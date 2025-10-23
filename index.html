@@ -4,22 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="dstack - The open-source, developer-friendly TEE SDK for deploying confidential applications. Deploy Docker containers to Trusted Execution Environments in minutes.">
-    <meta name="keywords" content="TEE, Trusted Execution Environment, confidential computing, dstack, Docker, security, attestation, Intel TDX, Linux Foundation">
+    <meta name="keywords" content="TEE, Trusted Execution Environment, confidential computing, dstack, Docker, security, attestation, Linux Foundation">
     <title>dstack - Deploy Confidential Applications in Minutes</title>
 
     <style>
         :root {
-            --primary-purple: #8B5CF6;
-            --primary-blue: #3B82F6;
-            --dark-bg: #0F0F1E;
-            --darker-bg: #08080F;
-            --card-bg: #1A1A2E;
+            --primary-green: #C4F142;
+            --primary-green-hover: #D5FF5C;
+            --dark-bg: #1A1A1A;
+            --darker-bg: #0A0A0A;
+            --card-bg: #252525;
             --text-primary: #FFFFFF;
             --text-secondary: #94A3B8;
-            --accent-cyan: #06B6D4;
-            --success-green: #10B981;
-            --gradient-1: linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%);
-            --gradient-2: linear-gradient(135deg, #06B6D4 0%, #8B5CF6 100%);
+            --accent-green: #C4F142;
+            --success-green: #C4F142;
+            --gradient-1: linear-gradient(135deg, #C4F142 0%, #A8D636 100%);
+            --gradient-2: linear-gradient(135deg, #C4F142 0%, #D5FF5C 100%);
         }
 
         * {
@@ -41,11 +41,11 @@
             position: fixed;
             top: 0;
             width: 100%;
-            background: rgba(15, 15, 30, 0.95);
+            background: rgba(26, 26, 26, 0.95);
             backdrop-filter: blur(10px);
             padding: 1rem 2rem;
             z-index: 1000;
-            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+            border-bottom: 1px solid rgba(196, 241, 66, 0.2);
         }
 
         nav .container {
@@ -57,12 +57,14 @@
         }
 
         nav .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        nav .logo img {
+            height: 100%;
+            width: auto;
         }
 
         nav ul {
@@ -78,7 +80,7 @@
         }
 
         nav a:hover {
-            color: var(--primary-purple);
+            color: var(--primary-green);
         }
 
         /* Hero Section */
@@ -89,7 +91,7 @@
             justify-content: center;
             text-align: center;
             padding: 8rem 2rem 4rem;
-            background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            background: radial-gradient(circle at 50% 50%, rgba(196, 241, 66, 0.1) 0%, transparent 50%);
             position: relative;
             overflow: hidden;
         }
@@ -102,7 +104,7 @@
             right: 0;
             bottom: 0;
             background:
-                linear-gradient(90deg, transparent 0%, rgba(139, 92, 246, 0.05) 50%, transparent 100%),
+                linear-gradient(90deg, transparent 0%, rgba(196, 241, 66, 0.05) 50%, transparent 100%),
                 linear-gradient(0deg, var(--dark-bg) 0%, transparent 20%);
             pointer-events: none;
         }
@@ -132,12 +134,12 @@
         .lf-badge {
             display: inline-block;
             padding: 0.5rem 1rem;
-            background: rgba(139, 92, 246, 0.1);
-            border: 1px solid var(--primary-purple);
+            background: rgba(196, 241, 66, 0.1);
+            border: 1px solid var(--primary-green);
             border-radius: 2rem;
             margin: 1rem 0 2rem;
             font-size: 0.9rem;
-            color: var(--primary-purple);
+            color: var(--primary-green);
         }
 
         .cta-buttons {
@@ -164,17 +166,17 @@
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 10px 30px rgba(196, 241, 66, 0.3);
         }
 
         .btn-secondary {
             background: transparent;
-            border: 2px solid var(--primary-purple);
-            color: var(--primary-purple);
+            border: 2px solid var(--primary-green);
+            color: var(--primary-green);
         }
 
         .btn-secondary:hover {
-            background: rgba(139, 92, 246, 0.1);
+            background: rgba(196, 241, 66, 0.1);
         }
 
         /* Section Styles */
@@ -213,7 +215,7 @@
         }
 
         .what-is-text h3 {
-            color: var(--primary-purple);
+            color: var(--primary-green);
             margin-bottom: 1rem;
         }
 
@@ -227,12 +229,12 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 1rem;
-            border: 1px solid rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(196, 241, 66, 0.2);
         }
 
         .architecture h4 {
             margin-bottom: 1rem;
-            color: var(--primary-blue);
+            color: var(--primary-green);
         }
 
         .architecture ul {
@@ -242,13 +244,13 @@
         .architecture li {
             padding: 0.75rem;
             margin-bottom: 0.5rem;
-            background: rgba(139, 92, 246, 0.05);
-            border-left: 3px solid var(--primary-purple);
+            background: rgba(196, 241, 66, 0.05);
+            border-left: 3px solid var(--primary-green);
             border-radius: 0.25rem;
         }
 
         .architecture li strong {
-            color: var(--primary-purple);
+            color: var(--primary-green);
         }
 
         /* Features Grid */
@@ -263,14 +265,14 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 1rem;
-            border: 1px solid rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(196, 241, 66, 0.2);
             transition: all 0.3s;
         }
 
         .feature-card:hover {
             transform: translateY(-5px);
-            border-color: var(--primary-purple);
-            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+            border-color: var(--primary-green);
+            box-shadow: 0 10px 30px rgba(196, 241, 66, 0.2);
         }
 
         .feature-icon {
@@ -279,7 +281,7 @@
         }
 
         .feature-card h3 {
-            color: var(--primary-purple);
+            color: var(--primary-green);
             margin-bottom: 1rem;
         }
 
@@ -302,7 +304,7 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 1rem;
-            border: 1px solid rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(196, 241, 66, 0.2);
             position: relative;
             overflow: hidden;
         }
@@ -318,7 +320,7 @@
         }
 
         .use-case h3 {
-            color: var(--primary-blue);
+            color: var(--primary-green);
             margin-bottom: 1rem;
         }
 
@@ -328,7 +330,7 @@
         }
 
         .use-case .partners {
-            color: var(--primary-purple);
+            color: var(--primary-green);
             font-size: 0.9rem;
             font-style: italic;
             margin-top: 1rem;
@@ -345,17 +347,17 @@
             background: var(--card-bg);
             padding: 1.5rem;
             border-radius: 0.5rem;
-            border: 1px solid rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(196, 241, 66, 0.2);
             transition: all 0.3s;
         }
 
         .example-card:hover {
-            border-color: var(--accent-cyan);
+            border-color: var(--accent-green);
             transform: translateY(-3px);
         }
 
         .example-card h4 {
-            color: var(--accent-cyan);
+            color: var(--accent-green);
             margin-bottom: 0.5rem;
             font-size: 1rem;
         }
@@ -399,7 +401,7 @@
 
         .step h3 {
             margin-bottom: 0.5rem;
-            color: var(--primary-purple);
+            color: var(--primary-green);
         }
 
         .step p {
@@ -410,7 +412,7 @@
             background: var(--card-bg);
             padding: 1.5rem;
             border-radius: 0.5rem;
-            border: 1px solid rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(196, 241, 66, 0.2);
             margin-top: 2rem;
             overflow-x: auto;
         }
@@ -422,7 +424,7 @@
         }
 
         .code-block code {
-            color: var(--accent-cyan);
+            color: var(--accent-green);
         }
 
         /* Ecosystem */
@@ -438,11 +440,11 @@
             padding: 2rem;
             background: var(--card-bg);
             border-radius: 1rem;
-            border: 1px solid rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(196, 241, 66, 0.2);
         }
 
         .ecosystem-item h4 {
-            color: var(--primary-purple);
+            color: var(--primary-green);
             margin-bottom: 0.5rem;
         }
 
@@ -466,14 +468,14 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 1rem;
-            border: 1px solid rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(196, 241, 66, 0.2);
             text-align: center;
             transition: all 0.3s;
         }
 
         .resource-card:hover {
             transform: translateY(-5px);
-            border-color: var(--primary-blue);
+            border-color: var(--primary-green);
         }
 
         .resource-icon {
@@ -482,12 +484,12 @@
         }
 
         .resource-card h3 {
-            color: var(--primary-blue);
+            color: var(--primary-green);
             margin-bottom: 1rem;
         }
 
         .resource-card a {
-            color: var(--accent-cyan);
+            color: var(--accent-green);
             text-decoration: none;
         }
 
@@ -500,7 +502,7 @@
             background: var(--darker-bg);
             padding: 3rem 2rem;
             text-align: center;
-            border-top: 1px solid rgba(139, 92, 246, 0.2);
+            border-top: 1px solid rgba(196, 241, 66, 0.2);
         }
 
         footer .footer-links {
@@ -518,7 +520,7 @@
         }
 
         footer a:hover {
-            color: var(--primary-purple);
+            color: var(--primary-green);
         }
 
         footer .copyright {
@@ -553,6 +555,216 @@
             }
         }
 
+        /* Documentation Section */
+        .documentation {
+            background: var(--darker-bg);
+            min-height: 80vh;
+        }
+
+        .docs-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 3rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .docs-sidebar {
+            position: sticky;
+            top: 6rem;
+            height: fit-content;
+            max-height: calc(100vh - 8rem);
+            overflow-y: auto;
+        }
+
+        .docs-category {
+            margin-bottom: 2rem;
+        }
+
+        .docs-category h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--primary-green);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .docs-sidebar ul {
+            list-style: none;
+        }
+
+        .docs-sidebar li {
+            margin-bottom: 0.5rem;
+        }
+
+        .docs-sidebar a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+            display: block;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+        }
+
+        .docs-sidebar a:hover {
+            color: var(--primary-green);
+            background: rgba(196, 241, 66, 0.05);
+        }
+
+        .docs-sidebar a.active {
+            color: var(--primary-green);
+            background: rgba(196, 241, 66, 0.1);
+            font-weight: 500;
+        }
+
+        .docs-content {
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: 1rem;
+            border: 1px solid rgba(196, 241, 66, 0.1);
+            min-height: 500px;
+        }
+
+        .docs-content h1 {
+            color: var(--primary-green);
+            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+        }
+
+        .docs-content h2 {
+            color: var(--text-primary);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+            border-bottom: 2px solid rgba(196, 241, 66, 0.2);
+            padding-bottom: 0.5rem;
+        }
+
+        .docs-content h3 {
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.4rem;
+        }
+
+        .docs-content h4 {
+            color: var(--text-secondary);
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .docs-content p {
+            margin-bottom: 1rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        .docs-content a {
+            color: var(--primary-green);
+            text-decoration: none;
+        }
+
+        .docs-content a:hover {
+            text-decoration: underline;
+        }
+
+        .docs-content ul, .docs-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .docs-content li {
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .docs-content pre {
+            background: var(--darker-bg);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(196, 241, 66, 0.1);
+        }
+
+        .docs-content code {
+            font-family: 'Courier New', 'Consolas', monospace;
+            font-size: 0.9rem;
+        }
+
+        .docs-content pre code {
+            background: none;
+            padding: 0;
+            border-radius: 0;
+            color: var(--text-secondary);
+        }
+
+        .docs-content :not(pre) > code {
+            background: rgba(196, 241, 66, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            color: var(--primary-green);
+            font-size: 0.85em;
+        }
+
+        .docs-content blockquote {
+            border-left: 4px solid var(--primary-green);
+            padding-left: 1rem;
+            margin: 1.5rem 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .docs-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+
+        .docs-content th, .docs-content td {
+            padding: 0.75rem;
+            border: 1px solid rgba(196, 241, 66, 0.2);
+            text-align: left;
+        }
+
+        .docs-content th {
+            background: rgba(196, 241, 66, 0.1);
+            color: var(--primary-green);
+            font-weight: 600;
+        }
+
+        .docs-content img {
+            max-width: 100%;
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .doc-loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .doc-error {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            color: #ff6b6b;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+        }
+
+        .heading-anchor {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .heading-anchor:hover {
+            color: var(--primary-green);
+        }
+
         /* Smooth Scroll */
         html {
             scroll-behavior: smooth;
@@ -563,11 +775,14 @@
     <!-- Navigation -->
     <nav>
         <div class="container">
-            <div class="logo">dstack</div>
+            <div class="logo">
+                <img src="assets/logos/dstack-horizontal-primary.svg" alt="dstack">
+            </div>
             <ul>
                 <li><a href="#what-is">About</a></li>
                 <li><a href="#features">Features</a></li>
                 <li><a href="#use-cases">Use Cases</a></li>
+                <li><a href="#documentation">Documentation</a></li>
                 <li><a href="#examples">Examples</a></li>
                 <li><a href="#getting-started">Get Started</a></li>
                 <li><a href="#resources">Resources</a></li>
@@ -608,8 +823,8 @@
                     confidential applications running in production in minutes.
                 </p>
                 <p>
-                    Built on Intel TDX technology and backed by the Linux Foundation, dstack provides enterprise-grade
-                    security with open-source transparency and vendor independence.
+                    Backed by the Linux Foundation, dstack provides enterprise-grade security with
+                    open-source transparency and vendor independence through hardware-level trusted execution environments.
                 </p>
                 <h3 style="margin-top: 2rem;">Key Benefits</h3>
                 <p>
@@ -623,7 +838,7 @@
             <div class="architecture">
                 <h4>Architecture Components</h4>
                 <ul>
-                    <li><strong>dstack-vmm</strong> - Manages Confidential VMs on TDX hosts</li>
+                    <li><strong>dstack-vmm</strong> - Manages Confidential VMs on TEE hosts</li>
                     <li><strong>dstack-gateway</strong> - Reverse proxy for TLS connections</li>
                     <li><strong>dstack-kms</strong> - Decentralized key management</li>
                     <li><strong>dstack-guest-agent</strong> - In-CVM attestation service</li>
@@ -743,6 +958,19 @@
         </div>
     </section>
 
+    <!-- Documentation -->
+    <section id="documentation" class="documentation">
+        <h2>Documentation</h2>
+        <p class="section-subtitle">
+            Complete guides and references from the dstack repository
+        </p>
+
+        <div class="docs-container">
+            <div id="docs-sidebar"></div>
+            <div id="docs-content" class="docs-content"></div>
+        </div>
+    </section>
+
     <!-- Examples -->
     <section id="examples">
         <h2>Example Projects</h2>
@@ -820,7 +1048,7 @@
             <div class="step">
                 <div class="step-number">1</div>
                 <h3>Install Dependencies</h3>
-                <p>Set up your TDX-enabled host with required build tools and Rust toolchain (Ubuntu 24.04 recommended).</p>
+                <p>Set up your TEE-enabled host with required build tools and Rust toolchain (Ubuntu 24.04 recommended).</p>
             </div>
 
             <div class="step">
@@ -862,7 +1090,7 @@ cd dstack
         </div>
 
         <div style="text-align: center; margin-top: 3rem;">
-            <a href="https://docs.phala.com/dstack/overview" class="btn btn-primary" target="_blank">
+            <a href="#documentation" class="btn btn-primary">
                 Read Full Documentation
             </a>
         </div>
@@ -897,11 +1125,6 @@ cd dstack
             </div>
 
             <div class="ecosystem-item">
-                <h4>Intel</h4>
-                <p>TDX technology provider enabling hardware-level confidential computing</p>
-            </div>
-
-            <div class="ecosystem-item">
                 <h4>Open Source</h4>
                 <p>Apache 2.0 licensed with 310+ GitHub stars and active community contributions</p>
             </div>
@@ -920,7 +1143,7 @@ cd dstack
                 <div class="resource-icon">📚</div>
                 <h3>Documentation</h3>
                 <p>Comprehensive guides, tutorials, and API references</p>
-                <a href="https://docs.phala.com/dstack/overview" target="_blank">docs.phala.com/dstack →</a>
+                <a href="#documentation">View Documentation →</a>
             </div>
 
             <div class="resource-card">
@@ -950,7 +1173,7 @@ cd dstack
     <footer>
         <div class="footer-links">
             <a href="https://github.com/Dstack-TEE/dstack" target="_blank">GitHub</a>
-            <a href="https://docs.phala.com/dstack/overview" target="_blank">Documentation</a>
+            <a href="#documentation">Documentation</a>
             <a href="https://github.com/Dstack-TEE/dstack-examples" target="_blank">Examples</a>
             <a href="https://phala.com" target="_blank">Phala Network</a>
             <a href="https://www.linuxfoundation.org/" target="_blank">Linux Foundation</a>
@@ -960,7 +1183,26 @@ cd dstack
         </p>
     </footer>
 
+    <!-- CDN Dependencies for Documentation -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@latest/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+
+    <!-- Documentation System -->
+    <script src="docs.js"></script>
+
     <script>
+        // Initialize documentation system
+        document.addEventListener('DOMContentLoaded', () => {
+            const docsSystem = new DstackDocs();
+            const sidebar = document.getElementById('docs-sidebar');
+            const content = document.getElementById('docs-content');
+
+            if (sidebar && content) {
+                docsSystem.init(sidebar, content);
+            }
+        });
+
         // Smooth scroll for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
@@ -982,9 +1224,9 @@ cd dstack
             const currentScroll = window.pageYOffset;
 
             if (currentScroll > 100) {
-                nav.style.background = 'rgba(15, 15, 30, 0.98)';
+                nav.style.background = 'rgba(26, 26, 26, 0.98)';
             } else {
-                nav.style.background = 'rgba(15, 15, 30, 0.95)';
+                nav.style.background = 'rgba(26, 26, 26, 0.95)';
             }
 
             lastScroll = currentScroll;
