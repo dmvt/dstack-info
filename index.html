@@ -11,14 +11,17 @@
         :root {
             --primary-green: #C4F142;
             --primary-green-hover: #D5FF5C;
-            --dark-bg: #1A1A1A;
-            --darker-bg: #0A0A0A;
-            --card-bg: #252525;
+            --primary-green-dark: #9AC936;
+            --dark-bg: #0D0D0D;
+            --darker-bg: #050505;
+            --card-bg: #1A1A1A;
+            --card-border: #2A2A2A;
             --text-primary: #FFFFFF;
-            --text-secondary: #94A3B8;
+            --text-secondary: #8A8A8A;
+            --text-tertiary: #5A5A5A;
             --accent-green: #C4F142;
             --success-green: #C4F142;
-            --gradient-1: linear-gradient(135deg, #C4F142 0%, #A8D636 100%);
+            --gradient-1: linear-gradient(135deg, #C4F142 0%, #9AC936 100%);
             --gradient-2: linear-gradient(135deg, #C4F142 0%, #D5FF5C 100%);
         }
 
@@ -41,11 +44,11 @@
             position: fixed;
             top: 0;
             width: 100%;
-            background: rgba(26, 26, 26, 0.95);
+            background: rgba(13, 13, 13, 0.98);
             backdrop-filter: blur(10px);
             padding: 1rem 2rem;
             z-index: 1000;
-            border-bottom: 1px solid rgba(196, 241, 66, 0.2);
+            border-bottom: 1px solid rgba(196, 241, 66, 0.15);
         }
 
         nav .container {
@@ -204,7 +207,7 @@
 
         /* What is dstack */
         .what-is {
-            background: var(--darker-bg);
+            background: var(--dark-bg);
         }
 
         .what-is-content {
@@ -229,7 +232,7 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 1rem;
-            border: 1px solid rgba(196, 241, 66, 0.2);
+            border: 1px solid var(--card-border);
         }
 
         .architecture h4 {
@@ -265,7 +268,7 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 1rem;
-            border: 1px solid rgba(196, 241, 66, 0.2);
+            border: 1px solid var(--card-border);
             transition: all 0.3s;
         }
 
@@ -291,7 +294,7 @@
 
         /* Use Cases */
         .use-cases {
-            background: var(--darker-bg);
+            background: var(--dark-bg);
         }
 
         .use-cases-grid {
@@ -304,7 +307,7 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 1rem;
-            border: 1px solid rgba(196, 241, 66, 0.2);
+            border: 1px solid var(--card-border);
             position: relative;
             overflow: hidden;
         }
@@ -347,7 +350,7 @@
             background: var(--card-bg);
             padding: 1.5rem;
             border-radius: 0.5rem;
-            border: 1px solid rgba(196, 241, 66, 0.2);
+            border: 1px solid var(--card-border);
             transition: all 0.3s;
         }
 
@@ -369,7 +372,7 @@
 
         /* Getting Started */
         .getting-started {
-            background: var(--darker-bg);
+            background: var(--dark-bg);
         }
 
         .steps {
@@ -409,10 +412,10 @@
         }
 
         .code-block {
-            background: var(--card-bg);
+            background: var(--darker-bg);
             padding: 1.5rem;
             border-radius: 0.5rem;
-            border: 1px solid rgba(196, 241, 66, 0.2);
+            border: 1px solid var(--card-border);
             margin-top: 2rem;
             overflow-x: auto;
         }
@@ -440,7 +443,7 @@
             padding: 2rem;
             background: var(--card-bg);
             border-radius: 1rem;
-            border: 1px solid rgba(196, 241, 66, 0.2);
+            border: 1px solid var(--card-border);
         }
 
         .ecosystem-item h4 {
@@ -455,7 +458,7 @@
 
         /* Resources */
         .resources {
-            background: var(--darker-bg);
+            background: var(--dark-bg);
         }
 
         .resources-grid {
@@ -468,7 +471,7 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 1rem;
-            border: 1px solid rgba(196, 241, 66, 0.2);
+            border: 1px solid var(--card-border);
             text-align: center;
             transition: all 0.3s;
         }
@@ -502,7 +505,7 @@
             background: var(--darker-bg);
             padding: 3rem 2rem;
             text-align: center;
-            border-top: 1px solid rgba(196, 241, 66, 0.2);
+            border-top: 1px solid var(--card-border);
         }
 
         footer .footer-links {
@@ -555,216 +558,6 @@
             }
         }
 
-        /* Documentation Section */
-        .documentation {
-            background: var(--darker-bg);
-            min-height: 80vh;
-        }
-
-        .docs-container {
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            gap: 3rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .docs-sidebar {
-            position: sticky;
-            top: 6rem;
-            height: fit-content;
-            max-height: calc(100vh - 8rem);
-            overflow-y: auto;
-        }
-
-        .docs-category {
-            margin-bottom: 2rem;
-        }
-
-        .docs-category h3 {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            color: var(--primary-green);
-            margin-bottom: 0.75rem;
-            font-weight: 600;
-        }
-
-        .docs-sidebar ul {
-            list-style: none;
-        }
-
-        .docs-sidebar li {
-            margin-bottom: 0.5rem;
-        }
-
-        .docs-sidebar a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.95rem;
-            transition: color 0.2s;
-            display: block;
-            padding: 0.5rem;
-            border-radius: 0.25rem;
-        }
-
-        .docs-sidebar a:hover {
-            color: var(--primary-green);
-            background: rgba(196, 241, 66, 0.05);
-        }
-
-        .docs-sidebar a.active {
-            color: var(--primary-green);
-            background: rgba(196, 241, 66, 0.1);
-            font-weight: 500;
-        }
-
-        .docs-content {
-            background: var(--card-bg);
-            padding: 3rem;
-            border-radius: 1rem;
-            border: 1px solid rgba(196, 241, 66, 0.1);
-            min-height: 500px;
-        }
-
-        .docs-content h1 {
-            color: var(--primary-green);
-            margin-bottom: 1.5rem;
-            font-size: 2.5rem;
-        }
-
-        .docs-content h2 {
-            color: var(--text-primary);
-            margin-top: 2rem;
-            margin-bottom: 1rem;
-            font-size: 1.8rem;
-            border-bottom: 2px solid rgba(196, 241, 66, 0.2);
-            padding-bottom: 0.5rem;
-        }
-
-        .docs-content h3 {
-            color: var(--text-primary);
-            margin-top: 1.5rem;
-            margin-bottom: 0.75rem;
-            font-size: 1.4rem;
-        }
-
-        .docs-content h4 {
-            color: var(--text-secondary);
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
-        }
-
-        .docs-content p {
-            margin-bottom: 1rem;
-            line-height: 1.7;
-            color: var(--text-secondary);
-        }
-
-        .docs-content a {
-            color: var(--primary-green);
-            text-decoration: none;
-        }
-
-        .docs-content a:hover {
-            text-decoration: underline;
-        }
-
-        .docs-content ul, .docs-content ol {
-            margin-left: 1.5rem;
-            margin-bottom: 1rem;
-            color: var(--text-secondary);
-        }
-
-        .docs-content li {
-            margin-bottom: 0.5rem;
-            line-height: 1.6;
-        }
-
-        .docs-content pre {
-            background: var(--darker-bg);
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            overflow-x: auto;
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(196, 241, 66, 0.1);
-        }
-
-        .docs-content code {
-            font-family: 'Courier New', 'Consolas', monospace;
-            font-size: 0.9rem;
-        }
-
-        .docs-content pre code {
-            background: none;
-            padding: 0;
-            border-radius: 0;
-            color: var(--text-secondary);
-        }
-
-        .docs-content :not(pre) > code {
-            background: rgba(196, 241, 66, 0.1);
-            padding: 0.2rem 0.4rem;
-            border-radius: 0.25rem;
-            color: var(--primary-green);
-            font-size: 0.85em;
-        }
-
-        .docs-content blockquote {
-            border-left: 4px solid var(--primary-green);
-            padding-left: 1rem;
-            margin: 1.5rem 0;
-            color: var(--text-secondary);
-            font-style: italic;
-        }
-
-        .docs-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 1.5rem;
-        }
-
-        .docs-content th, .docs-content td {
-            padding: 0.75rem;
-            border: 1px solid rgba(196, 241, 66, 0.2);
-            text-align: left;
-        }
-
-        .docs-content th {
-            background: rgba(196, 241, 66, 0.1);
-            color: var(--primary-green);
-            font-weight: 600;
-        }
-
-        .docs-content img {
-            max-width: 100%;
-            border-radius: 0.5rem;
-            margin: 1.5rem 0;
-        }
-
-        .doc-loading {
-            text-align: center;
-            padding: 3rem;
-            color: var(--text-secondary);
-        }
-
-        .doc-error {
-            background: rgba(255, 0, 0, 0.1);
-            border: 1px solid rgba(255, 0, 0, 0.3);
-            color: #ff6b6b;
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-        }
-
-        .heading-anchor {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .heading-anchor:hover {
-            color: var(--primary-green);
-        }
-
         /* Smooth Scroll */
         html {
             scroll-behavior: smooth;
@@ -782,7 +575,7 @@
                 <li><a href="#what-is">About</a></li>
                 <li><a href="#features">Features</a></li>
                 <li><a href="#use-cases">Use Cases</a></li>
-                <li><a href="#documentation">Documentation</a></li>
+                <li><a href="docs.html">Documentation</a></li>
                 <li><a href="#examples">Examples</a></li>
                 <li><a href="#getting-started">Get Started</a></li>
                 <li><a href="#resources">Resources</a></li>
@@ -958,19 +751,6 @@
         </div>
     </section>
 
-    <!-- Documentation -->
-    <section id="documentation" class="documentation">
-        <h2>Documentation</h2>
-        <p class="section-subtitle">
-            Complete guides and references from the dstack repository
-        </p>
-
-        <div class="docs-container">
-            <div id="docs-sidebar"></div>
-            <div id="docs-content" class="docs-content"></div>
-        </div>
-    </section>
-
     <!-- Examples -->
     <section id="examples">
         <h2>Example Projects</h2>
@@ -1090,7 +870,7 @@ cd dstack
         </div>
 
         <div style="text-align: center; margin-top: 3rem;">
-            <a href="#documentation" class="btn btn-primary">
+            <a href="docs.html" class="btn btn-primary">
                 Read Full Documentation
             </a>
         </div>
@@ -1143,7 +923,7 @@ cd dstack
                 <div class="resource-icon">📚</div>
                 <h3>Documentation</h3>
                 <p>Comprehensive guides, tutorials, and API references</p>
-                <a href="#documentation">View Documentation →</a>
+                <a href="docs.html">View Documentation →</a>
             </div>
 
             <div class="resource-card">
@@ -1173,7 +953,7 @@ cd dstack
     <footer>
         <div class="footer-links">
             <a href="https://github.com/Dstack-TEE/dstack" target="_blank">GitHub</a>
-            <a href="#documentation">Documentation</a>
+            <a href="docs.html">Documentation</a>
             <a href="https://github.com/Dstack-TEE/dstack-examples" target="_blank">Examples</a>
             <a href="https://phala.com" target="_blank">Phala Network</a>
             <a href="https://www.linuxfoundation.org/" target="_blank">Linux Foundation</a>
@@ -1183,26 +963,7 @@ cd dstack
         </p>
     </footer>
 
-    <!-- CDN Dependencies for Documentation -->
-    <script src="https://cdn.jsdelivr.net/npm/marked@latest/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-
-    <!-- Documentation System -->
-    <script src="docs.js"></script>
-
     <script>
-        // Initialize documentation system
-        document.addEventListener('DOMContentLoaded', () => {
-            const docsSystem = new DstackDocs();
-            const sidebar = document.getElementById('docs-sidebar');
-            const content = document.getElementById('docs-content');
-
-            if (sidebar && content) {
-                docsSystem.init(sidebar, content);
-            }
-        });
-
         // Smooth scroll for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
@@ -1224,9 +985,9 @@ cd dstack
             const currentScroll = window.pageYOffset;
 
             if (currentScroll > 100) {
-                nav.style.background = 'rgba(26, 26, 26, 0.98)';
+                nav.style.background = 'rgba(13, 13, 13, 0.98)';
             } else {
-                nav.style.background = 'rgba(26, 26, 26, 0.95)';
+                nav.style.background = 'rgba(13, 13, 13, 0.95)';
             }
 
             lastScroll = currentScroll;
