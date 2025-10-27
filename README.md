@@ -1,10 +1,10 @@
 # dstack.info Website
 
-Official website for dstack - the open-source, developer-friendly TEE SDK for deploying confidential applications.
+Community-built website for dstack - the open-source, developer-friendly TEE SDK for deploying confidential applications.
 
 ## Overview
 
-This website serves as the primary resource hub for developers and organizations interested in deploying applications to Trusted Execution Environments (TEEs) using dstack.
+This website serves as a community resource hub for developers and organizations interested in deploying applications to Trusted Execution Environments (TEEs) using dstack.
 
 ## Features
 

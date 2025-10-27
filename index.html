@@ -7,22 +7,47 @@
     <meta name="keywords" content="TEE, Trusted Execution Environment, confidential computing, dstack, Docker, security, attestation, Linux Foundation">
     <title>dstack - Deploy Confidential Applications in Minutes</title>
 
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <style>
         :root {
-            --primary-green: #C4F142;
-            --primary-green-hover: #D5FF5C;
-            --primary-green-dark: #9AC936;
-            --dark-bg: #0D0D0D;
-            --darker-bg: #050505;
-            --card-bg: #1A1A1A;
-            --card-border: #2A2A2A;
+            /* Primary palette */
+            --lime-green: #C4F142;
+            --lime-green-bright: #D5FF5C;
+            --lime-green-dark: #9AC936;
+
+            /* Complementary accent */
+            --cyber-blue: #42C4F1;
+            --cyber-purple: #4F42F1;
+
+            /* Backgrounds - deep space theme */
+            --bg-black: #000000;
+            --bg-space: #0A0B0F;
+            --bg-deep: #12131A;
+            --bg-card: #16171C;
+            --bg-elevated: #1C1D24;
+
+            /* Borders - subtle blue-gray */
+            --border-subtle: #1E1F28;
+            --border-default: #2A2B35;
+            --border-bright: #3A3B45;
+
+            /* Text hierarchy */
             --text-primary: #FFFFFF;
-            --text-secondary: #8A8A8A;
-            --text-tertiary: #5A5A5A;
-            --accent-green: #C4F142;
-            --success-green: #C4F142;
-            --gradient-1: linear-gradient(135deg, #C4F142 0%, #9AC936 100%);
-            --gradient-2: linear-gradient(135deg, #C4F142 0%, #D5FF5C 100%);
+            --text-secondary: #9CA3AF;
+            --text-tertiary: #6B7280;
+            --text-muted: #4B5563;
+
+            /* Gradients */
+            --gradient-lime: linear-gradient(135deg, #C4F142 0%, #9AC936 100%);
+            --gradient-cyber: linear-gradient(135deg, #42C4F1 0%, #4F42F1 100%);
+            --gradient-mixed: linear-gradient(135deg, #C4F142 0%, #42C4F1 100%);
         }
 
         * {
@@ -32,8 +57,8 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background: var(--dark-bg);
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-space);
             color: var(--text-primary);
             line-height: 1.6;
             overflow-x: hidden;
@@ -44,11 +69,11 @@
             position: fixed;
             top: 0;
             width: 100%;
-            background: rgba(13, 13, 13, 0.98);
+            background: rgba(10, 11, 15, 0.98);
             backdrop-filter: blur(10px);
             padding: 1rem 2rem;
             z-index: 1000;
-            border-bottom: 1px solid rgba(196, 241, 66, 0.15);
+            border-bottom: 1px solid var(--border-subtle);
         }
 
         nav .container {
@@ -83,7 +108,7 @@
         }
 
         nav a:hover {
-            color: var(--primary-green);
+            color: var(--lime-green);
         }
 
         /* Hero Section */
@@ -108,7 +133,7 @@
             bottom: 0;
             background:
                 linear-gradient(90deg, transparent 0%, rgba(196, 241, 66, 0.05) 50%, transparent 100%),
-                linear-gradient(0deg, var(--dark-bg) 0%, transparent 20%);
+                linear-gradient(0deg, var(--bg-space) 0%, transparent 20%);
             pointer-events: none;
         }
 
@@ -121,7 +146,7 @@
         .hero h1 {
             font-size: 3.5rem;
             margin-bottom: 1.5rem;
-            background: var(--gradient-1);
+            background: var(--gradient-lime);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -138,11 +163,18 @@
             display: inline-block;
             padding: 0.5rem 1rem;
             background: rgba(196, 241, 66, 0.1);
-            border: 1px solid var(--primary-green);
+            border: 1px solid var(--lime-green);
             border-radius: 2rem;
             margin: 1rem 0 2rem;
             font-size: 0.9rem;
-            color: var(--primary-green);
+            color: var(--lime-green);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .lf-badge:hover {
+            background: rgba(196, 241, 66, 0.2);
+            transform: scale(1.05);
         }
 
         .cta-buttons {
@@ -163,8 +195,8 @@
         }
 
         .btn-primary {
-            background: var(--gradient-1);
-            color: white;
+            background: var(--gradient-lime);
+            color: var(--bg-black);
         }
 
         .btn-primary:hover {
@@ -174,8 +206,8 @@
 
         .btn-secondary {
             background: transparent;
-            border: 2px solid var(--primary-green);
-            color: var(--primary-green);
+            border: 2px solid var(--lime-green);
+            color: var(--lime-green);
         }
 
         .btn-secondary:hover {
@@ -218,7 +250,7 @@
         }
 
         .what-is-text h3 {
-            color: var(--primary-green);
+            color: var(--lime-green);
             margin-bottom: 1rem;
         }
 
@@ -232,12 +264,12 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 1rem;
-            border: 1px solid var(--card-border);
+            border: 1px solid var(--border-default);
         }
 
         .architecture h4 {
             margin-bottom: 1rem;
-            color: var(--primary-green);
+            color: var(--lime-green);
         }
 
         .architecture ul {
@@ -248,12 +280,12 @@
             padding: 0.75rem;
             margin-bottom: 0.5rem;
             background: rgba(196, 241, 66, 0.05);
-            border-left: 3px solid var(--primary-green);
+            border-left: 3px solid var(--lime-green);
             border-radius: 0.25rem;
         }
 
         .architecture li strong {
-            color: var(--primary-green);
+            color: var(--lime-green);
         }
 
         /* Features Grid */
@@ -268,23 +300,24 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 1rem;
-            border: 1px solid var(--card-border);
+            border: 1px solid var(--border-default);
             transition: all 0.3s;
         }
 
         .feature-card:hover {
             transform: translateY(-5px);
-            border-color: var(--primary-green);
+            border-color: var(--lime-green);
             box-shadow: 0 10px 30px rgba(196, 241, 66, 0.2);
         }
 
         .feature-icon {
             font-size: 2.5rem;
             margin-bottom: 1rem;
+            color: var(--lime-green);
         }
 
         .feature-card h3 {
-            color: var(--primary-green);
+            color: var(--lime-green);
             margin-bottom: 1rem;
         }
 
@@ -307,7 +340,7 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 1rem;
-            border: 1px solid var(--card-border);
+            border: 1px solid var(--border-default);
             position: relative;
             overflow: hidden;
         }
@@ -319,11 +352,11 @@
             left: 0;
             width: 100%;
             height: 4px;
-            background: var(--gradient-1);
+            background: var(--gradient-lime);
         }
 
         .use-case h3 {
-            color: var(--primary-green);
+            color: var(--lime-green);
             margin-bottom: 1rem;
         }
 
@@ -333,7 +366,7 @@
         }
 
         .use-case .partners {
-            color: var(--primary-green);
+            color: var(--lime-green);
             font-size: 0.9rem;
             font-style: italic;
             margin-top: 1rem;
@@ -350,7 +383,7 @@
             background: var(--card-bg);
             padding: 1.5rem;
             border-radius: 0.5rem;
-            border: 1px solid var(--card-border);
+            border: 1px solid var(--border-default);
             transition: all 0.3s;
         }
 
@@ -393,18 +426,19 @@
             top: 0;
             width: 3rem;
             height: 3rem;
-            background: var(--gradient-1);
+            background: var(--gradient-lime);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
             font-weight: bold;
+            color: var(--bg-black);
         }
 
         .step h3 {
             margin-bottom: 0.5rem;
-            color: var(--primary-green);
+            color: var(--lime-green);
         }
 
         .step p {
@@ -412,10 +446,10 @@
         }
 
         .code-block {
-            background: var(--darker-bg);
+            background: var(--bg-deep);
             padding: 1.5rem;
             border-radius: 0.5rem;
-            border: 1px solid var(--card-border);
+            border: 1px solid var(--border-default);
             margin-top: 2rem;
             overflow-x: auto;
         }
@@ -443,11 +477,23 @@
             padding: 2rem;
             background: var(--card-bg);
             border-radius: 1rem;
-            border: 1px solid var(--card-border);
+            border: 1px solid var(--border-default);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .ecosystem-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--lime-green);
+        }
+
+        .ecosystem-item a {
+            text-decoration: none;
+            display: block;
         }
 
         .ecosystem-item h4 {
-            color: var(--primary-green);
+            color: var(--lime-green);
             margin-bottom: 0.5rem;
         }
 
@@ -471,23 +517,24 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 1rem;
-            border: 1px solid var(--card-border);
+            border: 1px solid var(--border-default);
             text-align: center;
             transition: all 0.3s;
         }
 
         .resource-card:hover {
             transform: translateY(-5px);
-            border-color: var(--primary-green);
+            border-color: var(--lime-green);
         }
 
         .resource-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
+            color: var(--lime-green);
         }
 
         .resource-card h3 {
-            color: var(--primary-green);
+            color: var(--lime-green);
             margin-bottom: 1rem;
         }
 
@@ -502,10 +549,10 @@
 
         /* Footer */
         footer {
-            background: var(--darker-bg);
+            background: var(--bg-deep);
             padding: 3rem 2rem;
             text-align: center;
-            border-top: 1px solid var(--card-border);
+            border-top: 1px solid var(--border-default);
         }
 
         footer .footer-links {
@@ -523,7 +570,7 @@
         }
 
         footer a:hover {
-            color: var(--primary-green);
+            color: var(--lime-green);
         }
 
         footer .copyright {
@@ -569,7 +616,7 @@
     <nav>
         <div class="container">
             <div class="logo">
-                <img src="assets/logos/dstack-horizontal-primary.svg" alt="dstack">
+                <img src="assets/logos/dstack-horizontal-light.svg" alt="dstack">
             </div>
             <ul>
                 <li><a href="#what-is">About</a></li>
@@ -588,7 +635,7 @@
         <div class="hero-content">
             <h1>Deploy Confidential Applications in Minutes</h1>
             <p class="subtitle">The open-source, developer-friendly TEE SDK for secure, attestable computing</p>
-            <div class="lf-badge">A Linux Foundation Project</div>
+            <a href="https://phala.com/posts/dstack-linux-foundation" target="_blank" class="lf-badge">Transitioning to Linux Foundation</a>
             <p style="color: var(--text-secondary); max-width: 700px; margin: 0 auto 2rem;">
                 Convert any Docker container into a secure, verifiable application running in Trusted Execution Environments.
                 No code changes required.
@@ -616,8 +663,8 @@
                     confidential applications running in production in minutes.
                 </p>
                 <p>
-                    Backed by the Linux Foundation, dstack provides enterprise-grade security with
-                    open-source transparency and vendor independence through hardware-level trusted execution environments.
+                    Built by a passionate open-source community, dstack provides production-ready security with
+                    full transparency and vendor independence through hardware-level trusted execution environments.
                 </p>
                 <h3 style="margin-top: 2rem;">Key Benefits</h3>
                 <p>
@@ -650,37 +697,37 @@
 
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon">🐳</div>
+                <div class="feature-icon"><i class="fa-brands fa-docker"></i></div>
                 <h3>Docker Native</h3>
                 <p>Use familiar Docker Compose workflows. No proprietary tooling or steep learning curves.</p>
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">🔒</div>
+                <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
                 <h3>Zero-Trust HTTPS</h3>
                 <p>Automatic TLS termination with RA-HTTPS wrapping and certificate management built-in.</p>
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">🔑</div>
+                <div class="feature-icon"><i class="fa-solid fa-key"></i></div>
                 <h3>Secret Management</h3>
                 <p>Client-side encrypted environment variables, decrypted securely within the TEE.</p>
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">✅</div>
+                <div class="feature-icon"><i class="fa-solid fa-certificate"></i></div>
                 <h3>Remote Attestation</h3>
                 <p>Cryptographic proof of execution environment with chain-of-trust visualization.</p>
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">🌐</div>
+                <div class="feature-icon"><i class="fa-solid fa-network-wired"></i></div>
                 <h3>Decentralized KMS</h3>
                 <p>Hardware-independent key derivation eliminates vendor lock-in and single points of failure.</p>
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">📊</div>
+                <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
                 <h3>Web Dashboard</h3>
                 <p>Intuitive interface for deployment, monitoring, and log management via REST API.</p>
             </div>
@@ -880,34 +927,34 @@ cd dstack
     <section id="ecosystem">
         <h2>Ecosystem & Community</h2>
         <p class="section-subtitle">
-            Built by a thriving open-source community with enterprise backing
+            Built by a thriving open-source community with diverse contributors
         </p>
 
         <div class="ecosystem-grid">
-            <div class="ecosystem-item">
+            <a href="https://www.linuxfoundation.org/" target="_blank" class="ecosystem-item">
                 <h4>Linux Foundation</h4>
-                <p>Neutral governance ensuring long-term stability and community-driven development</p>
-            </div>
+                <p>Transitioning to neutral governance for community-driven open-source development</p>
+            </a>
 
-            <div class="ecosystem-item">
+            <a href="https://phala.com" target="_blank" class="ecosystem-item">
                 <h4>Phala Network</h4>
                 <p>Lead contributor and operator of Phala Cloud, the managed dstack platform</p>
-            </div>
+            </a>
 
-            <div class="ecosystem-item">
+            <a href="https://www.flashbots.net/" target="_blank" class="ecosystem-item">
                 <h4>Flashbots</h4>
                 <p>Strategic collaboration on MEV protection and confidential computing research</p>
-            </div>
+            </a>
 
-            <div class="ecosystem-item">
+            <a href="https://github.com/ai16z" target="_blank" class="ecosystem-item">
                 <h4>ai16z</h4>
                 <p>Eliza AI agent framework built on dstack TEE infrastructure</p>
-            </div>
+            </a>
 
-            <div class="ecosystem-item">
+            <a href="https://github.com/Dstack-TEE/dstack" target="_blank" class="ecosystem-item">
                 <h4>Open Source</h4>
                 <p>Apache 2.0 licensed with 310+ GitHub stars and active community contributions</p>
-            </div>
+            </a>
         </div>
     </section>
 
@@ -920,28 +967,28 @@ cd dstack
 
         <div class="resources-grid">
             <div class="resource-card">
-                <div class="resource-icon">📚</div>
+                <div class="resource-icon"><i class="fa-solid fa-book"></i></div>
                 <h3>Documentation</h3>
                 <p>Comprehensive guides, tutorials, and API references</p>
                 <a href="docs.html">View Documentation →</a>
             </div>
 
             <div class="resource-card">
-                <div class="resource-icon">💻</div>
+                <div class="resource-icon"><i class="fa-brands fa-github"></i></div>
                 <h3>GitHub</h3>
                 <p>Source code, issues, and pull requests</p>
                 <a href="https://github.com/Dstack-TEE/dstack" target="_blank">github.com/dstack-TEE →</a>
             </div>
 
             <div class="resource-card">
-                <div class="resource-icon">🚀</div>
+                <div class="resource-icon"><i class="fa-solid fa-rocket"></i></div>
                 <h3>Examples</h3>
                 <p>Ready-to-deploy reference implementations</p>
                 <a href="https://github.com/Dstack-TEE/dstack-examples" target="_blank">dstack-examples →</a>
             </div>
 
             <div class="resource-card">
-                <div class="resource-icon">☁️</div>
+                <div class="resource-icon"><i class="fa-solid fa-cloud"></i></div>
                 <h3>Phala Cloud</h3>
                 <p>Managed dstack platform for easy deployment</p>
                 <a href="https://phala.com" target="_blank">phala.com →</a>
@@ -959,7 +1006,7 @@ cd dstack
             <a href="https://www.linuxfoundation.org/" target="_blank">Linux Foundation</a>
         </div>
         <p class="copyright">
-            &copy; 2025 dstack. A Linux Foundation Project. Licensed under Apache 2.0.
+            &copy; 2025 dstack. <a href="https://phala.com/posts/dstack-linux-foundation" target="_blank" style="color: var(--lime-green); text-decoration: none;">Open Source</a>. Licensed under Apache 2.0.
         </p>
     </footer>
 
@@ -985,9 +1032,9 @@ cd dstack
             const currentScroll = window.pageYOffset;
 
             if (currentScroll > 100) {
-                nav.style.background = 'rgba(13, 13, 13, 0.98)';
+                nav.style.background = 'rgba(10, 11, 15, 0.98)';
             } else {
-                nav.style.background = 'rgba(13, 13, 13, 0.95)';
+                nav.style.background = 'rgba(10, 11, 15, 0.95)';
             }
 
             lastScroll = currentScroll;

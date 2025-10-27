@@ -248,15 +248,15 @@ dstack-info/
 
 ## Final Notes
 
-This website represents a comprehensive, research-backed public resource for dstack. All content is based on:
-- Official Phala Network documentation
+This website represents a comprehensive, community-built resource for dstack. All content is based on:
+- Phala Network documentation
 - GitHub repositories and examples
 - Real production use cases
 - Community feedback and patterns
 
 The website is ready for production deployment and designed to:
 - Attract developers to the dstack ecosystem
-- Establish thought leadership in TEE space
+- Share knowledge and insights about TEE technology
 - Support Flashbots collaboration goals
 - Drive adoption and community growth
 
