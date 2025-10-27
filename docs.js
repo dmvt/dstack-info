@@ -78,7 +78,14 @@ class DstackDocs {
             if (!response.ok) throw new Error(`Failed to fetch ${path}`);
 
             const data = await response.json();
-            const content = atob(data.content); // Decode base64
+
+            // Decode base64 with proper UTF-8 handling for emojis and special characters
+            const binaryString = atob(data.content);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const content = new TextDecoder('utf-8').decode(bytes);
 
             // Cache the content
             this.cache.set(path, {
