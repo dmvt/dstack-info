@@ -123,7 +123,7 @@ class DstackDocs {
         // Get the directory of the current file for resolving relative paths
         const fileDir = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
 
-        // Fix image paths to use GitHub raw content
+        // Fix markdown image paths to use GitHub raw content
         markdown = markdown.replace(
             /!\[(.*?)\]\((?!http)(.*?)\)/g,
             (match, alt, imgPath) => {
@@ -133,6 +133,19 @@ class DstackDocs {
                     cleanPath = `${fileDir}/${cleanPath}`;
                 }
                 return `![${alt}](https://raw.githubusercontent.com/Dstack-TEE/dstack/master/${cleanPath})`;
+            }
+        );
+
+        // Fix HTML img tag src attributes to use GitHub raw content
+        markdown = markdown.replace(
+            /<img([^>]*?)src=["'](?!http)(.*?)["']/g,
+            (match, beforeSrc, imgPath) => {
+                let cleanPath = imgPath.startsWith('./') ? imgPath.slice(2) : imgPath;
+                // If the image path is relative and we have a file directory, prepend it
+                if (!cleanPath.startsWith('/') && fileDir && !cleanPath.startsWith('docs/')) {
+                    cleanPath = `${fileDir}/${cleanPath}`;
+                }
+                return `<img${beforeSrc}src="https://raw.githubusercontent.com/Dstack-TEE/dstack/master/${cleanPath}"`;
             }
         );
 
