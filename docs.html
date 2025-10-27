@@ -587,20 +587,31 @@
             white-space: nowrap;
         }
 
-        /* Blog Posts Styling */
-        .docs-content h3 a[href^="http"] {
-            color: var(--lime-green);
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .docs-content h3 a[href^="http"]::after {
+        /* External Link Icons - Apply to all external links */
+        .docs-content a[href^="http"]:not(.heading-anchor)::after,
+        .docs-content a[href^="https"]:not(.heading-anchor)::after {
             content: "\f35d";
             font-family: "Font Awesome 6 Free";
             font-weight: 900;
+            font-size: 0.75em;
+            margin-left: 0.3em;
+            opacity: 0.6;
+            display: inline-block;
+        }
+
+        /* Blog Posts Styling - Make h3 external links more prominent */
+        .docs-content h3 a[href^="http"],
+        .docs-content h3 a[href^="https"] {
+            color: var(--lime-green);
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .docs-content h3 a[href^="http"]::after,
+        .docs-content h3 a[href^="https"]::after {
             font-size: 0.8em;
             opacity: 0.7;
+            margin-left: 0.5rem;
         }
 
         .docs-content p strong {

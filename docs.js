@@ -113,20 +113,27 @@ class DstackDocs {
             markdown = this.removePhalaBranding(markdown);
         }
 
+        // Get the directory of the current file for resolving relative paths
+        const fileDir = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
+
         // Fix image paths to use GitHub raw content
         markdown = markdown.replace(
             /!\[(.*?)\]\((?!http)(.*?)\)/g,
-            (match, alt, path) => {
-                const cleanPath = path.startsWith('./') ? path.slice(2) : path;
-                return `![${alt}](https://raw.githubusercontent.com/Dstack-TEE/dstack/main/${cleanPath})`;
+            (match, alt, imgPath) => {
+                let cleanPath = imgPath.startsWith('./') ? imgPath.slice(2) : imgPath;
+                // If the image path is relative and we have a file directory, prepend it
+                if (!cleanPath.startsWith('/') && fileDir && !cleanPath.startsWith('docs/')) {
+                    cleanPath = `${fileDir}/${cleanPath}`;
+                }
+                return `![${alt}](https://raw.githubusercontent.com/Dstack-TEE/dstack/master/${cleanPath})`;
             }
         );
 
         // Fix relative links to point to GitHub
         markdown = markdown.replace(
             /\[([^\]]+)\]\((?!http|#)(.*?)\)/g,
-            (match, text, path) => {
-                return `[${text}](https://github.com/Dstack-TEE/dstack/blob/main/${path})`;
+            (match, text, linkPath) => {
+                return `[${text}](https://github.com/Dstack-TEE/dstack/blob/master/${linkPath})`;
             }
         );
 
@@ -411,6 +418,7 @@ function generateTableOfContents(contentElement) {
     if (headings.length < 3) return ''; // Don't show TOC for short pages
 
     let tocHTML = '<div class="table-of-contents"><div class="toc-header">On This Page</div><ul class="toc-list">';
+    let validHeadings = 0;
 
     headings.forEach((heading) => {
         const level = heading.tagName.toLowerCase();
@@ -418,11 +426,17 @@ function generateTableOfContents(contentElement) {
         const text = heading.textContent;
         const className = level === 'h3' ? 'toc-sub' : '';
 
+        // Skip headings without IDs (they have external links)
+        if (!id) return;
+
+        validHeadings++;
         tocHTML += `<li class="${className}"><a href="#${id}">${text}</a></li>`;
     });
 
     tocHTML += '</ul></div>';
-    return tocHTML;
+
+    // Don't show TOC if we don't have enough valid internal headings
+    return validHeadings >= 3 ? tocHTML : '';
 }
 
 // Initialize when DOM is ready
