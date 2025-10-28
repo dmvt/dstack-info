@@ -40,6 +40,7 @@ class DstackDocs {
             { title: 'KMS Protocol', path: 'kms/README.md', category: 'Architecture' },
 
             // Community
+            { title: 'Community Calls', path: 'COMMUNITY-CALLS.md', category: 'Community' },
             { title: 'Contributing Guide', path: 'CONTRIBUTING.md', category: 'Community' },
             { title: 'Code of Conduct', path: 'CODE_OF_CONDUCT.md', category: 'Community' },
             { title: 'Changelog', path: 'CHANGELOG.md', category: 'Community' },
@@ -57,8 +58,8 @@ class DstackDocs {
         }
 
         try {
-            // Check if this is a local file (blog posts, changelog content, glossary, etc.)
-            const localFiles = ['BLOG_POSTS.md', 'CHANGELOG-CONTENT.md', 'GLOSSARY.md'];
+            // Check if this is a local file (blog posts, changelog content, glossary, community calls, etc.)
+            const localFiles = ['BLOG_POSTS.md', 'CHANGELOG-CONTENT.md', 'GLOSSARY.md', 'COMMUNITY-CALLS.md'];
             if (localFiles.includes(path)) {
                 const response = await fetch(path);
                 if (!response.ok) throw new Error(`Failed to fetch local file ${path}`);
@@ -271,7 +272,7 @@ class DstackDocs {
             }
 
             // Add edit on GitHub link (only for GitHub-hosted files)
-            const localFiles = ['BLOG_POSTS.md', 'CHANGELOG-CONTENT.md', 'GLOSSARY.md'];
+            const localFiles = ['BLOG_POSTS.md', 'CHANGELOG-CONTENT.md', 'GLOSSARY.md', 'COMMUNITY-CALLS.md'];
             if (!localFiles.includes(path)) {
                 const editLink = `<div class="doc-meta"><a href="https://github.com/Dstack-TEE/dstack/edit/main/${path}" target="_blank" class="edit-link"><i class="fa-brands fa-github"></i> Edit on GitHub</a></div>`;
                 targetElement.insertAdjacentHTML('beforeend', editLink);
