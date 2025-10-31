@@ -86,7 +86,7 @@ test.describe('Homepage', () => {
   });
 
   test('should navigate to tutorials when clicking Tutorials link', async ({ page }) => {
-    // Click the first tutorial link (in nav)
+    // Click tutorial link in nav
     await page.locator('nav a[href="/tutorial/sample-tutorial"]').click();
 
     // Wait for navigation
