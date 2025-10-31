@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  /* dstack Brand Colors */
+  --color-lime-green: #c4f142;
+  --color-cyber-blue: #42c4f1;
+  --color-cyber-purple: #4f42f1;
+
+  /* Background Colors - Deep Space Theme */
+  --color-bg-space: #0a0b0f;
+  --color-bg-deep: #12131a;
+  --color-bg-card: #16171c;
+
+  /* Border Colors */
+  --color-border-default: #2a2b35;
+
+  /* Text Colors */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #9ca3af;
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--color-bg-space);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+}
