@@ -3,6 +3,7 @@
 @theme {
   /* dstack Brand Colors */
   --color-lime-green: #c4f142;
+  --color-lime-green-bright: #d5ff5c;
   --color-cyber-blue: #42c4f1;
   --color-cyber-purple: #4f42f1;
 
@@ -10,9 +11,11 @@
   --color-bg-space: #0a0b0f;
   --color-bg-deep: #12131a;
   --color-bg-card: #16171c;
+  --color-bg-black: #000000;
 
   /* Border Colors */
   --color-border-default: #2a2b35;
+  --color-border-subtle: #1e1f28;
 
   /* Text Colors */
   --color-text-primary: #ffffff;

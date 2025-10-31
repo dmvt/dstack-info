@@ -1,230 +1,99 @@
 ---
-import ComponentLayout from '../layouts/ComponentLayout.astro';
-import StepCard from '../components/StepCard.astro';
-import ProgressTracker from '../components/ProgressTracker.astro';
-import CodeBlock from '../components/CodeBlock.astro';
-import ValidationIndicator from '../components/ValidationIndicator.astro';
-import CommandOutput from '../components/CommandOutput.astro';
-import CollapsibleSection from '../components/CollapsibleSection.astro';
-import NavigationButtons from '../components/NavigationButtons.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<ComponentLayout
-	title=""
-	description="Interactive Tutorial Platform"
+<BaseLayout
+	title="dstack - Deploy Confidential Applications in Minutes"
+	description="The open-source, developer-friendly TEE SDK for deploying confidential applications. Deploy Docker containers to Trusted Execution Environments in minutes."
 >
+	<!-- Navigation -->
+	<nav class="fixed top-0 w-full bg-bg-space/98 backdrop-blur-md px-8 py-4 z-50 border-b border-border-subtle">
+		<div class="max-w-7xl mx-auto flex justify-between items-center">
+			<div class="h-10 flex items-center">
+				<img src="/logos/dstack-horizontal-light.svg" alt="dstack" class="h-full w-auto" />
+			</div>
+			<ul class="hidden md:flex list-none gap-8">
+				<li><a href="#what-is" class="text-text-secondary hover:text-lime-green transition-colors">About</a></li>
+				<li><a href="#features" class="text-text-secondary hover:text-lime-green transition-colors">Features</a></li>
+				<li><a href="#use-cases" class="text-text-secondary hover:text-lime-green transition-colors">Use Cases</a></li>
+				<li><a href="/tutorial/sample-tutorial" class="text-text-secondary hover:text-lime-green transition-colors">Tutorials</a></li>
+				<li><a href="#examples" class="text-text-secondary hover:text-lime-green transition-colors">Examples</a></li>
+				<li><a href="#getting-started" class="text-text-secondary hover:text-lime-green transition-colors">Get Started</a></li>
+				<li><a href="#resources" class="text-text-secondary hover:text-lime-green transition-colors">Resources</a></li>
+			</ul>
+		</div>
+	</nav>
 
-				<!-- ProgressTracker Demo -->
-				<section class="mb-12">
-					<h2 class="text-3xl font-bold text-text-primary mb-6">Progress Tracker</h2>
+	<!-- Hero Section -->
+	<section class="min-h-screen flex items-center justify-center text-center px-8 pt-32 pb-16 relative overflow-hidden">
+		<!-- Background effects -->
+		<div class="absolute inset-0 bg-gradient-radial from-lime-green/10 via-transparent to-transparent opacity-50"></div>
+		<div class="absolute inset-0 bg-gradient-to-t from-bg-space via-transparent to-transparent pointer-events-none"></div>
 
-					<div class="space-y-6">
-						<div>
-							<h3 class="text-lg text-text-secondary mb-3">Just Started (30%)</h3>
-							<ProgressTracker totalSteps={10} completedSteps={3} currentStep={4} />
-						</div>
+		<div class="max-w-4xl relative z-10">
+			<h1 class="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-lime-green to-lime-green-bright bg-clip-text text-transparent leading-tight">
+				Deploy Confidential Applications in Minutes
+			</h1>
+			<p class="text-xl md:text-2xl text-text-secondary mb-4">
+				The open-source, developer-friendly TEE SDK for secure, attestable computing
+			</p>
+			<a href="https://phala.com/posts/dstack-linux-foundation" target="_blank" class="inline-block px-6 py-3 bg-lime-green/10 border border-lime-green rounded-full my-4 text-sm text-lime-green hover:bg-lime-green/20 transition-all hover:scale-105">
+				Transitioning to Linux Foundation
+			</a>
+			<p class="text-text-secondary max-w-3xl mx-auto mb-8">
+				Convert any Docker container into a secure, verifiable application running in Trusted Execution Environments.
+				No code changes required.
+			</p>
+			<div class="flex gap-4 justify-center flex-wrap mt-8">
+				<a href="#getting-started" class="px-8 py-4 rounded-lg bg-gradient-to-r from-lime-green to-lime-green-bright text-bg-black font-semibold hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(196,241,66,0.3)] transition-all">
+					Get Started
+				</a>
+				<a href="https://github.com/Dstack-TEE/dstack" target="_blank" class="px-8 py-4 rounded-lg bg-transparent border-2 border-lime-green text-lime-green font-semibold hover:bg-lime-green/10 transition-colors">
+					View on GitHub
+				</a>
+			</div>
+		</div>
+	</section>
 
-						<div>
-							<h3 class="text-lg text-text-secondary mb-3">Half Complete (50%)</h3>
-							<ProgressTracker totalSteps={20} completedSteps={10} />
-						</div>
+	<!-- Placeholder for other sections -->
+	<section id="what-is" class="py-20 px-8">
+		<div class="max-w-7xl mx-auto text-center">
+			<h2 class="text-4xl font-bold mb-4">What is dstack?</h2>
+			<p class="text-text-secondary">More sections coming soon...</p>
+		</div>
+	</section>
 
-						<div>
-							<h3 class="text-lg text-text-secondary mb-3">Almost Done (75%)</h3>
-							<ProgressTracker totalSteps={8} completedSteps={6} currentStep={7} />
-						</div>
+	<script>
+		// Smooth scroll for navigation links
+		document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+			anchor.addEventListener('click', function (e) {
+				e.preventDefault();
+				const href = this.getAttribute('href');
+				if (href) {
+					const target = document.querySelector(href);
+					if (target) {
+						target.scrollIntoView({
+							behavior: 'smooth',
+							block: 'start'
+						});
+					}
+				}
+			});
+		});
 
-						<div>
-							<h3 class="text-lg text-text-secondary mb-3">Complete (100%)</h3>
-							<ProgressTracker totalSteps={15} completedSteps={15} />
-						</div>
-					</div>
-				</section>
+		// Navigation scroll effect
+		let lastScroll = 0;
+		const nav = document.querySelector('nav');
+		window.addEventListener('scroll', () => {
+			const currentScroll = window.pageYOffset;
 
-				<!-- StepCard Demo -->
-				<section class="mb-12">
-					<h2 class="text-3xl font-bold text-text-primary mb-6">Step Cards</h2>
+			if (currentScroll > 100 && nav) {
+				nav.style.background = 'rgba(10, 11, 15, 0.98)';
+			} else if (nav) {
+				nav.style.background = 'rgba(10, 11, 15, 0.95)';
+			}
 
-					<div class="space-y-4">
-						<StepCard
-							stepNumber={1}
-							title="Install Dependencies"
-							description="Install all required packages and dependencies for the dstack platform."
-							status="completed"
-						/>
-
-						<StepCard
-							stepNumber={2}
-							title="Configure Server"
-							description="Set up server configuration files and environment variables."
-							status="in-progress"
-						/>
-
-						<StepCard
-							stepNumber={3}
-							title="Deploy Application"
-							description="Deploy your first TEE application to the dstack network."
-							status="pending"
-						/>
-
-						<StepCard
-							stepNumber={4}
-							title="Verify Attestation"
-							status="pending"
-						/>
-					</div>
-				</section>
-
-				<!-- ValidationIndicator Demo -->
-				<section class="mb-12">
-					<h2 class="text-3xl font-bold text-text-primary mb-6">Validation Indicators</h2>
-
-					<div class="space-y-2 bg-bg-card border border-border-default rounded-lg p-4">
-						<ValidationIndicator label="Install system dependencies" checked={true} />
-						<ValidationIndicator label="Build dstack-vmm from source" checked={true} />
-						<ValidationIndicator label="Configure VMM settings" checked={false} />
-						<ValidationIndicator label="Start VMM service" checked={false} />
-						<ValidationIndicator label="Verify deployment" checked={false} />
-					</div>
-				</section>
-
-				<!-- CommandOutput Demo -->
-				<section class="mb-12">
-					<h2 class="text-3xl font-bold text-text-primary mb-6">Command Output</h2>
-
-					<div class="space-y-4">
-						<CommandOutput
-							output="Successfully built dstack-vmm v0.1.0"
-							title="Build Success"
-							type="success"
-						/>
-
-						<CommandOutput
-							output={`Error: failed to compile vmm
-   --> src/main.rs:42:5
-    |
- 42 |     println!("Missing semicolon")
-    |                                  ^ expected ';'`}
-							title="Build Error"
-							type="error"
-						/>
-
-						<CommandOutput
-							output="VMM service started on port 8090"
-							type="info"
-							showPrompt={true}
-						/>
-
-						<CommandOutput
-							output={`Node version: v20.10.0
-npm version: 10.2.3
-Rust version: 1.75.0`}
-							title="System Information"
-						/>
-					</div>
-				</section>
-
-				<!-- CollapsibleSection Demo -->
-				<section class="mb-12">
-					<h2 class="text-3xl font-bold text-text-primary mb-6">Collapsible Sections</h2>
-
-					<div class="space-y-4">
-						<CollapsibleSection title="Troubleshooting: Build Errors">
-							<p class="mb-3">If you encounter build errors, try the following:</p>
-							<ul class="list-disc list-inside space-y-2 text-text-secondary">
-								<li>Ensure Rust toolchain is up to date: <code class="text-lime-green">rustup update</code></li>
-								<li>Clean the build directory: <code class="text-lime-green">cargo clean</code></li>
-								<li>Verify all dependencies are installed</li>
-							</ul>
-						</CollapsibleSection>
-
-						<CollapsibleSection title="Common Issues" variant="warning" defaultOpen={true}>
-							<p class="mb-3 text-yellow-500">⚠️ Known issues with TDX hardware:</p>
-							<ul class="list-disc list-inside space-y-2 text-text-secondary">
-								<li>Some BIOS versions require manual TDX enablement</li>
-								<li>Kernel version 5.15+ is required for TDX support</li>
-								<li>Check dmesg logs for TDX initialization errors</li>
-							</ul>
-						</CollapsibleSection>
-
-						<CollapsibleSection title="Additional Information" variant="info">
-							<p class="text-text-secondary">
-								For more detailed documentation, visit the
-								<a href="https://github.com/Dstack-TEE/dstack" class="text-cyber-blue hover:underline">dstack GitHub repository</a>.
-								You can also join our community Discord for support.
-							</p>
-						</CollapsibleSection>
-					</div>
-				</section>
-
-				<!-- NavigationButtons Demo -->
-				<section class="mb-12">
-					<h2 class="text-3xl font-bold text-text-primary mb-6">Navigation Buttons</h2>
-
-					<div class="space-y-8">
-						<div>
-							<h3 class="text-lg text-text-secondary mb-3">Both Buttons Enabled</h3>
-							<NavigationButtons
-								previousUrl="/tutorial/step-1"
-								previousLabel="Step 1: Introduction"
-								nextUrl="/tutorial/step-3"
-								nextLabel="Step 3: Configuration"
-							/>
-						</div>
-
-						<div>
-							<h3 class="text-lg text-text-secondary mb-3">First Page (Previous Disabled)</h3>
-							<NavigationButtons
-								nextUrl="/tutorial/step-2"
-								nextLabel="Get Started"
-							/>
-						</div>
-
-						<div>
-							<h3 class="text-lg text-text-secondary mb-3">Last Page (Next Disabled)</h3>
-							<NavigationButtons
-								previousUrl="/tutorial/step-9"
-								previousLabel="Step 9: Verification"
-							/>
-						</div>
-
-						<div>
-							<h3 class="text-lg text-text-secondary mb-3">Both Disabled (Standalone Page)</h3>
-							<NavigationButtons />
-						</div>
-					</div>
-				</section>
-
-				<!-- CodeBlock Demo -->
-				<section class="mb-12">
-					<h2 class="text-3xl font-bold text-text-primary mb-6">Code Blocks</h2>
-
-					<div class="space-y-6">
-						<CodeBlock
-							code="npm install dstack-cli"
-							title="Install dstack CLI"
-						/>
-
-						<CodeBlock
-							code={`# Build dstack VMM
-cargo build --release
-
-# Verify installation
-./target/release/vmm --version`}
-							language="bash"
-							title="Build VMM from source"
-						/>
-
-						<CodeBlock
-							code={`{
-  "name": "my-tee-app",
-  "version": "1.0.0",
-  "dependencies": {
-    "dstack-sdk": "^0.1.0"
-  }
-}`}
-							language="json"
-						/>
-					</div>
-				</section>
-</ComponentLayout>
+			lastScroll = currentScroll;
+		});
+	</script>
+</BaseLayout>
