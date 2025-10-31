@@ -1,0 +1,119 @@
+---
+import TutorialLayout from '../../layouts/TutorialLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import StepCard from '../../components/StepCard.astro';
+import ValidationIndicator from '../../components/ValidationIndicator.astro';
+import NavigationButtons from '../../components/NavigationButtons.astro';
+---
+
+<TutorialLayout
+	title="Installation Guide"
+	description="Learn how to install and configure dstack on your system"
+	section="Getting Started"
+	totalSteps={5}
+	currentStep={2}
+>
+	<section class="mb-12">
+		<h2 class="text-2xl font-bold mb-4">Introduction</h2>
+		<p class="text-text-secondary mb-4">
+			This is a sample tutorial page demonstrating the TutorialLayout component.
+		</p>
+		<p class="text-text-secondary mb-4">
+			Notice the following features of the layout:
+		</p>
+		<ul class="list-disc list-inside text-text-secondary space-y-2 mb-6">
+			<li>Sidebar navigation (placeholder for Phase 0.4.3)</li>
+			<li>Breadcrumb navigation at the top</li>
+			<li>Progress indicator showing Step 2 of 5</li>
+			<li>Responsive design that hides sidebar on mobile</li>
+		</ul>
+	</section>
+
+	<section class="mb-12">
+		<h2 class="text-2xl font-bold mb-4">Step 1: Prerequisites</h2>
+		<p class="text-text-secondary mb-4">
+			Before installing dstack, ensure you have the following:
+		</p>
+
+		<div class="bg-bg-card border border-border-default rounded-lg p-4 mb-6">
+			<ValidationIndicator label="Linux system Ubuntu 22.04 or later" checked={true} />
+			<ValidationIndicator label="Root or sudo access" checked={true} />
+			<ValidationIndicator label="TEE-capable hardware" checked={false} />
+			<ValidationIndicator label="Network connectivity" checked={false} />
+		</div>
+
+		<StepCard
+			stepNumber={1}
+			title="System Requirements Check"
+			description="Verify your system meets all prerequisites"
+			status="completed"
+		/>
+	</section>
+
+	<section class="mb-12">
+		<h2 class="text-2xl font-bold mb-4">Step 2: Install Dependencies</h2>
+		<p class="text-text-secondary mb-4">
+			Update your system and install required packages:
+		</p>
+
+		<CodeBlock
+			code="sudo apt update && sudo apt upgrade -y"
+			language="bash"
+			title="Install system packages"
+		/>
+
+		<StepCard
+			stepNumber={2}
+			title="Install Dependencies"
+			description="Install all required system packages"
+			status="in-progress"
+		/>
+	</section>
+
+	<section class="mb-12">
+		<h2 class="text-2xl font-bold mb-4">Step 3: Download dstack</h2>
+		<p class="text-text-secondary mb-4">
+			Clone the dstack repository from GitHub:
+		</p>
+
+		<CodeBlock
+			code="git clone https://github.com/Dstack-TEE/dstack.git"
+			language="bash"
+		/>
+
+		<StepCard
+			stepNumber={3}
+			title="Download dstack"
+			description="Clone the source code from GitHub"
+			status="pending"
+		/>
+	</section>
+
+	<section class="mb-12">
+		<h2 class="text-2xl font-bold mb-4">Navigation</h2>
+		<p class="text-text-secondary mb-4">
+			Use the navigation buttons below to move between tutorial pages:
+		</p>
+
+		<NavigationButtons
+			previousUrl="/tutorial/introduction"
+			previousLabel="Introduction"
+			nextUrl="/tutorial/configuration"
+			nextLabel="Configuration"
+		/>
+	</section>
+
+	<section class="mb-12">
+		<div class="bg-bg-deep border border-border-default rounded-lg p-6">
+			<h3 class="text-xl font-bold mb-3 text-cyber-blue">Layout Features Demonstrated</h3>
+			<ul class="list-disc list-inside text-text-secondary space-y-2">
+				<li>Sidebar: Fixed navigation on the left (placeholder)</li>
+				<li>Breadcrumbs: Top navigation showing current location</li>
+				<li>Progress Bar: Visual indicator of completion (2 of 5 steps)</li>
+				<li>Content Area: Max-width 4xl, centered, with prose styling</li>
+				<li>Components: All Phase 0.3 components working within layout</li>
+				<li>Responsive: Sidebar hides on mobile</li>
+			</ul>
+		</div>
+	</section>
+</TutorialLayout>

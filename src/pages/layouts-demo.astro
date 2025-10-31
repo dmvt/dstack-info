@@ -1,0 +1,162 @@
+---
+import ComponentLayout from '../layouts/ComponentLayout.astro';
+---
+
+<ComponentLayout
+	title="Layout System Demo"
+	description="Explore the three layout components built in Phase 0.4.0"
+>
+	<section class="mb-12">
+		<h2 class="text-3xl font-bold text-text-primary mb-6">Layout Components</h2>
+		<p class="text-text-secondary mb-6">
+			Phase 0.4.0 introduced a flexible layout system with three reusable layout components.
+			Each layout serves a different purpose and can be used throughout the site.
+		</p>
+	</section>
+
+	<!-- BaseLayout Demo -->
+	<section class="mb-12">
+		<h3 class="text-2xl font-bold text-text-primary mb-4">1. BaseLayout</h3>
+		<div class="bg-bg-card border border-border-default rounded-lg p-6">
+			<p class="text-text-secondary mb-4">
+				<strong>Purpose:</strong> Foundation layout providing common HTML structure
+			</p>
+			<p class="text-text-secondary mb-4">
+				<strong>Features:</strong>
+			</p>
+			<ul class="list-disc list-inside text-text-secondary space-y-2 mb-4">
+				<li>Shared &lt;html&gt;, &lt;head&gt;, and &lt;body&gt; structure</li>
+				<li>Meta tags (charset, viewport, description, generator)</li>
+				<li>Font Awesome CSS included</li>
+				<li>Favicon configured</li>
+				<li>Global CSS imported</li>
+				<li>Customizable title and description props</li>
+				<li>Slot for additional head content</li>
+			</ul>
+			<p class="text-text-secondary mb-4">
+				<strong>Usage:</strong> Base for all other layouts. Use directly for simple pages.
+			</p>
+			<div class="bg-bg-deep rounded p-4">
+				<code class="text-lime-green text-sm">
+					import BaseLayout from '../layouts/BaseLayout.astro';<br/>
+					&lt;BaseLayout title="My Page" description="Description"&gt;<br/>
+					&nbsp;&nbsp;&lt;slot /&gt;<br/>
+					&lt;/BaseLayout&gt;
+				</code>
+			</div>
+		</div>
+	</section>
+
+	<!-- TutorialLayout Demo -->
+	<section class="mb-12">
+		<h3 class="text-2xl font-bold text-text-primary mb-4">2. TutorialLayout</h3>
+		<div class="bg-bg-card border border-border-default rounded-lg p-6">
+			<p class="text-text-secondary mb-4">
+				<strong>Purpose:</strong> Layout for tutorial and documentation pages
+			</p>
+			<p class="text-text-secondary mb-4">
+				<strong>Features:</strong>
+			</p>
+			<ul class="list-disc list-inside text-text-secondary space-y-2 mb-4">
+				<li>Fixed sidebar navigation (264px, hidden on mobile)</li>
+				<li>Breadcrumb navigation showing page hierarchy</li>
+				<li>Dynamic progress indicator with color-coded bar</li>
+				<li>Prose styling for markdown content</li>
+				<li>Responsive layout (sidebar toggles at lg breakpoint)</li>
+				<li>Props: title, description, section, totalSteps, currentStep</li>
+			</ul>
+			<p class="text-text-secondary mb-4">
+				<strong>Live Demo:</strong> <a href="/tutorial/sample" class="text-cyber-blue hover:underline">View Sample Tutorial →</a>
+			</p>
+			<div class="bg-bg-deep rounded p-4">
+				<code class="text-lime-green text-sm">
+					import TutorialLayout from '../layouts/TutorialLayout.astro';<br/>
+					&lt;TutorialLayout<br/>
+					&nbsp;&nbsp;title="Installation Guide"<br/>
+					&nbsp;&nbsp;section="Getting Started"<br/>
+					&nbsp;&nbsp;totalSteps={5}<br/>
+					&nbsp;&nbsp;currentStep={2}<br/>
+					&gt;<br/>
+					&nbsp;&nbsp;&lt;!-- Tutorial content --&gt;<br/>
+					&lt;/TutorialLayout&gt;
+				</code>
+			</div>
+		</div>
+	</section>
+
+	<!-- ComponentLayout Demo -->
+	<section class="mb-12">
+		<h3 class="text-2xl font-bold text-text-primary mb-4">3. ComponentLayout</h3>
+		<div class="bg-bg-card border border-border-default rounded-lg p-6">
+			<p class="text-text-secondary mb-4">
+				<strong>Purpose:</strong> Layout for component documentation and showcase pages
+			</p>
+			<p class="text-text-secondary mb-4">
+				<strong>Features:</strong>
+			</p>
+			<ul class="list-disc list-inside text-text-secondary space-y-2 mb-4">
+				<li>Centered layout with max-width constraint</li>
+				<li>dstack branded header with colored logo</li>
+				<li>Optional component and test count display</li>
+				<li>Automatic stats formatting with separators</li>
+				<li>Responsive padding and spacing</li>
+				<li>Props: title, description, componentCount, testCount</li>
+			</ul>
+			<p class="text-text-secondary mb-4">
+				<strong>Live Demos:</strong>
+			</p>
+			<ul class="list-disc list-inside text-text-secondary space-y-2 mb-4">
+				<li><a href="/" class="text-cyber-blue hover:underline">Homepage (Component Demos)</a></li>
+				<li><a href="/components-demo" class="text-cyber-blue hover:underline">Component Library</a></li>
+				<li>This page (Layouts Demo)</li>
+			</ul>
+			<div class="bg-bg-deep rounded p-4">
+				<code class="text-lime-green text-sm">
+					import ComponentLayout from '../layouts/ComponentLayout.astro';<br/>
+					&lt;ComponentLayout<br/>
+					&nbsp;&nbsp;title="Component Library"<br/>
+					&nbsp;&nbsp;componentCount={7}<br/>
+					&nbsp;&nbsp;testCount={90}<br/>
+					&gt;<br/>
+					&nbsp;&nbsp;&lt;!-- Component demos --&gt;<br/>
+					&lt;/ComponentLayout&gt;
+				</code>
+			</div>
+		</div>
+	</section>
+
+	<!-- Test Results -->
+	<section class="mb-12">
+		<h2 class="text-3xl font-bold text-text-primary mb-6">Test Coverage</h2>
+		<div class="bg-bg-card border border-border-default rounded-lg p-6">
+			<p class="text-text-secondary mb-4">
+				All three layouts have comprehensive test coverage:
+			</p>
+			<ul class="list-disc list-inside text-text-secondary space-y-2">
+				<li><strong>BaseLayout:</strong> 11 tests (props, meta tags, structure)</li>
+				<li><strong>TutorialLayout:</strong> 17 tests (sidebar, breadcrumbs, progress, responsive)</li>
+				<li><strong>ComponentLayout:</strong> 14 tests (header, stats, responsive)</li>
+				<li><strong>Total:</strong> 42 new tests + 90 component tests = <span class="text-lime-green font-bold">132 tests passing</span></li>
+			</ul>
+		</div>
+	</section>
+
+	<!-- Links -->
+	<section class="mb-12">
+		<h2 class="text-3xl font-bold text-text-primary mb-6">Explore More</h2>
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+			<a href="/" class="bg-bg-card border border-border-default hover:border-cyber-blue rounded-lg p-6 transition-colors">
+				<h3 class="text-xl font-bold text-text-primary mb-2">Homepage</h3>
+				<p class="text-text-secondary text-sm">Component demos using ComponentLayout</p>
+			</a>
+			<a href="/components-demo" class="bg-bg-card border border-border-default hover:border-cyber-blue rounded-lg p-6 transition-colors">
+				<h3 class="text-xl font-bold text-text-primary mb-2">Component Library</h3>
+				<p class="text-text-secondary text-sm">Full component documentation</p>
+			</a>
+			<a href="/tutorial/sample" class="bg-bg-card border border-border-default hover:border-cyber-blue rounded-lg p-6 transition-colors">
+				<h3 class="text-xl font-bold text-text-primary mb-2">Sample Tutorial</h3>
+				<p class="text-text-secondary text-sm">TutorialLayout in action</p>
+			</a>
+		</div>
+	</section>
+</ComponentLayout>
