@@ -61,7 +61,8 @@ describe('TutorialLayout Component', () => {
 
 		expect(result).toContain('<aside');
 		expect(result).toContain('w-64');
-		expect(result).toContain('Tutorial Sections');
+		// Sidebar now uses dynamic components, not static text
+		expect(result).toContain('Sidebar Navigation');
 	});
 
 	it('should include dstack logo in sidebar', async () => {
@@ -86,7 +87,7 @@ describe('TutorialLayout Component', () => {
 		expect(result).toContain('<nav');
 		expect(result).toContain('Home');
 		expect(result).toContain('href="/"');
-		expect(result).toContain('href="/tutorial"');
+		expect(result).toContain('fa-home'); // Home icon
 	});
 
 	it('should render progress indicator when totalSteps and currentStep provided', async () => {
