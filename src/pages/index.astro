@@ -1,5 +1,5 @@
 ---
-import '../styles/global.css';
+import ComponentLayout from '../layouts/ComponentLayout.astro';
 import StepCard from '../components/StepCard.astro';
 import ProgressTracker from '../components/ProgressTracker.astro';
 import CodeBlock from '../components/CodeBlock.astro';
@@ -9,26 +9,10 @@ import CollapsibleSection from '../components/CollapsibleSection.astro';
 import NavigationButtons from '../components/NavigationButtons.astro';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>dstack - Component Demo</title>
-	</head>
-	<body>
-		<div class="min-h-screen py-12 px-4">
-			<div class="max-w-4xl mx-auto">
-				<!-- Header -->
-				<div class="text-center mb-12">
-					<h1 class="text-5xl font-bold mb-4">
-						<span class="text-lime-green">d</span><span class="text-cyber-blue">stack</span>
-					</h1>
-					<p class="text-text-secondary text-lg">Interactive Tutorial Platform</p>
-					<p class="text-text-secondary text-sm mt-2">Built with Astro + TailwindCSS</p>
-				</div>
+<ComponentLayout
+	title=""
+	description="Interactive Tutorial Platform"
+>
 
 				<!-- ProgressTracker Demo -->
 				<section class="mb-12">
@@ -243,7 +227,4 @@ cargo build --release
 						/>
 					</div>
 				</section>
-			</div>
-		</div>
-	</body>
-</html>
+</ComponentLayout>

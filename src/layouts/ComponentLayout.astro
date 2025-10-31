@@ -1,0 +1,45 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+export interface Props {
+	title: string;
+	description?: string;
+	componentCount?: number;
+	testCount?: number;
+}
+
+const {
+	title,
+	description,
+	componentCount,
+	testCount
+} = Astro.props;
+---
+
+<BaseLayout title={`${title} | dstack`} description={description}>
+	<div class="min-h-screen py-12 px-4">
+		<div class="max-w-4xl mx-auto">
+			<!-- Header -->
+			<div class="text-center mb-12">
+				<h1 class="text-5xl font-bold mb-4">
+					<span class="text-lime-green">d</span><span class="text-cyber-blue">stack</span>
+					<span class="text-text-primary"> {title}</span>
+				</h1>
+				{description && (
+					<p class="text-text-secondary text-lg">{description}</p>
+				)}
+				{(componentCount || testCount) && (
+					<p class="text-text-secondary text-sm mt-2">
+						{componentCount && `${componentCount} Interactive Components`}
+						{componentCount && testCount && ' | '}
+						{testCount && `${testCount} Tests Passing`}
+						{' | TailwindCSS Only | Fully Accessible'}
+					</p>
+				)}
+			</div>
+
+			<!-- Component Content Slot -->
+			<slot />
+		</div>
+	</div>
+</BaseLayout>

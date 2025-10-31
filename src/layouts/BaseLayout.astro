@@ -1,0 +1,30 @@
+---
+import '../styles/global.css';
+
+export interface Props {
+	title?: string;
+	description?: string;
+}
+
+const {
+	title = 'dstack - Trusted Execution Environment Platform',
+	description = 'Build secure, decentralized applications with Intel TDX and AMD SEV-SNP support'
+} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="description" content={description} />
+		<title>{title}</title>
+		<slot name="head" />
+	</head>
+	<body class="bg-bg-space text-text-primary">
+		<slot />
+	</body>
+</html>
