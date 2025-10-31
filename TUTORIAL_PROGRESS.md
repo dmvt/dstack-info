@@ -1,7 +1,7 @@
 # dstack Tutorial Project - Progress Tracker
 
-**Last Updated:** 2025-10-31 06:20 EDT
-**Current Phase:** 0.3.1 (CodeBlock Component with Tests) - IN PROGRESS
+**Last Updated:** 2025-10-31 07:30 EDT
+**Current Phase:** 0.3.2 (Step and Progress Components) - READY TO START
 
 ---
 
@@ -142,9 +142,47 @@
 
 ---
 
+### Phase 0.3.1: CodeBlock Component with Tests ✅ COMPLETE
+**Completed:** 2025-10-31 07:30 EDT
+**Commits:** 6baadca, 9e09594, 38e9331
+
+**What was done:**
+- Fixed CSS variable bug (--text-primary → --color-text-primary)
+- Created 9 comprehensive CodeBlock component tests
+- Added TailwindCSS-only styling methodology (#10) to PROJECT_PLAN.md
+- Fixed global.css universal reset that was breaking Tailwind utilities
+- Converted CodeBlock to use ONLY TailwindCSS classes (removed all style blocks)
+- Improved copy button to icon-only design with visual feedback
+- Button shows checkmark on successful copy, X on error
+- Removed focus outline for cleaner appearance
+
+**Testing:**
+- All 12 tests passing (9 CodeBlock + 3 sample)
+- Component renders properly with padding
+- Copy functionality works with icon feedback
+- Title alignment matches code padding
+
+**Key Learnings:**
+- Universal `* { padding: 0; }` in global.css was overriding ALL Tailwind padding classes
+- Must be careful with CSS resets when using utility-first frameworks
+- TailwindCSS-only approach is more maintainable and consistent
+- Icon-only buttons need good visual feedback (color + icon change)
+
+**Files Changed:**
+- PROJECT_PLAN.md (added methodology #10)
+- src/styles/global.css (fixed universal reset)
+- src/components/CodeBlock.astro (TailwindCSS-only, icon button)
+- src/__tests__/CodeBlock.test.ts (9 component tests)
+
+**Deployment:** https://57dfe012.dstack-info.pages.dev
+
+**Status:** Approved and confirmed
+
+---
+
 ## Current Phase: 0.3 Component System Development
 
-**Status:** Phase 0.3.0 complete, proceeding to Phase 0.3.1
+**Status:** Phase 0.3.1 complete, proceeding to Phase 0.3.2
 **Started:** 2025-10-31 05:25 EDT
 
 **Updated Plan for Phase 0.3:**
@@ -174,9 +212,9 @@ Per updated PROJECT_PLAN.md with testing strategy:
 - Dark mode compatible
 - Interactive state management
 
-**Current Step:** Phase 0.3.1 - Add tests to existing CodeBlock component and fix CSS bugs
+**Current Step:** Phase 0.3.2 - Build StepCard and ProgressTracker components with tests
 
-**Note:** CodeBlock was built in commit d186ff9 before testing infrastructure existed. Phase 0.3.1 will add tests and fix CSS variable bugs.
+**Note:** Following TailwindCSS-only methodology (#10) - all styling via utility classes, no custom style blocks.
 
 ---
 
@@ -198,18 +236,28 @@ Per updated PROJECT_PLAN.md with testing strategy:
 6. ✅ Update TUTORIAL_PROGRESS.md with results
 7. ✅ Proceed to next chunk
 
+### What We Learned in Phase 0.3.1:
+1. ✅ Universal CSS resets (`* { padding: 0; }`) override ALL Tailwind utilities
+2. ✅ Must use TailwindCSS-only styling for consistency and maintainability
+3. ✅ No custom `<style>` blocks for layout/spacing/colors (methodology #10)
+4. ✅ Icon-only buttons need strong visual feedback (color + icon change)
+5. ✅ Test manually in browser - unit tests can't catch all visual/styling bugs
+6. ✅ Iterate on styling before committing - save commit/deploy until approved
+
 ---
 
 ## Next Steps
 
-1. Fix CodeBlock CSS variable bugs (use correct TailwindCSS variable names)
-2. Write tests for CodeBlock component
-3. Verify tests pass
-4. Commit and deploy
-5. Present checkpoint
-6. Wait for approval
-7. Update this document
-8. Proceed to Phase 0.3.2 (StepCard and ProgressTracker)
+1. Build StepCard component (tutorial step display card)
+2. Build ProgressTracker component (progress bar with localStorage)
+3. Write tests for both components
+4. Create demo page examples
+5. Verify all tests pass
+6. Commit and deploy
+7. Present checkpoint
+8. Wait for approval
+9. Update this document
+10. Proceed to Phase 0.3.3 (Validation and Output components)
 
 ---
 
