@@ -93,7 +93,6 @@ cat setup-tdx-config
 TDX_PPA="tdx-release"
 
 # Attestation components (0 = disabled, 1 = enabled)
-# Set to 0 for basic TDX setup without attestation
 TDX_SETUP_ATTESTATION=0
 
 # NVIDIA H100 GPU support (0 = disabled, 1 = enabled)
@@ -103,7 +102,28 @@ TDX_SETUP_NVIDIA_H100=0
 TDX_SETUP_INTEL_KERNEL=0
 ```
 
-**For a basic TDX host setup, the defaults are fine.** You can enable attestation later if needed.
+### About TDX Attestation
+
+**What is Attestation?**
+Attestation provides cryptographic proof that:
+- Your workload is running in a genuine Intel TDX Trust Domain
+- The software stack (kernel, firmware, application) has not been tampered with
+- The hardware and configuration meet security requirements
+
+**Do you need attestation?**
+- ✅ **Yes, for production/dstack deployments** - Attestation is essential for verifying confidential computing guarantees
+- ⚠️ **Optional for testing** - You can test basic TDX functionality without attestation
+- 🔒 **Required for trust** - Without attestation, you cannot cryptographically prove your workload is secure
+
+**To enable attestation:**
+Edit the configuration file before running the setup:
+```bash
+nano setup-tdx-config
+# Change: TDX_SETUP_ATTESTATION=0
+# To:     TDX_SETUP_ATTESTATION=1
+```
+
+**For this tutorial, we'll proceed with the default (attestation disabled) to keep the initial setup simple. You can add attestation later by following Canonical's attestation setup guide.**
 
 ## Step 4: Run TDX Host Setup Script
 
