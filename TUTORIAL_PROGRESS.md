@@ -1,7 +1,7 @@
 # dstack Tutorial Project - Progress Tracker
 
-**Last Updated:** 2025-10-31 07:30 EDT
-**Current Phase:** 0.3.2 (Step and Progress Components) - READY TO START
+**Last Updated:** 2025-10-31 08:00 EDT
+**Current Phase:** 0.3.3 (Validation and Output Components) - READY TO START
 
 ---
 
@@ -180,25 +180,84 @@
 
 ---
 
+### Phase 0.3.2: Step and Progress Components with Tests ✅ COMPLETE
+**Completed:** 2025-10-31 07:55 EDT
+**Commits:** 2 (6ef2e3f, 9170609)
+
+#### Commit 1: Add Components (6ef2e3f)
+**What was done:**
+- Created StepCard.astro component with 3 status states
+  - Props: stepNumber, title, description, status
+  - States: pending (gray), in-progress (blue spinner), completed (green checkmark)
+  - TailwindCSS-only styling
+- Created ProgressTracker.astro component
+  - Props: totalSteps, completedSteps, currentStep, showPercentage, showStepCount
+  - Dynamic color-coded progress bar (purple <50%, blue 50-99%, green 100%)
+  - ARIA attributes for accessibility
+  - Percentage calculation and optional current step indicator
+- Wrote 10 comprehensive tests for StepCard
+- Wrote 14 comprehensive tests for ProgressTracker
+- Updated index.astro with interactive demo sections
+- All 36 tests passing
+
+**Testing:**
+- Component rendering tests: ✅ Working
+- Props validation tests: ✅ Working
+- Status state tests: ✅ Working
+- Accessibility tests: ✅ Working
+- Build tested: ✅ Working
+
+#### Commit 2: Fix Deployment Methodology (9170609)
+**What was done:**
+- Updated PROJECT_PLAN.md step 9 in Working Methodology
+- Clarified manual deployment process: `wrangler pages deploy dist`
+- Added IMPORTANT note: No automatic webhooks
+- Updated reminder #6 to emphasize MANUAL deployment
+
+**Key Learning:**
+- ❌ Initially assumed git push would trigger automatic deployment
+- ✅ Corrected: Must manually run `npm run build` then `wrangler pages deploy`
+- ✅ Updated PROJECT_PLAN to prevent future mistakes
+
+**Files Created:**
+- src/components/StepCard.astro
+- src/components/ProgressTracker.astro
+- src/__tests__/StepCard.test.ts
+- src/__tests__/ProgressTracker.test.ts
+
+**Files Modified:**
+- src/pages/index.astro (added component demos)
+- PROJECT_PLAN.md (deployment methodology clarification)
+
+**Deployments:**
+- https://9e3a281f.dstack-info.pages.dev (components)
+- https://43fc141f.dstack-info.pages.dev (with updated PROJECT_PLAN)
+
+**Status:** Approved and confirmed
+
+---
+
 ## Current Phase: 0.3 Component System Development
 
-**Status:** Phase 0.3.1 complete, proceeding to Phase 0.3.2
+**Status:** Phase 0.3.2 complete, proceeding to Phase 0.3.3
 **Started:** 2025-10-31 05:25 EDT
 
 **Updated Plan for Phase 0.3:**
 Per updated PROJECT_PLAN.md with testing strategy:
 
 1. **Phase 0.3.0:** ✅ Vitest infrastructure setup → deploy → checkpoint → APPROVED
-2. **Phase 0.3.1:** CodeBlock component with tests → deploy → checkpoint → approval
-3. **Phase 0.3.2:** Step and progress components with tests → deploy → checkpoint → approval
+2. **Phase 0.3.1:** ✅ CodeBlock component with tests → deploy → checkpoint → APPROVED
+3. **Phase 0.3.2:** ✅ Step and progress components with tests → deploy → checkpoint → APPROVED
 4. **Phase 0.3.3:** Validation and output components with tests → deploy → checkpoint → approval
 5. **Phase 0.3.4:** Navigation components with tests → deploy → checkpoint → approval
 6. **Phase 0.3.5:** Component demo page and documentation → deploy → checkpoint → approval
 
+**Components Built:**
+- ✅ CodeBlock.astro - Syntax highlighting + copy button
+- ✅ StepCard.astro - Tutorial step display
+- ✅ ProgressTracker.astro - Progress bar with percentage display
+
 **Components to Build:**
-- CodeBlock.astro - Syntax highlighting + copy button
-- StepCard.astro - Tutorial step display
-- ProgressTracker.astro - Progress bar with localStorage
 - ValidationIndicator.astro - Interactive checkboxes
 - CommandOutput.astro - Terminal output display
 - CollapsibleSection.astro - Expandable sections
@@ -212,7 +271,7 @@ Per updated PROJECT_PLAN.md with testing strategy:
 - Dark mode compatible
 - Interactive state management
 
-**Current Step:** Phase 0.3.2 - Build StepCard and ProgressTracker components with tests
+**Current Step:** Phase 0.3.3 - Build ValidationIndicator, CommandOutput, and CollapsibleSection components with tests
 
 **Note:** Following TailwindCSS-only methodology (#10) - all styling via utility classes, no custom style blocks.
 
@@ -244,20 +303,30 @@ Per updated PROJECT_PLAN.md with testing strategy:
 5. ✅ Test manually in browser - unit tests can't catch all visual/styling bugs
 6. ✅ Iterate on styling before committing - save commit/deploy until approved
 
+### What We Learned in Phase 0.3.2:
+1. ❌ **CRITICAL ERROR:** Assumed git push would trigger automatic Cloudflare Pages deployment
+2. ✅ **CORRECTION:** No webhooks configured - must MANUALLY deploy with `wrangler pages deploy dist`
+3. ✅ Updated PROJECT_PLAN.md to document correct deployment process
+4. ✅ Added reminder in "Never Forget" section to prevent future mistakes
+5. ✅ Always build first (`npm run build`), then deploy (`wrangler pages deploy dist --project-name=dstack-info`)
+6. ✅ StepCard and ProgressTracker components work well with status-based styling
+7. ✅ Dynamic color-coding provides clear visual feedback for progress states
+
 ---
 
 ## Next Steps
 
-1. Build StepCard component (tutorial step display card)
-2. Build ProgressTracker component (progress bar with localStorage)
-3. Write tests for both components
-4. Create demo page examples
-5. Verify all tests pass
-6. Commit and deploy
-7. Present checkpoint
-8. Wait for approval
-9. Update this document
-10. Proceed to Phase 0.3.3 (Validation and Output components)
+1. Build ValidationIndicator component (interactive checkboxes for step completion)
+2. Build CommandOutput component (terminal-style output display)
+3. Build CollapsibleSection component (expandable troubleshooting sections)
+4. Write comprehensive tests for all 3 components
+5. Update demo page with new component examples
+6. Verify all tests pass
+7. Build and deploy manually (wrangler!)
+8. Present checkpoint with testing plan
+9. Wait for approval
+10. Update this document
+11. Proceed to Phase 0.3.4 (Navigation components)
 
 ---
 
