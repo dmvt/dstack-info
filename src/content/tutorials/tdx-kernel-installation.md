@@ -20,7 +20,7 @@ lastUpdated: 2025-10-31
 
 This tutorial covers verifying the TDX kernel installation and rebooting your system to load the TDX-enabled kernel.
 
-## Step 5: Verify Kernel Installation
+## Step 4: Verify Kernel Installation
 
 Before rebooting, verify the TDX kernel was installed:
 
@@ -48,7 +48,7 @@ uname -r
 
 This shows you're still running the generic kernel. After reboot, you'll be running `6.8.0-1028-intel`.
 
-## Step 6: Reboot to TDX Kernel
+## Step 5: Reboot to TDX Kernel
 
 Reboot the server to load the TDX-enabled kernel:
 

@@ -22,7 +22,7 @@ lastUpdated: 2025-10-31
 
 This tutorial covers configuring BIOS settings to enable TDX hardware features and verifying successful enablement.
 
-## Step 9: Configure BIOS for TDX
+## Step 8: Configure BIOS for TDX
 
 At this point, you have the TDX-enabled kernel and software stack installed, but TDX hardware features are still **disabled in BIOS**. You need to configure BIOS settings to enable TDX.
 
@@ -85,7 +85,7 @@ After enabling all TDX-related BIOS settings:
 1. **Save changes** (usually F10)
 2. **Reboot the server**
 
-## Step 10: Verify TDX is Enabled
+## Step 9: Verify TDX is Enabled
 
 After rebooting from BIOS configuration, verify TDX is now enabled:
 
