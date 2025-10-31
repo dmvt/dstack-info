@@ -1,23 +1,124 @@
 ---
 import '../styles/global.css';
+import StepCard from '../components/StepCard.astro';
+import ProgressTracker from '../components/ProgressTracker.astro';
+import CodeBlock from '../components/CodeBlock.astro';
 ---
 
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
+		<title>dstack - Component Demo</title>
 	</head>
 	<body>
-		<div class="min-h-screen flex items-center justify-center">
-			<div class="text-center">
-				<h1 class="text-5xl font-bold mb-4">
-					<span class="text-lime-green">d</span><span class="text-cyber-blue">stack</span>
-				</h1>
-				<p class="text-text-secondary text-lg">Interactive Tutorial Platform</p>
-				<p class="text-text-secondary text-sm mt-2">Built with Astro + TailwindCSS</p>
+		<div class="min-h-screen py-12 px-4">
+			<div class="max-w-4xl mx-auto">
+				<!-- Header -->
+				<div class="text-center mb-12">
+					<h1 class="text-5xl font-bold mb-4">
+						<span class="text-lime-green">d</span><span class="text-cyber-blue">stack</span>
+					</h1>
+					<p class="text-text-secondary text-lg">Interactive Tutorial Platform</p>
+					<p class="text-text-secondary text-sm mt-2">Built with Astro + TailwindCSS</p>
+				</div>
+
+				<!-- ProgressTracker Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Progress Tracker</h2>
+
+					<div class="space-y-6">
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Just Started (30%)</h3>
+							<ProgressTracker totalSteps={10} completedSteps={3} currentStep={4} />
+						</div>
+
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Half Complete (50%)</h3>
+							<ProgressTracker totalSteps={20} completedSteps={10} />
+						</div>
+
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Almost Done (75%)</h3>
+							<ProgressTracker totalSteps={8} completedSteps={6} currentStep={7} />
+						</div>
+
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Complete (100%)</h3>
+							<ProgressTracker totalSteps={15} completedSteps={15} />
+						</div>
+					</div>
+				</section>
+
+				<!-- StepCard Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Step Cards</h2>
+
+					<div class="space-y-4">
+						<StepCard
+							stepNumber={1}
+							title="Install Dependencies"
+							description="Install all required packages and dependencies for the dstack platform."
+							status="completed"
+						/>
+
+						<StepCard
+							stepNumber={2}
+							title="Configure Server"
+							description="Set up server configuration files and environment variables."
+							status="in-progress"
+						/>
+
+						<StepCard
+							stepNumber={3}
+							title="Deploy Application"
+							description="Deploy your first TEE application to the dstack network."
+							status="pending"
+						/>
+
+						<StepCard
+							stepNumber={4}
+							title="Verify Attestation"
+							status="pending"
+						/>
+					</div>
+				</section>
+
+				<!-- CodeBlock Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Code Blocks</h2>
+
+					<div class="space-y-6">
+						<CodeBlock
+							code="npm install dstack-cli"
+							title="Install dstack CLI"
+						/>
+
+						<CodeBlock
+							code={`# Build dstack VMM
+cargo build --release
+
+# Verify installation
+./target/release/vmm --version`}
+							language="bash"
+							title="Build VMM from source"
+						/>
+
+						<CodeBlock
+							code={`{
+  "name": "my-tee-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "dstack-sdk": "^0.1.0"
+  }
+}`}
+							language="json"
+						/>
+					</div>
+				</section>
 			</div>
 		</div>
 	</body>

@@ -1,0 +1,71 @@
+---
+export interface Props {
+  totalSteps: number;
+  completedSteps: number;
+  currentStep?: number;
+  showPercentage?: boolean;
+  showStepCount?: boolean;
+}
+
+const {
+  totalSteps,
+  completedSteps,
+  currentStep,
+  showPercentage = true,
+  showStepCount = true,
+} = Astro.props;
+
+// Calculate progress percentage
+const percentage = Math.round((completedSteps / totalSteps) * 100);
+
+// Determine progress bar color based on completion
+const getProgressColor = (percent: number) => {
+  if (percent === 100) return 'bg-lime-green';
+  if (percent >= 50) return 'bg-cyber-blue';
+  return 'bg-cyber-purple';
+};
+
+const progressColor = getProgressColor(percentage);
+---
+
+<div class="progress-tracker bg-bg-card border border-border-default rounded-lg p-4">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-3">
+    {showStepCount && (
+      <div class="step-count text-text-secondary text-sm">
+        <span class="text-text-primary font-semibold">{completedSteps}</span>
+        <span> of </span>
+        <span class="text-text-primary font-semibold">{totalSteps}</span>
+        <span> steps completed</span>
+      </div>
+    )}
+    {showPercentage && (
+      <div class="progress-percentage text-text-primary font-bold text-lg">
+        {percentage}%
+      </div>
+    )}
+  </div>
+
+  <!-- Progress Bar -->
+  <div
+    class="progress-bar-container bg-bg-deep rounded-full h-3 overflow-hidden"
+    role="progressbar"
+    aria-valuenow={percentage}
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-label={`Tutorial progress: ${percentage}% complete`}
+  >
+    <div
+      class={`progress-bar-fill ${progressColor} h-full rounded-full transition-all duration-500 ease-out`}
+      style={`width: ${percentage}%`}
+    >
+    </div>
+  </div>
+
+  <!-- Current Step Indicator (Optional) -->
+  {currentStep && (
+    <div class="current-step text-text-secondary text-xs mt-2">
+      Currently on step {currentStep}
+    </div>
+  )}
+</div>
