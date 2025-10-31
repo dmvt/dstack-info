@@ -133,7 +133,10 @@ Create an exhaustive, production-quality installation tutorial system for dstack
    - Troubleshooting section (from real issues encountered)
 7. **Create Validation Widget** - Claude: Build interactive validation component
 8. **Git Commit** - Claude: Commit tutorial + Ansible + widget (signed)
-9. **Deploy** - Claude: Push to Cloudflare Pages
+9. **Deploy** - Claude:
+   - Build: `npm run build`
+   - Deploy: `wrangler pages deploy dist --project-name=dstack-info`
+   - **IMPORTANT:** No automatic webhooks - must deploy manually after each commit
 10. **Checkpoint** - Claude: Present testing plan for user to dogfood the tutorial
 11. **User Testing** - User: Follow tutorial as written, verify everything works
 12. **User Approval** - User: Confirm tutorial works or request fixes
@@ -1552,7 +1555,7 @@ For each of the 14 dstack-examples:
 3. **NO SHORTCUTS** - Real deployments only
 4. **Commit early and often** - After each logical step
 5. **All commits signed** - No AI attribution
-6. **Deploy after every commit** - To Cloudflare Pages
+6. **Deploy after every commit** - MANUALLY using `wrangler pages deploy dist --project-name=dstack-info` (NO automatic webhooks)
 7. **Checkpoint after every commit** - With testing plan
 8. **Update TUTORIAL_PROGRESS.md** - After each approval
 9. **Dual approach always** - Manual + Ansible (Phase 1+)
