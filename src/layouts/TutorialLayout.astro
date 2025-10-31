@@ -1,5 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import TutorialSidebar from '../components/TutorialSidebar.svelte';
 
 export interface Props {
 	title: string;
@@ -7,6 +8,8 @@ export interface Props {
 	section?: string;
 	totalSteps?: number;
 	currentStep?: number;
+	allTutorials?: any[];
+	currentSlug?: string;
 }
 
 const {
@@ -14,13 +17,15 @@ const {
 	description,
 	section = 'Tutorial',
 	totalSteps,
-	currentStep
+	currentStep,
+	allTutorials = [],
+	currentSlug = ''
 } = Astro.props;
 ---
 
 <BaseLayout title={`${title} | dstack Tutorial`} description={description}>
 	<div class="flex min-h-screen">
-		<!-- Sidebar Navigation (placeholder for Phase 0.4.3) -->
+		<!-- Sidebar Navigation -->
 		<aside class="hidden lg:block w-64 bg-bg-deep border-r border-border-default fixed h-full overflow-y-auto">
 			<div class="p-6">
 				<a href="/" class="flex items-center space-x-2 mb-8">
@@ -29,12 +34,14 @@ const {
 					</span>
 				</a>
 
-				<!-- Navigation will be added in Phase 0.4.3 -->
-				<nav class="space-y-2">
-					<div class="text-text-secondary text-sm uppercase font-semibold mb-3">Tutorial Sections</div>
-					<!-- Placeholder for navigation items -->
-					<div class="text-text-secondary text-sm">Navigation coming in Phase 0.4.3</div>
-				</nav>
+				<!-- Dynamic Navigation -->
+				{allTutorials.length > 0 && (
+					<TutorialSidebar
+						client:load
+						tutorials={allTutorials}
+						currentSlug={currentSlug}
+					/>
+				)}
 			</div>
 		</aside>
 

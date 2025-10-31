@@ -25,12 +25,13 @@ export async function getStaticPaths() {
         tutorial,
         previousTutorial,
         nextTutorial,
+        allTutorials: sortedTutorials,
       },
     };
   });
 }
 
-const { tutorial, previousTutorial, nextTutorial } = Astro.props;
+const { tutorial, previousTutorial, nextTutorial, allTutorials } = Astro.props;
 const { Content } = await tutorial.render();
 const { title, description, section, stepNumber, totalSteps } = tutorial.data;
 ---
@@ -41,6 +42,8 @@ const { title, description, section, stepNumber, totalSteps } = tutorial.data;
   section={section}
   totalSteps={totalSteps}
   currentStep={stepNumber}
+  allTutorials={allTutorials}
+  currentSlug={tutorial.slug}
 >
   <Content />
 
