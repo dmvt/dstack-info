@@ -108,6 +108,14 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 - Never silently deviate from the documented plan
 - If uncertain whether request aligns with plan: Ask for clarification
 
+#### 10. **TailwindCSS-Only Styling**
+- ALL styling must use TailwindCSS utility classes in the HTML/JSX
+- NEVER use custom `<style>` blocks or inline styles for layout, spacing, colors, typography
+- Only exception: Truly unique CSS that TailwindCSS cannot handle (rare)
+- Custom fonts should be defined in global.css @theme, then used via Tailwind utilities
+- Component-specific styles defeat the purpose of using a utility-first framework
+- Easier to maintain, more consistent, better for future contributors
+
 ### Working Methodology
 
 **For Each Tutorial Section:**
