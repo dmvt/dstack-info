@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { isTutorialComplete } from '../utils/progress';
 
   export let tutorials: any[];
@@ -24,12 +24,38 @@
     tutorials: tutList.sort((a, b) => a.data.stepNumber - b.data.stepNumber)
   }));
 
-  onMount(() => {
-    // Load completion status for all tutorials
+  function updateCompletionStatus() {
     tutorials.forEach(tutorial => {
       completionStatus[tutorial.slug] = isTutorialComplete(tutorial.slug);
     });
+    // Force reactivity
+    completionStatus = { ...completionStatus };
+  }
+
+  onMount(() => {
+    // Load initial completion status
+    updateCompletionStatus();
     mounted = true;
+
+    // Listen for localStorage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'dstack-tutorial-progress') {
+        updateCompletionStatus();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for custom events from same page
+    const handleCustomUpdate = () => {
+      updateCompletionStatus();
+    };
+    window.addEventListener('tutorialProgressUpdate', handleCustomUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('tutorialProgressUpdate', handleCustomUpdate);
+    };
   });
 </script>
 

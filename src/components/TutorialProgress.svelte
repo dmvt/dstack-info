@@ -25,6 +25,9 @@
       markTutorialComplete(tutorialSlug);
       isComplete = true;
     }
+
+    // Dispatch custom event to notify sidebar
+    window.dispatchEvent(new CustomEvent('tutorialProgressUpdate'));
   }
 </script>
 
