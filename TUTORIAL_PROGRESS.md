@@ -1,7 +1,7 @@
 # dstack Tutorial Project - Progress Tracker
 
-**Last Updated:** 2025-10-31 05:25 EDT
-**Current Phase:** 0.3 (Component System Development) - IN PROGRESS
+**Last Updated:** 2025-10-31 06:20 EDT
+**Current Phase:** 0.3.1 (CodeBlock Component with Tests) - IN PROGRESS
 
 ---
 
@@ -111,19 +111,51 @@
 
 ---
 
+### Phase 0.3.0: Setup Vitest Testing Infrastructure ✅ COMPLETE
+**Completed:** 2025-10-31 06:20 EDT
+**Commit:** 712e478
+
+**What was done:**
+- Installed Vitest dependencies (vitest, happy-dom, @vitest/ui)
+- Created vitest.config.ts with Astro integration
+- Added test scripts to package.json (test, test:watch, test:ui, test:coverage)
+- Created sample test file to verify setup
+- All 3 tests passing
+
+**Testing:**
+- `npm test` works: ✅ 3/3 tests passing
+- `npm run test:watch` works: ✅ Watch mode functional
+- `npm run test:ui` works: ✅ UI launches correctly
+- Build tested: ✅ Still working with Vitest added
+
+**Files Created:**
+- vitest.config.ts
+- src/__tests__/sample.test.ts
+
+**Files Modified:**
+- package.json (added test scripts and dependencies)
+- package-lock.json
+
+**Deployment:** https://4645910b.dstack-info.pages.dev
+
+**Status:** Approved and confirmed
+
+---
+
 ## Current Phase: 0.3 Component System Development
 
-**Status:** RESTARTED (following proper methodology)
+**Status:** Phase 0.3.0 complete, proceeding to Phase 0.3.1
 **Started:** 2025-10-31 05:25 EDT
 
-**Plan for Phase 0.3:**
-Per PROJECT_PLAN.md, build components with multiple commits:
+**Updated Plan for Phase 0.3:**
+Per updated PROJECT_PLAN.md with testing strategy:
 
-1. **Commit 1:** CodeBlock component → deploy → checkpoint → approval
-2. **Commit 2:** Step and progress components → deploy → checkpoint → approval
-3. **Commit 3:** Validation and output components → deploy → checkpoint → approval
-4. **Commit 4:** Navigation components → deploy → checkpoint → approval
-5. **Commit 5:** Component demo page → deploy → checkpoint → approval
+1. **Phase 0.3.0:** ✅ Vitest infrastructure setup → deploy → checkpoint → APPROVED
+2. **Phase 0.3.1:** CodeBlock component with tests → deploy → checkpoint → approval
+3. **Phase 0.3.2:** Step and progress components with tests → deploy → checkpoint → approval
+4. **Phase 0.3.3:** Validation and output components with tests → deploy → checkpoint → approval
+5. **Phase 0.3.4:** Navigation components with tests → deploy → checkpoint → approval
+6. **Phase 0.3.5:** Component demo page and documentation → deploy → checkpoint → approval
 
 **Components to Build:**
 - CodeBlock.astro - Syntax highlighting + copy button
@@ -142,7 +174,9 @@ Per PROJECT_PLAN.md, build components with multiple commits:
 - Dark mode compatible
 - Interactive state management
 
-**Current Step:** About to build CodeBlock component
+**Current Step:** Phase 0.3.1 - Add tests to existing CodeBlock component and fix CSS bugs
+
+**Note:** CodeBlock was built in commit d186ff9 before testing infrastructure existed. Phase 0.3.1 will add tests and fix CSS variable bugs.
 
 ---
 
@@ -168,12 +202,14 @@ Per PROJECT_PLAN.md, build components with multiple commits:
 
 ## Next Steps
 
-1. Build CodeBlock component
-2. Commit and deploy
-3. Present checkpoint
-4. Wait for approval
-5. Update this document
-6. Proceed to next component
+1. Fix CodeBlock CSS variable bugs (use correct TailwindCSS variable names)
+2. Write tests for CodeBlock component
+3. Verify tests pass
+4. Commit and deploy
+5. Present checkpoint
+6. Wait for approval
+7. Update this document
+8. Proceed to Phase 0.3.2 (StepCard and ProgressTracker)
 
 ---
 
