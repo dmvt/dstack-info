@@ -43,15 +43,13 @@
 
     <button
       on:click={toggleComplete}
-      class="ml-6 flex items-center justify-center w-12 h-12 rounded-lg transition-all duration-200 {isComplete
-        ? 'bg-lime-green text-bg-space hover:bg-lime-green/90'
-        : 'bg-bg-deep border-2 border-border-default hover:border-cyber-blue'}"
+      class="ml-6 flex items-center justify-center w-12 h-12 rounded-lg border-2 transition-all duration-200 {isComplete
+        ? 'bg-lime-green border-lime-green text-bg-space hover:bg-lime-green/90'
+        : 'bg-transparent border-border-default hover:border-cyber-blue'}"
       aria-label={isComplete ? 'Mark as incomplete' : 'Mark as complete'}
     >
       {#if isComplete}
         <i class="fas fa-check text-2xl"></i>
-      {:else}
-        <i class="far fa-square text-2xl text-text-secondary"></i>
       {/if}
     </button>
   </div>
