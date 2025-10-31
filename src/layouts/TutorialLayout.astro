@@ -1,6 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import TutorialSidebar from '../components/TutorialSidebar.svelte';
+import TutorialSearch from '../components/TutorialSearch.svelte';
 
 export interface Props {
 	title: string;
@@ -34,6 +35,14 @@ const {
 					</span>
 				</a>
 
+				<!-- Search -->
+				{allTutorials.length > 0 && (
+					<TutorialSearch
+						client:load
+						tutorials={allTutorials}
+					/>
+				)}
+
 				<!-- Dynamic Navigation -->
 				{allTutorials.length > 0 && (
 					<TutorialSidebar
@@ -47,14 +56,23 @@ const {
 
 		<!-- Main Content -->
 		<main class="flex-1 lg:ml-64">
-			<!-- Breadcrumb Navigation (placeholder for Phase 0.4.3) -->
+			<!-- Breadcrumb Navigation -->
 			<div class="bg-bg-deep border-b border-border-default px-6 py-4">
 				<nav class="flex items-center space-x-2 text-sm">
-					<a href="/" class="text-cyber-blue hover:underline">Home</a>
+					<a href="/" class="text-cyber-blue hover:underline transition-colors">
+						<i class="fas fa-home mr-1"></i>
+						Home
+					</a>
 					<span class="text-text-secondary">/</span>
-					<a href="/tutorial" class="text-cyber-blue hover:underline">Tutorial</a>
-					<span class="text-text-secondary">/</span>
-					<span class="text-text-secondary">{section}</span>
+					<span class="text-text-primary font-medium">{section}</span>
+					{currentStep && totalSteps && (
+						<>
+							<span class="text-text-secondary">·</span>
+							<span class="text-text-secondary text-xs">
+								Step {currentStep} of {totalSteps}
+							</span>
+						</>
+					)}
 				</nav>
 			</div>
 
