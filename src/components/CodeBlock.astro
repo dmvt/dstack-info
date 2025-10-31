@@ -28,16 +28,16 @@ const getLanguageClass = (lang: string) => {
       <span class="text-text-secondary text-sm font-medium">{title}</span>
     </div>
   )}
-  <div class="code-block relative bg-bg-card border border-border-default rounded-lg overflow-hidden" class:list={[title && 'rounded-t-none']}>
+  <div class="code-block relative bg-bg-card border border-border-default rounded-lg" class:list={[title && 'rounded-t-none']}>
     <button
-      class="copy-button absolute top-3 right-3 px-3 py-1.5 bg-bg-deep border border-border-default rounded text-text-secondary hover:text-lime-green hover:border-lime-green transition-colors text-sm font-medium"
+      class="copy-button absolute top-2 right-2 px-3 py-1.5 bg-bg-deep rounded text-text-secondary hover:text-lime-green transition-colors text-sm font-medium"
       data-code={code}
       aria-label="Copy code to clipboard"
     >
       <i class="fa-solid fa-copy mr-1.5"></i>
       <span class="copy-text">Copy</span>
     </button>
-    <pre class="p-4 overflow-x-auto text-sm"><code class={getLanguageClass(language)}>{code}</code></pre>
+    <pre class="p-4 pr-24 overflow-x-auto text-sm"><code class={getLanguageClass(language)}>{code}</code></pre>
   </div>
 </div>
 
@@ -59,12 +59,12 @@ const getLanguageClass = (lang: string) => {
           // Update button text
           const originalText = copyText.textContent;
           copyText.textContent = 'Copied!';
-          button.classList.add('text-lime-green', 'border-lime-green');
+          button.classList.add('text-lime-green');
 
           // Reset after 2 seconds
           setTimeout(() => {
             copyText.textContent = originalText;
-            button.classList.remove('text-lime-green', 'border-lime-green');
+            button.classList.remove('text-lime-green');
           }, 2000);
         } catch (err) {
           console.error('Failed to copy code:', err);
@@ -91,17 +91,9 @@ const getLanguageClass = (lang: string) => {
     color: var(--color-text-primary);
   }
 
-  .code-block-wrapper:hover .copy-button {
-    opacity: 1;
-  }
-
   .copy-button {
-    opacity: 0.7;
-    transition: opacity 0.2s, color 0.2s, border-color 0.2s;
-  }
-
-  .copy-button:hover {
     opacity: 1;
+    transition: color 0.2s;
   }
 
   .copy-button:focus {
