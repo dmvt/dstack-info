@@ -30,6 +30,20 @@ At this point, you have the TDX-enabled kernel and software stack installed, but
 
 Access your server's BIOS/UEFI (via IPMI/iLO/iDRAC or physical access) and enable:
 
+#### 0. Prerequisites: Disable Physical Address Limit (IMPORTANT!)
+
+**Before enabling TME-MT, you must first disable the CPU physical address limit:**
+
+Navigate to: **Advanced → CPU Configuration** (or **Processor Configuration**)
+
+Find and **disable**:
+- ☐ **Limit CPU Physical Address to 46 bits**
+- May also be labeled: "Physical Address Limit", "Hyper-V Physical Address Limit", or "Address Width Limit"
+
+**Why this matters:** The 46-bit address limit prevents TME-MT from working. Intel MKTME needs the upper address bits for encryption key IDs. If you don't disable this first, TME-MT will be greyed out and unselectable.
+
+After disabling, save and reboot, then re-enter BIOS to continue with the following settings:
+
 #### 1. Memory Encryption Settings
 
 Navigate to: **Advanced → CPU Configuration → Memory Encryption**
@@ -180,6 +194,24 @@ tdx_guest
 - Navigate to CPU Configuration → Memory Encryption
 - Enable TME and TME-MT
 - Save and reboot
+
+### Issue: TME-MT Option Greyed Out/Disabled
+
+**Cause:** CPU Physical Address Limit is enabled (restricts to 46-bit addressing)
+
+**Why this happens:** Intel MKTME (Multi-Key Total Memory Encryption), which TME-MT uses, requires upper address bits for encryption key IDs. The 46-bit physical address limit reserves these bits, preventing TME-MT from functioning. Many server BIOS configurations enable this by default for older OS/hypervisor compatibility.
+
+**Solution:**
+1. Enter BIOS
+2. Navigate to: **Advanced → CPU Configuration** (or **Processor Configuration**)
+3. Find: **"Limit CPU Physical Address to 46 bits"** or **"Physical Address Limit"**
+   - May also be labeled: "Hyper-V Physical Address Limit" or "Address Width Limit"
+4. **Disable** this setting
+5. Save and reboot
+6. Re-enter BIOS - TME-MT should now be selectable
+7. Enable TME-MT and continue with TDX setup
+
+**Note:** This is documented in Dell, ASUS, and other server vendor documentation. Enabling the 46-bit limit automatically disables TME-MT capabilities.
 
 ### Issue: No SEAM Firmware After Enabling TDX
 
