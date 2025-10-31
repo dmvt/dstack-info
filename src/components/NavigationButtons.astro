@@ -1,0 +1,61 @@
+---
+export interface Props {
+  previousUrl?: string;
+  previousLabel?: string;
+  nextUrl?: string;
+  nextLabel?: string;
+}
+
+const {
+  previousUrl,
+  previousLabel = 'Previous',
+  nextUrl,
+  nextLabel = 'Next',
+} = Astro.props;
+
+// Check if buttons should be disabled
+const hasPrevious = !!previousUrl;
+const hasNext = !!nextUrl;
+---
+
+<nav class="navigation-buttons flex items-center justify-between gap-4 py-6" aria-label="Tutorial navigation">
+  <!-- Previous Button -->
+  {hasPrevious ? (
+    <a
+      href={previousUrl}
+      class="nav-button nav-previous flex items-center gap-2 px-4 py-3 bg-bg-card border border-border-default rounded-lg text-text-primary hover:border-cyber-blue hover:text-cyber-blue transition-all group"
+      aria-label={`Go to previous: ${previousLabel}`}
+    >
+      <i class="fa-solid fa-chevron-left text-text-secondary group-hover:text-cyber-blue transition-colors" aria-hidden="true"></i>
+      <span class="font-medium">{previousLabel}</span>
+    </a>
+  ) : (
+    <div
+      class="nav-button nav-previous-disabled flex items-center gap-2 px-4 py-3 bg-bg-deep border border-border-default rounded-lg text-text-secondary opacity-50 cursor-not-allowed"
+      aria-disabled="true"
+    >
+      <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+      <span class="font-medium">{previousLabel}</span>
+    </div>
+  )}
+
+  <!-- Next Button -->
+  {hasNext ? (
+    <a
+      href={nextUrl}
+      class="nav-button nav-next flex items-center gap-2 px-4 py-3 bg-lime-green text-bg-deep rounded-lg font-medium hover:bg-lime-green/90 transition-all group"
+      aria-label={`Go to next: ${nextLabel}`}
+    >
+      <span>{nextLabel}</span>
+      <i class="fa-solid fa-chevron-right group-hover:translate-x-1 transition-transform" aria-hidden="true"></i>
+    </a>
+  ) : (
+    <div
+      class="nav-button nav-next-disabled flex items-center gap-2 px-4 py-3 bg-bg-deep border border-border-default rounded-lg text-text-secondary opacity-50 cursor-not-allowed"
+      aria-disabled="true"
+    >
+      <span class="font-medium">{nextLabel}</span>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+    </div>
+  )}
+</nav>

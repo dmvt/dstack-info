@@ -6,6 +6,7 @@ import CodeBlock from '../components/CodeBlock.astro';
 import ValidationIndicator from '../components/ValidationIndicator.astro';
 import CommandOutput from '../components/CommandOutput.astro';
 import CollapsibleSection from '../components/CollapsibleSection.astro';
+import NavigationButtons from '../components/NavigationButtons.astro';
 ---
 
 <html lang="en">
@@ -169,6 +170,44 @@ Rust version: 1.75.0`}
 								You can also join our community Discord for support.
 							</p>
 						</CollapsibleSection>
+					</div>
+				</section>
+
+				<!-- NavigationButtons Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Navigation Buttons</h2>
+
+					<div class="space-y-8">
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Both Buttons Enabled</h3>
+							<NavigationButtons
+								previousUrl="/tutorial/step-1"
+								previousLabel="Step 1: Introduction"
+								nextUrl="/tutorial/step-3"
+								nextLabel="Step 3: Configuration"
+							/>
+						</div>
+
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">First Page (Previous Disabled)</h3>
+							<NavigationButtons
+								nextUrl="/tutorial/step-2"
+								nextLabel="Get Started"
+							/>
+						</div>
+
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Last Page (Next Disabled)</h3>
+							<NavigationButtons
+								previousUrl="/tutorial/step-9"
+								previousLabel="Step 9: Verification"
+							/>
+						</div>
+
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Both Disabled (Standalone Page)</h3>
+							<NavigationButtons />
+						</div>
 					</div>
 				</section>
 
