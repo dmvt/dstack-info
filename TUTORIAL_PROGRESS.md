@@ -671,11 +671,55 @@
 
 ---
 
+### Phase 0.4.3: Navigation and Search ✅ COMPLETE
+**Completed:** 2025-10-31 11:53 EDT
+**Commits:** 57da5ae, 6efd35c, 6a3e5e5, 85145d5, 22f022a, 754ca91
+
+**What was done:**
+- Created TutorialSidebar.svelte for dynamic navigation
+- Lists tutorials grouped by section with step numbers
+- Highlights current tutorial with cyan background
+- Shows green checkmarks for completed tutorials
+- Real-time updates when marking complete (custom events)
+- Created TutorialSearch.svelte for filtering
+- Search by title, description, or tags (case-insensitive)
+- Dropdown results with tutorial details
+- Improved breadcrumbs with home icon and step progress
+
+**Testing:**
+- 20 new tests for sidebar and search components
+- All 190 tests passing (170 previous + 20 new)
+- TutorialSidebar: 7 tests (grouping, sorting, validation)
+- TutorialSearch: 13 tests (filtering, edge cases)
+- Tests focus on business logic without DOM dependencies
+
+**Files Created:**
+- src/components/TutorialSidebar.svelte - Dynamic sidebar navigation
+- src/components/TutorialSearch.svelte - Search functionality
+- src/__tests__/TutorialSidebar.test.ts - 7 tests
+- src/__tests__/TutorialSearch.test.ts - 13 tests
+
+**Files Modified:**
+- src/layouts/TutorialLayout.astro - Integrated sidebar and search
+- src/pages/tutorial/[...slug].astro - Pass allTutorials and currentSlug
+- src/__tests__/TutorialLayout.test.ts - Updated for new structure
+
+**Key Learnings:**
+- Custom events (tutorialProgressUpdate) enable cross-component communication
+- Testing Svelte 5 components: focus on logic rather than DOM rendering
+- localStorage storage event only fires across tabs, need custom events for same-page
+- Reactive statements ($:) in Svelte work well for derived data
+
+**Deployment:** https://01bdf0eb.dstack-info.pages.dev
+
+**Status:** User tested and approved
+
+---
+
 ## Current Phase: 0.4 Tutorial Platform Infrastructure
 
-**Status:** Phase 0.4.3 IN PROGRESS - Navigation and search
+**Status:** Phase 0.4.3 complete - Ready to proceed to Phase 0.4.4
 **Started Phase 0.4:** 2025-10-31 08:50 EDT
-**Started Phase 0.4.3:** 2025-10-31 11:05 EDT
 
 **Phase 0.4 Plan:**
 Breaking down into 5 sub-phases following successful Phase 0.3 methodology:
@@ -683,24 +727,8 @@ Breaking down into 5 sub-phases following successful Phase 0.3 methodology:
 1. **Phase 0.4.0:** ✅ Layout system (BaseLayout, TutorialLayout, ComponentLayout) → APPROVED
 2. **Phase 0.4.1:** ✅ Content collections configuration (config.ts, content/tutorials/) → APPROVED
 3. **Phase 0.4.2:** ✅ Progress tracking system (utils/progress.ts with localStorage) → APPROVED
-4. **Phase 0.4.3:** 🔄 Navigation and search (sidebar, breadcrumbs, basic search) → IN PROGRESS
+4. **Phase 0.4.3:** ✅ Navigation and search (sidebar, breadcrumbs, basic search) → APPROVED
 5. **Phase 0.4.4:** ⏸️ Sample tutorial content and integration testing → PENDING
-
-**Phase 0.4.3 Plan (Current):**
-- Build dynamic sidebar navigation from content collections
-- Show all tutorial sections and steps
-- Highlight current tutorial
-- Show completion checkmarks for completed tutorials
-- Improve breadcrumb navigation (currently placeholder)
-- Add basic search functionality (filter tutorials by title/tags)
-- All using TailwindCSS utilities
-- Commit → build → deploy → checkpoint
-
-**What I'm building:**
-- Dynamic sidebar that lists all tutorials by section
-- Visual indicators for current page and completion status
-- Working breadcrumbs with proper links
-- Client-side search component with filtering
 
 ---
 
