@@ -5,13 +5,13 @@ section: "Host Setup"
 stepNumber: 4
 totalSteps: 6
 prerequisites:
-  - "Completed Part 3: TDX Kernel Installation"
-  - "Server rebooted successfully"
+    - "Completed Part 3: TDX Kernel Installation"
+    - "Server rebooted successfully"
 tags:
-  - "tdx"
-  - "verification"
-  - "status"
-  - "troubleshooting"
+    - "tdx"
+    - "verification"
+    - "status"
+    - "troubleshooting"
 difficulty: "intermediate"
 estimatedTime: "10 minutes"
 lastUpdated: 2025-10-31
@@ -21,7 +21,7 @@ lastUpdated: 2025-10-31
 
 This tutorial covers verifying that the TDX kernel loaded successfully and checking the TDX status to determine what BIOS configuration is needed.
 
-## Step 6: Verify TDX Kernel Loaded
+## Step 7: Verify TDX Kernel Loaded
 
 After reboot, SSH back into the server and verify the TDX kernel is running:
 
@@ -30,13 +30,14 @@ uname -r
 ```
 
 **Expected output:**
+
 ```
 6.8.0-1028-intel
 ```
 
 ✓ Success! You're now running the TDX-enabled Intel kernel.
 
-## Step 7: Check TDX Status
+## Step 8: Check TDX Status
 
 Now let's check if TDX is enabled in the system.
 
@@ -47,6 +48,7 @@ dmesg | grep -i tdx
 ```
 
 **If TDX is enabled (after BIOS config), you should see:**
+
 ```
 [    X.XXXXXX] virt/tdx: module initialized
 ```
@@ -60,6 +62,7 @@ ls -la /sys/module/kvm_intel/parameters/ | grep tdx
 ```
 
 **Expected output:**
+
 ```
 -r--r--r-- 1 root root 4096 Oct 31 19:04 tdx
 ```
@@ -71,8 +74,9 @@ cat /sys/module/kvm_intel/parameters/tdx
 ```
 
 **Output:**
-- `N` = TDX is NOT enabled (BIOS configuration needed)
-- `Y` = TDX is enabled and ready to use
+
+-   `N` = TDX is NOT enabled (BIOS configuration needed)
+-   `Y` = TDX is enabled and ready to use
 
 ### Check TME (Total Memory Encryption)
 
@@ -83,11 +87,13 @@ dmesg | grep -i tme
 ```
 
 **If TME is NOT enabled:**
+
 ```
 [    0.000000] x86/tme: not enabled by BIOS
 ```
 
 **If TME is enabled:**
+
 ```
 [    0.000000] x86/tme: enabled by BIOS
 ```
@@ -99,11 +105,13 @@ ls -la /sys/firmware/tdx* 2>/dev/null || echo "No TDX firmware found"
 ```
 
 **If TDX is NOT enabled:**
+
 ```
 No TDX firmware found
 ```
 
 **If TDX is enabled, you'll see:**
+
 ```
 /sys/firmware/tdx_seam/
 ```
