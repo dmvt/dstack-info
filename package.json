@@ -13,9 +13,12 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@astrojs/svelte": "^7.2.1",
     "@tailwindcss/vite": "^4.1.16",
     "astro": "^5.15.3",
-    "tailwindcss": "^4.1.16"
+    "svelte": "^5.43.2",
+    "tailwindcss": "^4.1.16",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@vitest/ui": "^3.2.4",
