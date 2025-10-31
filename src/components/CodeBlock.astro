@@ -30,7 +30,7 @@ const getLanguageClass = (lang: string) => {
   )}
   <div class="code-block relative bg-bg-card border border-border-default rounded-lg overflow-hidden" class:list={[title && 'rounded-t-none']}>
     <button
-      class="copy-button absolute top-3 right-3 px-3 py-1.5 bg-bg-elevated border border-border-default rounded text-text-secondary hover:text-lime-green hover:border-lime-green transition-colors text-sm font-medium"
+      class="copy-button absolute top-3 right-3 px-3 py-1.5 bg-bg-deep border border-border-default rounded text-text-secondary hover:text-lime-green hover:border-lime-green transition-colors text-sm font-medium"
       data-code={code}
       aria-label="Copy code to clipboard"
     >
@@ -105,7 +105,7 @@ const getLanguageClass = (lang: string) => {
   }
 
   .copy-button:focus {
-    outline: 2px solid var(--lime-green);
+    outline: 2px solid var(--color-lime-green);
     outline-offset: 2px;
   }
 </style>
