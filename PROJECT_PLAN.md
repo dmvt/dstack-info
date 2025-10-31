@@ -100,28 +100,43 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 - Built for future contributors
 - Professional design and UX
 
+#### 9. **Plan Adherence & Verification**
+- Before starting any work: Verify it matches the current phase in PROJECT_PLAN.md
+- If user requests work outside the plan or methodology: STOP and inform them
+- Clearly state what conflicts with the plan/methodology
+- Ask for explicit double confirmation before proceeding with out-of-plan work
+- Never silently deviate from the documented plan
+- If uncertain whether request aligns with plan: Ask for clarification
+
 ### Working Methodology
 
 **For Each Tutorial Section:**
 
 1. **Plan** - Define what we're installing/configuring
-2. **Execute Manually** - SSH to server, run commands, document
-3. **Build Ansible** - Create role/playbook for same task
-4. **Test Manual** - User N runs manual commands from tutorial
-5. **Test Ansible** - User N+1 runs Ansible playbook
-6. **Verify Equivalence** - Confirm both approaches yield identical results
-7. **Document Tutorial** - Write complete tutorial section with:
+2. **Execute Manually** - Claude: SSH to server, run commands, document results
+3. **Build Ansible** - Claude: Create role/playbook for same task
+4. **Test Both Approaches** - Claude: Verify both manual and Ansible work correctly
+5. **Verify Equivalence** - Claude: Confirm both approaches yield identical results
+6. **Document Tutorial** - Claude: Write complete tutorial section with:
    - Prerequisites
-   - Manual step-by-step instructions
-   - Ansible automation instructions
+   - Manual step-by-step instructions (tested and verified)
+   - Ansible automation instructions (tested and verified)
    - Verification steps
-   - Troubleshooting section
-8. **Create Validation Widget** - Build interactive validation component
-9. **Git Commit** - Commit tutorial + Ansible + widget (signed)
-10. **Deploy** - Push to Cloudflare Pages
-11. **Checkpoint** - Present testing plan, await approval
-12. **Update Memory** - Add progress to TUTORIAL_PROGRESS.md
-13. **Proceed** - Move to next section
+   - Troubleshooting section (from real issues encountered)
+7. **Create Validation Widget** - Claude: Build interactive validation component
+8. **Git Commit** - Claude: Commit tutorial + Ansible + widget (signed)
+9. **Deploy** - Claude: Push to Cloudflare Pages
+10. **Checkpoint** - Claude: Present testing plan for user to dogfood the tutorial
+11. **User Testing** - User: Follow tutorial as written, verify everything works
+12. **User Approval** - User: Confirm tutorial works or request fixes
+13. **Update Memory** - Claude: Add progress to TUTORIAL_PROGRESS.md after approval
+14. **Proceed** - Move to next section
+
+**Key Principle: Dogfooding**
+- Claude does all the work first and verifies it works
+- Tutorial is written based on what actually worked
+- User tests by following the tutorial as a new user would
+- This ensures tutorials are accurate and complete
 
 ---
 
@@ -197,10 +212,19 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 | Interactive Components | Svelte | Validation widgets, dashboards |
 | Content | Markdown/MDX | Tutorial writing |
 | Type Safety | TypeScript | Development quality |
+| Unit Testing | Vitest | Component/unit testing |
+| E2E Testing | Playwright | Browser automation testing |
+| Test Environment | happy-dom | Lightweight DOM for unit tests |
 | Package Manager | npm | Dependency management |
 | Build Tool | Vite | Fast builds and HMR |
 | Deployment | Cloudflare Pages | Edge hosting |
 | Version Control | Git | Signed commits |
+
+**Testing Philosophy:**
+- **Testing Pyramid:** Many unit tests (Vitest)  → Fewer E2E tests (Playwright)
+- **Vitest:** Fast unit tests for component rendering, props, logic
+- **Playwright:** Browser tests for user interactions, copy buttons, navigation
+- **Coverage Target:** >80% unit test coverage, critical paths covered by E2E
 
 **See ARCHITECTURE_DECISION.md for complete rationale**
 
@@ -208,7 +232,17 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 
 ## Detailed Phase Plan
 
-### Phase 0: Website Modernization (Weeks 1-2)
+### Phase 0: Website Modernization (Weeks 1-3)
+
+**Timeline Breakdown:**
+- Phase 0.1: Framework Decision (1 day)
+- Phase 0.2: Project Setup (1-2 days)
+- Phase 0.3: Component System + Vitest Testing (7-9 days)
+- Phase 0.4: Tutorial Platform (3-4 days)
+- Phase 0.5: Homepage Migration (3-4 days)
+- Phase 0.6: Playwright E2E Testing (2-3 days)
+
+**Total: ~21 days (3 weeks)**
 
 #### 0.1 Framework & Tooling Decision ✅ IN PROGRESS
 **Status:** Awaiting approval on Astro + TailwindCSS
@@ -250,9 +284,18 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 
 ---
 
-#### 0.3 Component System Development
+#### 0.3 Component System Development (WITH TESTING)
 
-**What we'll build:**
+**Overview:**
+Build reusable Astro components with comprehensive testing using Vitest + Container API.
+
+**Testing Strategy:**
+- **Framework:** Vitest (unit/component testing)
+- **Environment:** happy-dom (lightweight DOM)
+- **Approach:** Test-driven development where applicable
+- **Coverage:** Component rendering, props, interactions
+
+**Components to Build:**
 - `CodeBlock.astro` - Syntax highlighting + copy button
 - `StepCard.astro` - Individual tutorial step display
 - `ProgressTracker.astro` - Tutorial completion tracking
@@ -267,26 +310,148 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 - Accessible (ARIA labels, keyboard navigation)
 - Mobile responsive
 - Dark mode compatible
+- Unit tests for each component
+
+---
+
+##### 0.3.0 Setup Vitest Testing Infrastructure
+
+**What we'll do:**
+1. Install Vitest dependencies: `vitest`, `happy-dom`, `@vitest/ui`
+2. Create `vitest.config.ts` with Astro integration
+3. Add test scripts to package.json (test, test:watch, test:ui, test:coverage)
+4. Write sample test to verify setup works
+5. Configure test directory structure
 
 **Git Commits:**
-1. Add CodeBlock component with copy functionality
-2. Add step and progress components
-3. Add validation and output components
-4. Add navigation components
-5. Create component documentation
+1. Add Vitest testing infrastructure
 
 **Testing Plan for Checkpoint:**
-- [ ] Create demo page showcasing all components
-- [ ] Test code block copy functionality
-- [ ] Test progress tracker state persistence
-- [ ] Test validation indicators
-- [ ] Test collapsible sections
-- [ ] Verify mobile responsiveness
-- [ ] Test keyboard navigation
+- [ ] Dependencies installed successfully
+- [ ] Vitest config created and valid
+- [ ] Test scripts work: `npm test`
+- [ ] Sample test passes
+- [ ] Test UI accessible: `npm run test:ui`
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Show component library demo page, await confirmation
-**Update:** Add Phase 0.3 completion to TUTORIAL_PROGRESS.md
+**Checkpoint:** Show Vitest setup working with sample test
+**Update:** Add Phase 0.3.0 completion to TUTORIAL_PROGRESS.md
+
+---
+
+##### 0.3.1 CodeBlock Component with Tests
+
+**What we'll build:**
+- CodeBlock.astro component
+- Tests for CodeBlock rendering
+- Tests for props (code, language, title)
+- Demo page for visual verification
+
+**Git Commits:**
+1. Add CodeBlock component with tests
+
+**Testing Plan for Checkpoint:**
+- [ ] Component renders correctly
+- [ ] Copy button appears and functions
+- [ ] Tests pass: `npm test`
+- [ ] Demo page shows CodeBlock examples
+- [ ] Deploy and verify on Cloudflare Pages
+
+**Checkpoint:** Show CodeBlock working with passing tests
+**Update:** Add Phase 0.3.1 completion to TUTORIAL_PROGRESS.md
+
+---
+
+##### 0.3.2 Step and Progress Components with Tests
+
+**What we'll build:**
+- StepCard.astro component
+- ProgressTracker.astro component
+- Tests for both components
+- Demo page updates
+
+**Git Commits:**
+1. Add StepCard and ProgressTracker with tests
+
+**Testing Plan for Checkpoint:**
+- [ ] StepCard renders with different states
+- [ ] ProgressTracker calculates progress correctly
+- [ ] Tests pass: `npm test`
+- [ ] Demo page shows examples
+- [ ] Deploy and verify on Cloudflare Pages
+
+**Checkpoint:** Show step components working with tests
+**Update:** Add Phase 0.3.2 completion to TUTORIAL_PROGRESS.md
+
+---
+
+##### 0.3.3 Validation and Output Components with Tests
+
+**What we'll build:**
+- ValidationIndicator.astro component
+- CommandOutput.astro component
+- CollapsibleSection.astro component
+- Tests for all components
+- Demo page updates
+
+**Git Commits:**
+1. Add validation, output, and collapsible components with tests
+
+**Testing Plan for Checkpoint:**
+- [ ] ValidationIndicator shows checked/unchecked states
+- [ ] CommandOutput displays terminal-style content
+- [ ] CollapsibleSection expands/collapses
+- [ ] Tests pass: `npm test`
+- [ ] Demo page shows examples
+- [ ] Deploy and verify on Cloudflare Pages
+
+**Checkpoint:** Show utility components working with tests
+**Update:** Add Phase 0.3.3 completion to TUTORIAL_PROGRESS.md
+
+---
+
+##### 0.3.4 Navigation Components with Tests
+
+**What we'll build:**
+- NavigationButtons.astro component
+- Tests for navigation component
+- Demo page updates
+
+**Git Commits:**
+1. Add NavigationButtons with tests
+
+**Testing Plan for Checkpoint:**
+- [ ] NavigationButtons render with correct links
+- [ ] Disabled states work correctly
+- [ ] Tests pass: `npm test`
+- [ ] Demo page shows examples
+- [ ] Deploy and verify on Cloudflare Pages
+
+**Checkpoint:** Show navigation component working with tests
+**Update:** Add Phase 0.3.4 completion to TUTORIAL_PROGRESS.md
+
+---
+
+##### 0.3.5 Component Demo Page and Documentation
+
+**What we'll build:**
+- Comprehensive component showcase page
+- COMPONENTS.md documentation
+- Usage examples for each component
+- Test coverage report
+
+**Git Commits:**
+1. Add comprehensive demo page and component docs
+
+**Testing Plan for Checkpoint:**
+- [ ] Demo page shows all components
+- [ ] All interactive features work
+- [ ] Documentation complete
+- [ ] Test coverage >80%
+- [ ] Deploy and verify on Cloudflare Pages
+
+**Checkpoint:** Show complete component library with docs
+**Update:** Add Phase 0.3.5 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -385,7 +550,126 @@ src/
 
 ---
 
-### Phase 1: Server Preparation & Hardware Verification (Week 3)
+#### 0.6 End-to-End Testing with Playwright
+
+**Overview:**
+Add comprehensive E2E browser testing to complement Vitest unit tests. This phase ensures all user interactions work correctly in real browsers.
+
+**Testing Strategy:**
+- **Framework:** Playwright (browser automation)
+- **Coverage:** User interactions, copy buttons, navigation, form submissions
+- **Browsers:** Chromium, Firefox, WebKit
+- **Approach:** Critical user journeys and interactive features
+
+**What we'll do:**
+1. Install Playwright and dependencies
+2. Configure Playwright for Astro
+3. Write E2E tests for interactive components
+4. Set up CI/CD integration (optional)
+5. Create test documentation
+
+---
+
+##### 0.6.0 Setup Playwright Infrastructure
+
+**What we'll do:**
+1. Install Playwright: `npm init playwright@latest`
+2. Configure `playwright.config.ts` for Astro
+3. Add test scripts to package.json (e2e, e2e:ui, e2e:debug)
+4. Write sample E2E test for homepage
+5. Configure test artifacts (screenshots, videos)
+
+**Git Commits:**
+1. Add Playwright testing infrastructure
+
+**Testing Plan for Checkpoint:**
+- [ ] Playwright installed successfully
+- [ ] Config created and valid
+- [ ] E2E scripts work: `npm run e2e`
+- [ ] Sample test passes in all browsers
+- [ ] Test UI accessible: `npm run e2e:ui`
+- [ ] Deploy and verify on Cloudflare Pages
+
+**Checkpoint:** Show Playwright setup with passing sample test
+**Update:** Add Phase 0.6.0 completion to TUTORIAL_PROGRESS.md
+
+---
+
+##### 0.6.1 Component Interaction E2E Tests
+
+**What we'll test:**
+- CodeBlock copy button functionality
+- Progress tracker state persistence
+- Collapsible sections expand/collapse
+- Navigation buttons work correctly
+- Form interactions (if any)
+- Mobile responsiveness
+
+**Git Commits:**
+1. Add E2E tests for interactive components
+
+**Testing Plan for Checkpoint:**
+- [ ] Copy button test passes (clicks, verifies clipboard)
+- [ ] Progress tracking test passes (saves, persists)
+- [ ] Collapsible sections test passes
+- [ ] Navigation test passes
+- [ ] Tests pass in all browsers (Chromium, Firefox, WebKit)
+- [ ] Deploy and verify on Cloudflare Pages
+
+**Checkpoint:** Show E2E tests passing in multiple browsers
+**Update:** Add Phase 0.6.1 completion to TUTORIAL_PROGRESS.md
+
+---
+
+##### 0.6.2 User Journey E2E Tests
+
+**What we'll test:**
+- Complete tutorial navigation flow
+- Homepage to tutorial navigation
+- Search functionality (when added)
+- Cross-page state persistence
+- Error handling flows
+
+**Git Commits:**
+1. Add user journey E2E tests
+
+**Testing Plan for Checkpoint:**
+- [ ] Homepage navigation test passes
+- [ ] Tutorial flow test passes
+- [ ] State persistence across pages works
+- [ ] Tests pass in all browsers
+- [ ] Test report generated
+- [ ] Deploy and verify on Cloudflare Pages
+
+**Checkpoint:** Show complete user journey tests passing
+**Update:** Add Phase 0.6.2 completion to TUTORIAL_PROGRESS.md
+
+---
+
+##### 0.6.3 E2E Test Documentation
+
+**What we'll build:**
+- E2E testing documentation (E2E_TESTING.md)
+- Usage guide for writing new E2E tests
+- Best practices for Playwright with Astro
+- CI/CD integration guide (for future)
+
+**Git Commits:**
+1. Add E2E testing documentation
+
+**Testing Plan for Checkpoint:**
+- [ ] Documentation complete and accurate
+- [ ] Examples work correctly
+- [ ] All tests still passing
+- [ ] Test coverage report available
+- [ ] Deploy and verify on Cloudflare Pages
+
+**Checkpoint:** Show complete E2E testing setup with docs
+**Update:** Add Phase 0.6.3 completion to TUTORIAL_PROGRESS.md
+
+---
+
+### Phase 1: Server Preparation & Hardware Verification (Week 4)
 
 #### 1.1 Server Access & Initial Verification
 
@@ -595,7 +879,7 @@ ansible/
 
 ---
 
-### Phase 2: Core Installation - VMM (Week 4)
+### Phase 2: Core Installation - VMM (Week 5)
 
 #### 2.1 System Baseline & Dependencies
 
@@ -1042,7 +1326,7 @@ Add to `ansible/roles/dstack-host/tasks/vmm-service.yml`:
 
 ---
 
-### Phase 3: KMS Deployment (Week 5)
+### Phase 3: KMS Deployment (Week 6)
 
 Similar detailed breakdowns for:
 - 3.1 Smart Contract Compilation
@@ -1055,7 +1339,7 @@ Similar detailed breakdowns for:
 
 ---
 
-### Phase 4: Gateway Deployment (Week 6)
+### Phase 4: Gateway Deployment (Week 7)
 
 Similar detailed breakdowns for:
 - 4.1 Certbot & SSL Setup
@@ -1064,7 +1348,7 @@ Similar detailed breakdowns for:
 
 ---
 
-### Phase 5: First Application Deployment (Week 7)
+### Phase 5: First Application Deployment (Week 8)
 
 Similar detailed breakdowns for:
 - 5.1 Guest OS Image Setup
@@ -1073,7 +1357,7 @@ Similar detailed breakdowns for:
 
 ---
 
-### Phase 6: Example Deployments (Weeks 8-11)
+### Phase 6: Example Deployments (Weeks 9-12)
 
 For each of the 14 dstack-examples:
 
@@ -1105,7 +1389,7 @@ For each of the 14 dstack-examples:
 
 ---
 
-### Phase 7: UI Deployment Interface (Week 12)
+### Phase 7: UI Deployment Interface (Week 13)
 
 **7.1 Deployment Dashboard (Svelte Component)**
 
@@ -1136,7 +1420,7 @@ For each of the 14 dstack-examples:
 
 ---
 
-### Phase 8: Final Integration & Polish (Week 13)
+### Phase 8: Final Integration & Polish (Week 14)
 
 **8.1 Complete System Testing**
 - Run all Ansible playbooks from scratch on fresh user
@@ -1255,16 +1539,18 @@ For each of the 14 dstack-examples:
 ## Important Reminders
 
 ### Never Forget
-1. **NO SHORTCUTS** - Real deployments only
-2. **Commit early and often** - After each logical step
-3. **All commits signed** - No AI attribution
-4. **Deploy after every commit** - To Cloudflare Pages
-5. **Checkpoint after every commit** - With testing plan
-6. **Update TUTORIAL_PROGRESS.md** - After each approval
-7. **Dual approach always** - Manual + Ansible
-8. **Multi-user testing** - Different users for each approach
-9. **Small chunks** - Fit in one context window
-10. **Document everything** - Especially errors and solutions
+1. **VERIFY PLAN ALIGNMENT** - Before starting work, confirm it matches PROJECT_PLAN.md
+2. **FLAG OUT-OF-PLAN REQUESTS** - If user asks for something outside plan/methodology, inform them and get double confirmation
+3. **NO SHORTCUTS** - Real deployments only
+4. **Commit early and often** - After each logical step
+5. **All commits signed** - No AI attribution
+6. **Deploy after every commit** - To Cloudflare Pages
+7. **Checkpoint after every commit** - With testing plan
+8. **Update TUTORIAL_PROGRESS.md** - After each approval
+9. **Dual approach always** - Manual + Ansible (Phase 1+)
+10. **Multi-user testing** - Different users for each approach (Phase 1+)
+11. **Small chunks** - Fit in one context window
+12. **Document everything** - Especially errors and solutions
 
 ### If Something Goes Wrong
 - Document the issue immediately
