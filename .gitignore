@@ -44,5 +44,10 @@ temp/
 # Astro
 .astro/
 
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
 # Obsidian
 .obsidian/
