@@ -102,7 +102,7 @@ TDX_SETUP_NVIDIA_H100=0
 TDX_SETUP_INTEL_KERNEL=0
 ```
 
-### About TDX Attestation
+### Enable TDX Attestation (Recommended)
 
 **What is Attestation?**
 Attestation provides cryptographic proof that:
@@ -110,12 +110,12 @@ Attestation provides cryptographic proof that:
 - The software stack (kernel, firmware, application) has not been tampered with
 - The hardware and configuration meet security requirements
 
-**Do you need attestation?**
-- ✅ **Yes, for production/dstack deployments** - Attestation is essential for verifying confidential computing guarantees
-- ⚠️ **Optional for testing** - You can test basic TDX functionality without attestation
-- 🔒 **Required for trust** - Without attestation, you cannot cryptographically prove your workload is secure
+**Why Enable Attestation?**
+- 🔒 **Essential for production** - Required for dstack and confidential computing deployments
+- ✅ **Verifiable trust** - Cryptographically prove your workload is secure
+- 🛡️ **Industry standard** - Expected for enterprise confidential computing
 
-**To enable attestation:**
+**Enable attestation now:**
 Edit the configuration file before running the setup:
 ```bash
 nano setup-tdx-config
@@ -123,7 +123,9 @@ nano setup-tdx-config
 # To:     TDX_SETUP_ATTESTATION=1
 ```
 
-**For this tutorial, we'll proceed with the default (attestation disabled) to keep the initial setup simple. You can add attestation later by following Canonical's attestation setup guide.**
+Save the file (Ctrl+O, Enter, Ctrl+X).
+
+**Note:** You can skip attestation setup if you only want to test basic TDX functionality. However, for dstack deployments, attestation is required to verify confidential computing guarantees.
 
 ## Step 4: Run TDX Host Setup Script
 
