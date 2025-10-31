@@ -103,16 +103,23 @@ After enabling all TDX-related BIOS settings:
 
 After rebooting from BIOS configuration, verify TDX is now enabled:
 
-### 1. Check TME Status
+### 1. Check TME/MKTME Status
 
 ```bash
 dmesg | grep -i tme
 ```
 
-**Expected output (TME enabled):**
+**Expected output (TME and MKTME enabled):**
 ```
 [    0.000000] x86/tme: enabled by BIOS
+[    0.000000] x86/mktme: enabled by BIOS
+[    0.000000] x86/mktme: 63 KeyIDs available
 ```
+
+**What this means:**
+- ✅ TME (Total Memory Encryption) is active
+- ✅ MKTME (Multi-Key TME) is active - this is TME-MT working
+- ✅ 63 KeyIDs available means you can run up to 63 isolated Trust Domains simultaneously
 
 ### 2. Check TDX Initialization
 
@@ -120,11 +127,28 @@ dmesg | grep -i tme
 dmesg | grep -i tdx
 ```
 
-**Expected output (TDX enabled):**
+**Expected output (TDX enabled with attestation):**
 ```
-[    X.XXXXXX] virt/tdx: module initialized
-[    X.XXXXXX] tdx: TDX module: version 1.5
+[   58.680744] virt/tdx: BIOS enabled: private KeyID range [32, 64)
+[   58.681739] virt/tdx: Disable ACPI S3. Turn off TDX in the BIOS to use ACPI S3.
+[  245.715035] virt/tdx: TDX module: attributes 0x0, vendor_id 0x8086, major_version 1, minor_version 5, build_date 20240725, build_num 784
+[  245.715041] virt/tdx: CMR: [0x100000, 0x77800000)
+[  245.715044] virt/tdx: CMR: [0x100000000, 0x407a000000)
+[  245.715046] virt/tdx: CMR: [0x4080000000, 0x807c000000)
+[  245.715048] virt/tdx: CMR: [0x8080000000, 0xc07c000000)
+[  245.715049] virt/tdx: CMR: [0xc080000000, 0x1007c000000)
+[  249.751098] virt/tdx: 4202516 KB allocated for PAMT
+[  249.751110] virt/tdx: module initialized
 ```
+
+**What this means:**
+- ✅ TDX module version 1.5 loaded successfully
+- ✅ Private KeyIDs allocated for TDX guests (32-64)
+- ✅ CMR (Convertible Memory Regions) configured - these are memory ranges available for TDX
+- ✅ PAMT (Physical Address Metadata Table) allocated (~4.2 GB for tracking TD memory)
+- ✅ **Module initialized** - TDX is fully operational
+
+**Note:** ACPI S3 (suspend-to-RAM) is disabled when TDX is enabled. This is expected behavior.
 
 ### 3. Check TDX Parameter
 
@@ -137,37 +161,25 @@ cat /sys/module/kvm_intel/parameters/tdx
 Y
 ```
 
-### 4. Check SEAM Firmware
+✅ This confirms KVM has TDX support enabled.
 
-```bash
-ls -la /sys/firmware/tdx_seam/
-```
-
-**Expected output:**
-```
-drwxr-xr-x  2 root root    0 Oct 31 19:30 .
-dr-xr-xr-x 10 root root    0 Oct 31 19:30 ..
--r--r--r--  1 root root 4096 Oct 31 19:30 seaminfo
-```
-
-Check SEAM module info:
-
-```bash
-cat /sys/firmware/tdx_seam/seaminfo
-```
-
-This will show TDX module version and capabilities.
-
-### 5. Check TDX CPU Flags
+### 4. Check TDX Host CPU Flags
 
 ```bash
 grep -o 'tdx[^ ]*' /proc/cpuinfo | sort -u
 ```
 
-**Expected output (if TDX guest support is enabled):**
+**Expected output (TDX host):**
 ```
-tdx_guest
+tdx_host_platform
+tdx_pw_mce
 ```
+
+**What this means:**
+- ✅ `tdx_host_platform` - Your CPU is running as a TDX host (correct!)
+- ✅ `tdx_pw_mce` - TDX Power Management and Machine Check Exception support
+
+**Note:** The `tdx_guest` flag appears inside TDX guest VMs, not on the host. If you see `tdx_host_platform`, your host is configured correctly.
 
 ## Next Steps
 
