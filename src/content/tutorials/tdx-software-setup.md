@@ -168,7 +168,17 @@ The script will install:
 - **libvirt0 10.0.0-2ubuntu8.3+tdx1.2** - TDX-enabled libvirt
 - **ovmf 2024.02-3+tdx1.0** - TDX-enabled UEFI firmware
 
-**Installation time:** ~5 minutes (depending on network speed)
+**If attestation is enabled (`TDX_SETUP_ATTESTATION=1`), additional packages:**
+- **tdx-qgs** (1.21) - TDX Quote Generation Service
+- **sgx-dcap-pccs** (1.21) - Provisioning Certificate Caching Service
+- **libsgx-dcap-default-qpl** (1.21) - Quote Provider Library
+- **sgx-ra-service** (1.21) - Remote Attestation Service
+- **libsgx-tdx-logic1** - TDX attestation logic
+- **Node.js 18+** - Required for PCCS web service
+
+**Installation time:**
+- Without attestation: ~5 minutes
+- With attestation: ~10 minutes (30 MB additional packages)
 
 ### What the Script Does
 
@@ -193,6 +203,11 @@ The script will install:
    update-initramfs -u
    update-grub
    ```
+
+5. **Starts attestation services (if enabled):**
+   - `qgsd.service` - Quote Generation Service Daemon
+   - `pccs.service` - Provisioning Certificate Caching Service (on port 8081)
+   - `mpa_registration_tool.service` - Multi-Package Agent registration
 
 ### Final Setup Message
 
