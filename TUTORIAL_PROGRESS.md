@@ -988,6 +988,45 @@
 
 ---
 
+### Phase 0.6.1: Component Interaction E2E Tests ✅ COMPLETE
+**Completed:** 2025-10-31 13:14 EDT
+**Commits:** c56b72d
+
+**What was done:**
+- Created e2e/tutorial-interactions.spec.ts with 20 comprehensive E2E tests
+- Tests validate real user workflows in browser environment
+- Tutorial Content tests (3): title, code blocks, sections
+- Progress Tracking tests (4): visibility, toggle, persistence, visual feedback
+- Sidebar Navigation tests (6): display, listing, highlighting, navigation, updates, grouping
+- Search Functionality tests (3): visibility, filtering, clearing
+- Navigation Buttons tests (4): visibility, navigation, states, hover effects
+- Fixed test selectors to match actual implementation
+- Removed tests for unused components (CodeBlock copy button, CollapsibleSection)
+
+**Testing:**
+- All 30 E2E tests passing: ✅ Working (7.0s)
+- All 251 unit tests passing: ✅ Working (1.61s)
+- Build successful: ✅ Working (8 pages)
+
+**Key Learnings:**
+- Tutorial markdown doesn't use custom CodeBlock component with copy button
+- Tutorials are sorted alphabetically by section, then by step number
+- deploy-first-app (Deployment #1) is first tutorial, not sample-tutorial
+- Playwright strict mode requires `.first()` or specific locators
+- Test actual implementation, not assumed features
+
+**Files Created:**
+- e2e/tutorial-interactions.spec.ts (254 lines, 20 tests)
+
+**Files Modified:**
+- e2e/homepage.spec.ts (minor comment fix)
+
+**Deployment:** https://e1974213.dstack-info.pages.dev
+
+**Status:** User tested and approved
+
+---
+
 ## Phase 0.6: Playwright E2E Testing - IN PROGRESS
 
 **Status:** Phase 0.6 IN PROGRESS - Adding end-to-end browser testing
@@ -997,17 +1036,17 @@
 Breaking down into 4 sub-phases following project methodology:
 
 1. **Phase 0.6.0:** ✅ Setup Playwright infrastructure → COMPLETE
-2. **Phase 0.6.1:** Component interaction E2E tests → TODO
-3. **Phase 0.6.2:** User journey E2E tests → TODO
+2. **Phase 0.6.1:** ✅ Component interaction E2E tests → COMPLETE
+3. **Phase 0.6.2:** User journey E2E tests → IN PROGRESS
 4. **Phase 0.6.3:** E2E test documentation → TODO
 
-**Current Sub-Phase:** 0.6.1 - Component interaction E2E tests
+**Current Sub-Phase:** 0.6.2 - User journey E2E tests
 
 **What I'm building:**
-- E2E tests for interactive components (copy button, collapsible sections)
-- E2E tests for progress tracking functionality
-- E2E tests for sidebar navigation
-- E2E tests for search functionality
+- E2E tests for complete user journeys (homepage → tutorial → completion)
+- E2E tests for cross-page state persistence
+- E2E tests for multi-tutorial workflows
+- E2E tests for error scenarios and edge cases
 
 ---
 
