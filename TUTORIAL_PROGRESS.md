@@ -1,7 +1,7 @@
 # dstack Tutorial Project - Progress Tracker
 
-**Last Updated:** 2025-10-31 12:25 EDT
-**Current Phase:** Phase 0 COMPLETE - Website Modernization
+**Last Updated:** 2025-10-31 12:50 EDT
+**Current Phase:** Phase 0.6 IN PROGRESS - Playwright E2E Testing
 
 ---
 
@@ -929,7 +929,66 @@
 
 ---
 
-## Current Phase: 0.6 Playwright E2E Testing
+### Phase 0.6.0: Playwright Infrastructure Setup ✅ COMPLETE
+**Completed:** 2025-10-31 12:50 EDT
+**Commits:** 946afc7
+
+**What was done:**
+- Installed Playwright with Chromium browser
+- Created playwright.config.ts with automatic dev server startup
+  - Base URL: http://localhost:4321
+  - webServer config to auto-start dev server before tests
+  - Screenshot on failure, trace on first retry
+  - Configured for Chromium only (can expand later)
+- Created e2e/homepage.spec.ts with 10 comprehensive tests
+  - Homepage loads with correct title
+  - Navigation bar with all anchor links
+  - Hero section with CTAs (Get Started, GitHub)
+  - CTA click navigation to Getting Started section
+  - All major sections present
+  - Linux Foundation badge display
+  - Footer with copyright and license
+  - 6 feature cards content verification
+  - Tutorial navigation functionality
+  - Responsive mobile layout
+- Updated package.json with E2E test scripts
+  - npm run e2e - Run tests
+  - npm run e2e:ui - Run with UI
+  - npm run e2e:debug - Debug mode
+  - npm run e2e:report - Show HTML report
+- Fixed Vitest configuration to exclude e2e directory
+- Updated .gitignore for Playwright artifacts
+- Fixed Playwright strict mode violations with specific locators
+
+**Testing:**
+- All 10 E2E tests passing: ✅ Working (2.3s)
+- All 251 unit tests passing: ✅ Working (1.74s)
+- Build successful: ✅ Working (8 pages)
+- E2E and unit tests properly separated: ✅ Working
+
+**Key Learnings:**
+- Playwright strict mode requires specific locators (nav a[href="..."]) or .first() method
+- Vitest needs explicit exclusion of e2e directory to prevent conflicts
+- webServer config in playwright.config.ts auto-starts dev server
+- E2E tests complement unit tests for full coverage
+
+**Files Created:**
+- playwright.config.ts
+- e2e/homepage.spec.ts (10 tests)
+
+**Files Modified:**
+- package.json (added e2e scripts)
+- vitest.config.ts (exclude e2e directory)
+- .gitignore (Playwright artifacts)
+- TUTORIAL_PROGRESS.md (progress tracking)
+
+**Deployment:** https://0528d0ca.dstack-info.pages.dev
+
+**Status:** User tested and approved
+
+---
+
+## Phase 0.6: Playwright E2E Testing - IN PROGRESS
 
 **Status:** Phase 0.6 IN PROGRESS - Adding end-to-end browser testing
 **Started Phase 0.6:** 2025-10-31 12:30 EDT
@@ -937,19 +996,18 @@
 **Phase 0.6 Plan:**
 Breaking down into 4 sub-phases following project methodology:
 
-1. **Phase 0.6.0:** Setup Playwright infrastructure → IN PROGRESS
+1. **Phase 0.6.0:** ✅ Setup Playwright infrastructure → COMPLETE
 2. **Phase 0.6.1:** Component interaction E2E tests → TODO
 3. **Phase 0.6.2:** User journey E2E tests → TODO
 4. **Phase 0.6.3:** E2E test documentation → TODO
 
-**Current Sub-Phase:** 0.6.0 - Setup Playwright infrastructure
+**Current Sub-Phase:** 0.6.1 - Component interaction E2E tests
 
 **What I'm building:**
-- Install Playwright and dependencies
-- Configure playwright.config.ts for Astro
-- Add test scripts to package.json
-- Write sample E2E test for homepage
-- Configure test artifacts (screenshots, videos)
+- E2E tests for interactive components (copy button, collapsible sections)
+- E2E tests for progress tracking functionality
+- E2E tests for sidebar navigation
+- E2E tests for search functionality
 
 ---
 
