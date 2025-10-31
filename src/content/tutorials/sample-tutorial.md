@@ -82,6 +82,4 @@ If you see "permission denied" errors, ensure you're using `sudo` for commands t
 
 ## Next Steps
 
-Congratulations! You've completed the first tutorial. Next, we'll move on to installing Rust.
-
-**Continue to:** [Step 2: Install Rust Toolchain](/tutorial/install-rust)
+Congratulations! You've completed the first tutorial. Use the navigation buttons below to continue to the next step.

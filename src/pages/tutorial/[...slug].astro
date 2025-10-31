@@ -1,16 +1,35 @@
 ---
 import { getCollection } from 'astro:content';
 import TutorialLayout from '../../layouts/TutorialLayout.astro';
+import NavigationButtons from '../../components/NavigationButtons.astro';
 
 export async function getStaticPaths() {
   const tutorials = await getCollection('tutorials');
-  return tutorials.map((tutorial) => ({
-    params: { slug: tutorial.slug },
-    props: { tutorial },
-  }));
+
+  // Sort tutorials by section and stepNumber
+  const sortedTutorials = tutorials.sort((a, b) => {
+    if (a.data.section === b.data.section) {
+      return a.data.stepNumber - b.data.stepNumber;
+    }
+    return a.data.section.localeCompare(b.data.section);
+  });
+
+  return sortedTutorials.map((tutorial, index) => {
+    const previousTutorial = index > 0 ? sortedTutorials[index - 1] : null;
+    const nextTutorial = index < sortedTutorials.length - 1 ? sortedTutorials[index + 1] : null;
+
+    return {
+      params: { slug: tutorial.slug },
+      props: {
+        tutorial,
+        previousTutorial,
+        nextTutorial,
+      },
+    };
+  });
 }
 
-const { tutorial } = Astro.props;
+const { tutorial, previousTutorial, nextTutorial } = Astro.props;
 const { Content } = await tutorial.render();
 const { title, description, section, stepNumber, totalSteps } = tutorial.data;
 ---
@@ -23,4 +42,14 @@ const { title, description, section, stepNumber, totalSteps } = tutorial.data;
   currentStep={stepNumber}
 >
   <Content />
+
+  <!-- Navigation Buttons -->
+  <div class="mt-12 pt-8 border-t border-border-default">
+    <NavigationButtons
+      previousUrl={previousTutorial ? `/tutorial/${previousTutorial.slug}` : undefined}
+      previousLabel={previousTutorial ? previousTutorial.data.title : undefined}
+      nextUrl={nextTutorial ? `/tutorial/${nextTutorial.slug}` : undefined}
+      nextLabel={nextTutorial ? nextTutorial.data.title : undefined}
+    />
+  </div>
 </TutorialLayout>
