@@ -26,10 +26,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
 	<!-- Hero Section -->
 	<section class="min-h-screen flex items-center justify-center text-center px-8 pt-32 pb-16 relative overflow-hidden">
-		<!-- Background effects -->
-		<div class="absolute inset-0 bg-gradient-radial from-lime-green/10 via-transparent to-transparent opacity-50"></div>
-		<div class="absolute inset-0 bg-gradient-to-t from-bg-space via-transparent to-transparent pointer-events-none"></div>
-
 		<div class="max-w-4xl relative z-10">
 			<h1 class="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-lime-green to-lime-green-bright bg-clip-text text-transparent leading-tight">
 				Deploy Confidential Applications in Minutes
@@ -55,13 +51,422 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 		</div>
 	</section>
 
-	<!-- Placeholder for other sections -->
-	<section id="what-is" class="py-20 px-8">
-		<div class="max-w-7xl mx-auto text-center">
-			<h2 class="text-4xl font-bold mb-4">What is dstack?</h2>
-			<p class="text-text-secondary">More sections coming soon...</p>
+	<!-- What is dstack -->
+	<section id="what-is" class="py-20 px-8 bg-bg-deep">
+		<div class="max-w-7xl mx-auto">
+			<h2 class="text-4xl font-bold mb-4 text-center">What is dstack?</h2>
+			<p class="text-center text-text-secondary text-xl mb-12 max-w-3xl mx-auto">
+				A security-first SDK that simplifies deploying containerized applications into Trusted Execution Environments
+			</p>
+
+			<div class="grid md:grid-cols-2 gap-12 items-center">
+				<div>
+					<h3 class="text-2xl font-bold text-lime-green mb-4">Developer-Friendly TEE Deployment</h3>
+					<p class="text-text-secondary mb-4 text-lg">
+						dstack enables you to deploy Docker containers to secure, hardware-isolated environments with
+						minimal configuration changes. Using familiar tools like docker-compose.yaml, you can have
+						confidential applications running in production in minutes.
+					</p>
+					<p class="text-text-secondary mb-4 text-lg">
+						Built by a passionate open-source community, dstack provides production-ready security with
+						full transparency and vendor independence through hardware-level trusted execution environments.
+					</p>
+					<h3 class="text-2xl font-bold text-lime-green mb-4 mt-8">Key Benefits</h3>
+					<p class="text-text-secondary text-lg leading-relaxed">
+						<span class="text-lime-green font-semibold">✓ Zero Code Changes:</span> Deploy existing Docker containers as-is<br />
+						<span class="text-lime-green font-semibold">✓ Hardware-Level Security:</span> TEE isolation protects data in use<br />
+						<span class="text-lime-green font-semibold">✓ Remote Attestation:</span> Cryptographically verify application integrity<br />
+						<span class="text-lime-green font-semibold">✓ Vendor Independence:</span> Decentralized trust model, no lock-in
+					</p>
+				</div>
+
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default">
+					<h4 class="text-xl font-bold text-lime-green mb-6">Architecture Components</h4>
+					<ul class="space-y-3 list-none">
+						<li class="p-3 bg-lime-green/5 border-l-4 border-lime-green rounded">
+							<span class="text-lime-green font-semibold">dstack-vmm</span> - Manages Confidential VMs on TEE hosts
+						</li>
+						<li class="p-3 bg-lime-green/5 border-l-4 border-lime-green rounded">
+							<span class="text-lime-green font-semibold">dstack-gateway</span> - Reverse proxy for TLS connections
+						</li>
+						<li class="p-3 bg-lime-green/5 border-l-4 border-lime-green rounded">
+							<span class="text-lime-green font-semibold">dstack-kms</span> - Decentralized key management
+						</li>
+						<li class="p-3 bg-lime-green/5 border-l-4 border-lime-green rounded">
+							<span class="text-lime-green font-semibold">dstack-guest-agent</span> - In-CVM attestation service
+						</li>
+						<li class="p-3 bg-lime-green/5 border-l-4 border-lime-green rounded">
+							<span class="text-lime-green font-semibold">meta-dstack</span> - Yocto layer for guest images
+						</li>
+					</ul>
+				</div>
+			</div>
 		</div>
 	</section>
+
+	<!-- Features -->
+	<section id="features" class="py-20 px-8">
+		<div class="max-w-7xl mx-auto">
+			<h2 class="text-4xl font-bold mb-4 text-center">Why Choose dstack?</h2>
+			<p class="text-center text-text-secondary text-xl mb-12 max-w-3xl mx-auto">
+				Production-ready features designed for developers who care about security
+			</p>
+
+			<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green hover:shadow-[0_10px_30px_rgba(196,241,66,0.2)] transition-all">
+					<div class="text-5xl text-lime-green mb-4">
+						<i class="fa-brands fa-docker"></i>
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-3">Docker Native</h3>
+					<p class="text-text-secondary">Use familiar Docker Compose workflows. No proprietary tooling or steep learning curves.</p>
+				</div>
+
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green hover:shadow-[0_10px_30px_rgba(196,241,66,0.2)] transition-all">
+					<div class="text-5xl text-lime-green mb-4">
+						<i class="fa-solid fa-shield-halved"></i>
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-3">Zero-Trust HTTPS</h3>
+					<p class="text-text-secondary">Automatic TLS termination with RA-HTTPS wrapping and certificate management built-in.</p>
+				</div>
+
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green hover:shadow-[0_10px_30px_rgba(196,241,66,0.2)] transition-all">
+					<div class="text-5xl text-lime-green mb-4">
+						<i class="fa-solid fa-key"></i>
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-3">Secret Management</h3>
+					<p class="text-text-secondary">Client-side encrypted environment variables, decrypted securely within the TEE.</p>
+				</div>
+
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green hover:shadow-[0_10px_30px_rgba(196,241,66,0.2)] transition-all">
+					<div class="text-5xl text-lime-green mb-4">
+						<i class="fa-solid fa-certificate"></i>
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-3">Remote Attestation</h3>
+					<p class="text-text-secondary">Cryptographic proof of execution environment with chain-of-trust visualization.</p>
+				</div>
+
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green hover:shadow-[0_10px_30px_rgba(196,241,66,0.2)] transition-all">
+					<div class="text-5xl text-lime-green mb-4">
+						<i class="fa-solid fa-network-wired"></i>
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-3">Decentralized KMS</h3>
+					<p class="text-text-secondary">Hardware-independent key derivation eliminates vendor lock-in and single points of failure.</p>
+				</div>
+
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green hover:shadow-[0_10px_30px_rgba(196,241,66,0.2)] transition-all">
+					<div class="text-5xl text-lime-green mb-4">
+						<i class="fa-solid fa-chart-line"></i>
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-3">Web Dashboard</h3>
+					<p class="text-text-secondary">Intuitive interface for deployment, monitoring, and log management via REST API.</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Use Cases -->
+	<section id="use-cases" class="py-20 px-8 bg-bg-deep">
+		<div class="max-w-7xl mx-auto">
+			<h2 class="text-4xl font-bold mb-4 text-center">Real-World Applications</h2>
+			<p class="text-center text-text-secondary text-xl mb-12 max-w-3xl mx-auto">
+				Production deployments powering the next generation of secure applications
+			</p>
+
+			<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default relative overflow-hidden before:absolute before:top-0 before:left-0 before:w-full before:h-1 before:bg-gradient-to-r before:from-lime-green before:to-lime-green-bright">
+					<h3 class="text-xl font-bold text-lime-green mb-3">AI Agents & Inference</h3>
+					<p class="text-text-secondary mb-4">
+						Run private AI agents and LLMs with full confidentiality. Process sensitive data without
+						exposing it to cloud providers or infrastructure operators.
+					</p>
+					<p class="text-lime-green text-sm italic">Used by: ai16z (Eliza), 0G, Morpheus, Lumerin</p>
+				</div>
+
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default relative overflow-hidden before:absolute before:top-0 before:left-0 before:w-full before:h-1 before:bg-gradient-to-r before:from-lime-green before:to-lime-green-bright">
+					<h3 class="text-xl font-bold text-lime-green mb-3">Programmable Privacy</h3>
+					<p class="text-text-secondary mb-4">
+						Build privacy-preserving protocols and applications with custom TEE logic. Deploy Docker
+						containers as privacy co-processors for existing blockchains.
+					</p>
+					<p class="text-lime-green text-sm italic">Used by: Encifher</p>
+				</div>
+
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default relative overflow-hidden before:absolute before:top-0 before:left-0 before:w-full before:h-1 before:bg-gradient-to-r before:from-lime-green before:to-lime-green-bright">
+					<h3 class="text-xl font-bold text-lime-green mb-3">Blockchain Infrastructure</h3>
+					<p class="text-text-secondary mb-4">
+						Secure cross-chain bridges, verifiable oracles, and confidential smart contracts.
+						First Op-Succinct Layer 2 on Ethereum built with dstack.
+					</p>
+					<p class="text-lime-green text-sm italic">Used by: Phala Network L2</p>
+				</div>
+
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default relative overflow-hidden before:absolute before:top-0 before:left-0 before:w-full before:h-1 before:bg-gradient-to-r before:from-lime-green before:to-lime-green-bright">
+					<h3 class="text-xl font-bold text-lime-green mb-3">Zero-Knowledge Proofs</h3>
+					<p class="text-text-secondary mb-4">
+						Combine ZK cryptography with TEE hardware for enhanced security guarantees and
+						simplified proof generation workflows.
+					</p>
+					<p class="text-lime-green text-sm italic">Emerging use case in ETHGlobal hackathons</p>
+				</div>
+
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default relative overflow-hidden before:absolute before:top-0 before:left-0 before:w-full before:h-1 before:bg-gradient-to-r before:from-lime-green before:to-lime-green-bright">
+					<h3 class="text-xl font-bold text-lime-green mb-3">Web2-Web3 Identity</h3>
+					<p class="text-text-secondary mb-4">
+						Bridge traditional web accounts with blockchain identities in a secure, verifiable manner.
+						OAuth flows protected by TEE attestation.
+					</p>
+					<p class="text-lime-green text-sm italic">Hackathon winner pattern</p>
+				</div>
+
+				<div class="bg-bg-card p-8 rounded-2xl border border-border-default relative overflow-hidden before:absolute before:top-0 before:left-0 before:w-full before:h-1 before:bg-gradient-to-r before:from-lime-green before:to-lime-green-bright">
+					<h3 class="text-xl font-bold text-lime-green mb-3">Verifiable Frontends</h3>
+					<p class="text-text-secondary mb-4">
+						Guarantee frontend code integrity and protect users from malicious JavaScript injection.
+						Content-addressed deployments with attestation.
+					</p>
+					<p class="text-lime-green text-sm italic">Available in dstack-examples</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Examples -->
+	<section id="examples" class="py-20 px-8">
+		<div class="max-w-7xl mx-auto">
+			<h2 class="text-4xl font-bold mb-4 text-center">Example Projects</h2>
+			<p class="text-center text-text-secondary text-xl mb-12 max-w-3xl mx-auto">
+				Ready-to-deploy examples showcasing dstack capabilities
+			</p>
+
+			<div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+				<div class="bg-bg-card p-6 rounded-lg border border-border-default hover:border-lime-green hover:-translate-y-1 transition-all">
+					<h4 class="text-lime-green font-semibold mb-2">ConfigID-based Attestation</h4>
+					<p class="text-text-secondary text-sm">Modern remote attestation verification pattern</p>
+				</div>
+
+				<div class="bg-bg-card p-6 rounded-lg border border-border-default hover:border-lime-green hover:-translate-y-1 transition-all">
+					<h4 class="text-lime-green font-semibold mb-2">Custom Domain</h4>
+					<p class="text-text-secondary text-sm">Automatic TLS certificate management via zt-https</p>
+				</div>
+
+				<div class="bg-bg-card p-6 rounded-lg border border-border-default hover:border-lime-green hover:-translate-y-1 transition-all">
+					<h4 class="text-lime-green font-semibold mb-2">SSH over Gateway</h4>
+					<p class="text-text-secondary text-sm">Secure shell access through dstack infrastructure</p>
+				</div>
+
+				<div class="bg-bg-card p-6 rounded-lg border border-border-default hover:border-lime-green hover:-translate-y-1 transition-all">
+					<h4 class="text-lime-green font-semibold mb-2">TCP Port Forwarding</h4>
+					<p class="text-text-secondary text-sm">Arbitrary TCP port forwarding capabilities</p>
+				</div>
+
+				<div class="bg-bg-card p-6 rounded-lg border border-border-default hover:border-lime-green hover:-translate-y-1 transition-all">
+					<h4 class="text-lime-green font-semibold mb-2">Tor Hidden Service</h4>
+					<p class="text-text-secondary text-sm">Run Tor services within TEE environments</p>
+				</div>
+
+				<div class="bg-bg-card p-6 rounded-lg border border-border-default hover:border-lime-green hover:-translate-y-1 transition-all">
+					<h4 class="text-lime-green font-semibold mb-2">Timelock Decryption</h4>
+					<p class="text-text-secondary text-sm">NTS-based timelock encryption system</p>
+				</div>
+
+				<div class="bg-bg-card p-6 rounded-lg border border-border-default hover:border-lime-green hover:-translate-y-1 transition-all">
+					<h4 class="text-lime-green font-semibold mb-2">Blockchain Light Client</h4>
+					<p class="text-text-secondary text-sm">Verifiable blockchain data access in TEE</p>
+				</div>
+
+				<div class="bg-bg-card p-6 rounded-lg border border-border-default hover:border-lime-green hover:-translate-y-1 transition-all">
+					<h4 class="text-lime-green font-semibold mb-2">Private Docker Registry</h4>
+					<p class="text-text-secondary text-sm">Deploy from private registries with credentials</p>
+				</div>
+
+				<div class="bg-bg-card p-6 rounded-lg border border-border-default hover:border-lime-green hover:-translate-y-1 transition-all">
+					<h4 class="text-lime-green font-semibold mb-2">Launcher Pattern</h4>
+					<p class="text-text-secondary text-sm">Generic launcher for Docker Compose apps</p>
+				</div>
+
+				<div class="bg-bg-card p-6 rounded-lg border border-border-default hover:border-lime-green hover:-translate-y-1 transition-all">
+					<h4 class="text-lime-green font-semibold mb-2">Webshell</h4>
+					<p class="text-text-secondary text-sm">Web-based debugging shell for development</p>
+				</div>
+			</div>
+
+			<div class="text-center mt-12">
+				<a href="https://github.com/Dstack-TEE/dstack-examples" target="_blank" class="px-8 py-4 rounded-lg bg-gradient-to-r from-lime-green to-lime-green-bright text-bg-black font-semibold hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(196,241,66,0.3)] transition-all inline-block">
+					Explore All Examples on GitHub
+				</a>
+			</div>
+		</div>
+	</section>
+
+	<!-- Getting Started -->
+	<section id="getting-started" class="py-20 px-8 bg-bg-deep">
+		<div class="max-w-7xl mx-auto">
+			<h2 class="text-4xl font-bold mb-4 text-center">Get Started in Minutes</h2>
+			<p class="text-center text-text-secondary text-xl mb-12 max-w-3xl mx-auto">
+				Deploy your first confidential application with minimal setup
+			</p>
+
+			<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+				<div class="relative pl-16">
+					<div class="absolute left-0 top-0 w-12 h-12 bg-gradient-to-r from-lime-green to-lime-green-bright rounded-full flex items-center justify-center text-2xl font-bold text-bg-black">
+						1
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-2">Install Dependencies</h3>
+					<p class="text-text-secondary">Set up your TEE-enabled host with required build tools and Rust toolchain (Ubuntu 24.04 recommended).</p>
+				</div>
+
+				<div class="relative pl-16">
+					<div class="absolute left-0 top-0 w-12 h-12 bg-gradient-to-r from-lime-green to-lime-green-bright rounded-full flex items-center justify-center text-2xl font-bold text-bg-black">
+						2
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-2">Clone & Build</h3>
+					<p class="text-text-secondary">Clone the dstack repository and build host configuration artifacts. Download or build the guest CVM image.</p>
+				</div>
+
+				<div class="relative pl-16">
+					<div class="absolute left-0 top-0 w-12 h-12 bg-gradient-to-r from-lime-green to-lime-green-bright rounded-full flex items-center justify-center text-2xl font-bold text-bg-black">
+						3
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-2">Launch Services</h3>
+					<p class="text-text-secondary">Start the three core services: KMS for key management, Gateway for TLS routing, and VMM for CVM orchestration.</p>
+				</div>
+
+				<div class="relative pl-16">
+					<div class="absolute left-0 top-0 w-12 h-12 bg-gradient-to-r from-lime-green to-lime-green-bright rounded-full flex items-center justify-center text-2xl font-bold text-bg-black">
+						4
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-2">Deploy Application</h3>
+					<p class="text-text-secondary">Upload your docker-compose.yaml via the web dashboard. Your app is now running in a secure TEE with automatic attestation.</p>
+				</div>
+			</div>
+
+			<div class="bg-bg-card p-6 rounded-xl border border-border-default overflow-x-auto">
+				<pre class="text-text-secondary text-sm font-mono"><code><span class="text-text-secondary"># Install dependencies (Ubuntu 24.04)</span>
+sudo apt install build-essential chrpath diffstat lz4 wireguard-tools xorriso
+
+<span class="text-text-secondary"># Clone dstack</span>
+git clone https://github.com/Dstack-TEE/dstack
+cd dstack
+
+<span class="text-text-secondary"># Follow the README for detailed setup instructions</span>
+<span class="text-text-secondary"># Launch KMS, Gateway, and VMM services</span>
+<span class="text-text-secondary"># Access web dashboard and deploy your docker-compose.yaml</span>
+
+<span class="text-text-secondary"># Your application is now running in a secure TEE with:</span>
+<span class="text-lime-green">✓ Remote attestation enabled</span>
+<span class="text-lime-green">✓ Automatic HTTPS with TLS certificates</span>
+<span class="text-lime-green">✓ Encrypted secrets management</span>
+<span class="text-lime-green">✓ Verifiable execution environment</span></code></pre>
+			</div>
+
+			<div class="text-center mt-12">
+				<a href="/tutorial/sample-tutorial" class="px-8 py-4 rounded-lg bg-gradient-to-r from-lime-green to-lime-green-bright text-bg-black font-semibold hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(196,241,66,0.3)] transition-all inline-block">
+					Read Full Documentation
+				</a>
+			</div>
+		</div>
+	</section>
+
+	<!-- Ecosystem -->
+	<section id="ecosystem" class="py-20 px-8">
+		<div class="max-w-7xl mx-auto">
+			<h2 class="text-4xl font-bold mb-4 text-center">Ecosystem & Community</h2>
+			<p class="text-center text-text-secondary text-xl mb-12 max-w-3xl mx-auto">
+				Built by a thriving open-source community with diverse contributors
+			</p>
+
+			<div class="grid md:grid-cols-2 lg:grid-cols-5 gap-8">
+				<a href="https://www.linuxfoundation.org/" target="_blank" class="text-center p-8 bg-bg-card rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green transition-all block">
+					<h4 class="text-lime-green font-bold mb-2">Linux Foundation</h4>
+					<p class="text-text-secondary text-sm">Transitioning to neutral governance for community-driven open-source development</p>
+				</a>
+
+				<a href="https://phala.com" target="_blank" class="text-center p-8 bg-bg-card rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green transition-all block">
+					<h4 class="text-lime-green font-bold mb-2">Phala Network</h4>
+					<p class="text-text-secondary text-sm">Lead contributor and operator of Phala Cloud, the managed dstack platform</p>
+				</a>
+
+				<a href="https://www.flashbots.net/" target="_blank" class="text-center p-8 bg-bg-card rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green transition-all block">
+					<h4 class="text-lime-green font-bold mb-2">Flashbots</h4>
+					<p class="text-text-secondary text-sm">Strategic collaboration on MEV protection and confidential computing research</p>
+				</a>
+
+				<a href="https://github.com/ai16z" target="_blank" class="text-center p-8 bg-bg-card rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green transition-all block">
+					<h4 class="text-lime-green font-bold mb-2">ai16z</h4>
+					<p class="text-text-secondary text-sm">Eliza AI agent framework built on dstack TEE infrastructure</p>
+				</a>
+
+				<a href="https://github.com/Dstack-TEE/dstack" target="_blank" class="text-center p-8 bg-bg-card rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green transition-all block">
+					<h4 class="text-lime-green font-bold mb-2">Open Source</h4>
+					<p class="text-text-secondary text-sm">Apache 2.0 licensed with 310+ GitHub stars and active community contributions</p>
+				</a>
+			</div>
+		</div>
+	</section>
+
+	<!-- Resources -->
+	<section id="resources" class="py-20 px-8 bg-bg-deep">
+		<div class="max-w-7xl mx-auto">
+			<h2 class="text-4xl font-bold mb-4 text-center">Developer Resources</h2>
+			<p class="text-center text-text-secondary text-xl mb-12 max-w-3xl mx-auto">
+				Everything you need to build with dstack
+			</p>
+
+			<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+				<div class="text-center p-8 bg-bg-card rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green transition-all">
+					<div class="text-5xl text-lime-green mb-4">
+						<i class="fa-solid fa-book"></i>
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-3">Documentation</h3>
+					<p class="text-text-secondary mb-4">Comprehensive guides, tutorials, and API references</p>
+					<a href="/tutorial/sample-tutorial" class="text-lime-green hover:underline">View Documentation →</a>
+				</div>
+
+				<div class="text-center p-8 bg-bg-card rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green transition-all">
+					<div class="text-5xl text-lime-green mb-4">
+						<i class="fa-brands fa-github"></i>
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-3">GitHub</h3>
+					<p class="text-text-secondary mb-4">Source code, issues, and pull requests</p>
+					<a href="https://github.com/Dstack-TEE/dstack" target="_blank" class="text-lime-green hover:underline">github.com/dstack-TEE →</a>
+				</div>
+
+				<div class="text-center p-8 bg-bg-card rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green transition-all">
+					<div class="text-5xl text-lime-green mb-4">
+						<i class="fa-solid fa-rocket"></i>
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-3">Examples</h3>
+					<p class="text-text-secondary mb-4">Ready-to-deploy reference implementations</p>
+					<a href="https://github.com/Dstack-TEE/dstack-examples" target="_blank" class="text-lime-green hover:underline">dstack-examples →</a>
+				</div>
+
+				<div class="text-center p-8 bg-bg-card rounded-2xl border border-border-default hover:-translate-y-2 hover:border-lime-green transition-all">
+					<div class="text-5xl text-lime-green mb-4">
+						<i class="fa-solid fa-cloud"></i>
+					</div>
+					<h3 class="text-xl font-bold text-lime-green mb-3">Phala Cloud</h3>
+					<p class="text-text-secondary mb-4">Managed dstack platform for easy deployment</p>
+					<a href="https://phala.com" target="_blank" class="text-lime-green hover:underline">phala.com →</a>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Footer -->
+	<footer class="bg-bg-deep py-12 px-8 border-t border-border-default text-center">
+		<div class="max-w-7xl mx-auto">
+			<div class="flex justify-center gap-8 mb-8 flex-wrap">
+				<a href="https://github.com/Dstack-TEE/dstack" target="_blank" class="text-text-secondary hover:text-lime-green transition-colors">GitHub</a>
+				<a href="/tutorial/sample-tutorial" class="text-text-secondary hover:text-lime-green transition-colors">Documentation</a>
+				<a href="https://github.com/Dstack-TEE/dstack-examples" target="_blank" class="text-text-secondary hover:text-lime-green transition-colors">Examples</a>
+				<a href="https://phala.com" target="_blank" class="text-text-secondary hover:text-lime-green transition-colors">Phala Network</a>
+				<a href="https://www.linuxfoundation.org/" target="_blank" class="text-text-secondary hover:text-lime-green transition-colors">Linux Foundation</a>
+			</div>
+			<p class="text-text-secondary text-sm">
+				© 2025 dstack. <a href="https://phala.com/posts/dstack-linux-foundation" target="_blank" class="text-lime-green hover:underline">Open Source</a>. Licensed under Apache 2.0.
+			</p>
+		</div>
+	</footer>
 
 	<script>
 		// Smooth scroll for navigation links
@@ -79,21 +484,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 					}
 				}
 			});
-		});
-
-		// Navigation scroll effect
-		let lastScroll = 0;
-		const nav = document.querySelector('nav');
-		window.addEventListener('scroll', () => {
-			const currentScroll = window.pageYOffset;
-
-			if (currentScroll > 100 && nav) {
-				nav.style.background = 'rgba(10, 11, 15, 0.98)';
-			} else if (nav) {
-				nav.style.background = 'rgba(10, 11, 15, 0.95)';
-			}
-
-			lastScroll = currentScroll;
 		});
 	</script>
 </BaseLayout>
