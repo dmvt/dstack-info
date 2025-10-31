@@ -1,0 +1,103 @@
+---
+export interface Props {
+  title: string;
+  defaultOpen?: boolean;
+  variant?: 'default' | 'warning' | 'info';
+}
+
+const { title, defaultOpen = false, variant = 'default' } = Astro.props;
+
+// Variant-based styling
+const getVariantClasses = (v: string) => {
+  switch (v) {
+    case 'warning':
+      return {
+        border: 'border-yellow-500/50',
+        headerBg: 'bg-yellow-500/10',
+        icon: 'text-yellow-500',
+        title: 'text-yellow-500',
+      };
+    case 'info':
+      return {
+        border: 'border-cyber-blue/50',
+        headerBg: 'bg-cyber-blue/10',
+        icon: 'text-cyber-blue',
+        title: 'text-cyber-blue',
+      };
+    default:
+      return {
+        border: 'border-border-default',
+        headerBg: 'bg-bg-deep',
+        icon: 'text-text-secondary',
+        title: 'text-text-primary',
+      };
+  }
+};
+
+const variantClasses = getVariantClasses(variant);
+
+// Generate unique ID for this collapsible
+const sectionId = `collapsible-${Math.random().toString(36).substring(2, 9)}`;
+---
+
+<div class={`collapsible-section border ${variantClasses.border} rounded-lg mb-4 overflow-hidden`}>
+  <!-- Header (clickable) -->
+  <button
+    class={`collapsible-header w-full ${variantClasses.headerBg} px-4 py-3 flex items-center justify-between cursor-pointer transition-colors hover:bg-opacity-20`}
+    data-collapsible-trigger={sectionId}
+    aria-expanded={defaultOpen}
+    aria-controls={sectionId}
+  >
+    <h3 class={`${variantClasses.title} font-semibold text-lg`}>
+      {title}
+    </h3>
+    <i
+      class={`collapsible-icon fa-solid fa-chevron-down ${variantClasses.icon} transition-transform ${defaultOpen ? 'rotate-180' : ''}`}
+      aria-hidden="true"
+    ></i>
+  </button>
+
+  <!-- Content (collapsible) -->
+  <div
+    id={sectionId}
+    class={`collapsible-content overflow-hidden transition-all duration-300 ${defaultOpen ? 'max-h-screen' : 'max-h-0'}`}
+    role="region"
+  >
+    <div class="collapsible-body p-4 text-text-primary">
+      <slot />
+    </div>
+  </div>
+</div>
+
+<script>
+  // Client-side collapsible functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const triggers = document.querySelectorAll('[data-collapsible-trigger]');
+
+    triggers.forEach((trigger) => {
+      trigger.addEventListener('click', () => {
+        const targetId = trigger.getAttribute('data-collapsible-trigger');
+        const content = document.getElementById(targetId);
+        const icon = trigger.querySelector('.collapsible-icon');
+        const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+
+        if (content && icon) {
+          // Toggle expanded state
+          const newState = !isExpanded;
+          trigger.setAttribute('aria-expanded', newState.toString());
+
+          // Toggle content
+          if (newState) {
+            content.classList.remove('max-h-0');
+            content.classList.add('max-h-screen');
+            icon.classList.add('rotate-180');
+          } else {
+            content.classList.remove('max-h-screen');
+            content.classList.add('max-h-0');
+            icon.classList.remove('rotate-180');
+          }
+        }
+      });
+    });
+  });
+</script>

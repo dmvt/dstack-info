@@ -1,0 +1,40 @@
+---
+export interface Props {
+  label: string;
+  checked?: boolean;
+  id?: string;
+}
+
+const { label, checked = false, id } = Astro.props;
+
+// Generate a unique ID if not provided
+const checkboxId = id || `validation-${Math.random().toString(36).substring(2, 9)}`;
+---
+
+<div class="validation-indicator flex items-center gap-3 py-2">
+  <label class="flex items-center gap-3 flex-1 cursor-pointer group">
+    <!-- Hidden Checkbox -->
+    <input
+      type="checkbox"
+      id={checkboxId}
+      checked={checked}
+      class="sr-only peer"
+    />
+
+    <!-- Custom Checkbox Visual -->
+    <div
+      class="flex-shrink-0 flex items-center justify-center w-6 h-6 border-2 border-border-default rounded transition-all peer-checked:border-lime-green peer-checked:bg-lime-green group-hover:border-cyber-blue"
+      aria-hidden="true"
+    >
+      <!-- Checkmark Icon -->
+      <i
+        class="fa-solid fa-check text-bg-deep text-sm opacity-0 peer-checked:opacity-100 transition-opacity"
+      ></i>
+    </div>
+
+    <!-- Label Text -->
+    <span class="validation-label flex-1 text-text-primary select-none transition-all peer-checked:text-text-secondary peer-checked:line-through">
+      {label}
+    </span>
+  </label>
+</div>

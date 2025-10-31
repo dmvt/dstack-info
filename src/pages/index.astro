@@ -3,6 +3,9 @@ import '../styles/global.css';
 import StepCard from '../components/StepCard.astro';
 import ProgressTracker from '../components/ProgressTracker.astro';
 import CodeBlock from '../components/CodeBlock.astro';
+import ValidationIndicator from '../components/ValidationIndicator.astro';
+import CommandOutput from '../components/CommandOutput.astro';
+import CollapsibleSection from '../components/CollapsibleSection.astro';
 ---
 
 <html lang="en">
@@ -84,6 +87,88 @@ import CodeBlock from '../components/CodeBlock.astro';
 							title="Verify Attestation"
 							status="pending"
 						/>
+					</div>
+				</section>
+
+				<!-- ValidationIndicator Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Validation Indicators</h2>
+
+					<div class="space-y-2 bg-bg-card border border-border-default rounded-lg p-4">
+						<ValidationIndicator label="Install system dependencies" checked={true} />
+						<ValidationIndicator label="Build dstack-vmm from source" checked={true} />
+						<ValidationIndicator label="Configure VMM settings" checked={false} />
+						<ValidationIndicator label="Start VMM service" checked={false} />
+						<ValidationIndicator label="Verify deployment" checked={false} />
+					</div>
+				</section>
+
+				<!-- CommandOutput Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Command Output</h2>
+
+					<div class="space-y-4">
+						<CommandOutput
+							output="Successfully built dstack-vmm v0.1.0"
+							title="Build Success"
+							type="success"
+						/>
+
+						<CommandOutput
+							output={`Error: failed to compile vmm
+   --> src/main.rs:42:5
+    |
+ 42 |     println!("Missing semicolon")
+    |                                  ^ expected ';'`}
+							title="Build Error"
+							type="error"
+						/>
+
+						<CommandOutput
+							output="VMM service started on port 8090"
+							type="info"
+							showPrompt={true}
+						/>
+
+						<CommandOutput
+							output={`Node version: v20.10.0
+npm version: 10.2.3
+Rust version: 1.75.0`}
+							title="System Information"
+						/>
+					</div>
+				</section>
+
+				<!-- CollapsibleSection Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Collapsible Sections</h2>
+
+					<div class="space-y-4">
+						<CollapsibleSection title="Troubleshooting: Build Errors">
+							<p class="mb-3">If you encounter build errors, try the following:</p>
+							<ul class="list-disc list-inside space-y-2 text-text-secondary">
+								<li>Ensure Rust toolchain is up to date: <code class="text-lime-green">rustup update</code></li>
+								<li>Clean the build directory: <code class="text-lime-green">cargo clean</code></li>
+								<li>Verify all dependencies are installed</li>
+							</ul>
+						</CollapsibleSection>
+
+						<CollapsibleSection title="Common Issues" variant="warning" defaultOpen={true}>
+							<p class="mb-3 text-yellow-500">⚠️ Known issues with TDX hardware:</p>
+							<ul class="list-disc list-inside space-y-2 text-text-secondary">
+								<li>Some BIOS versions require manual TDX enablement</li>
+								<li>Kernel version 5.15+ is required for TDX support</li>
+								<li>Check dmesg logs for TDX initialization errors</li>
+							</ul>
+						</CollapsibleSection>
+
+						<CollapsibleSection title="Additional Information" variant="info">
+							<p class="text-text-secondary">
+								For more detailed documentation, visit the
+								<a href="https://github.com/Dstack-TEE/dstack" class="text-cyber-blue hover:underline">dstack GitHub repository</a>.
+								You can also join our community Discord for support.
+							</p>
+						</CollapsibleSection>
 					</div>
 				</section>
 
