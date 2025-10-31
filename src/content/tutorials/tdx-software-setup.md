@@ -3,7 +3,7 @@ title: "TDX Software Setup"
 description: "Install Canonical's TDX software stack including kernel, QEMU, and libvirt"
 section: "Host Setup"
 stepNumber: 2
-totalSteps: 5
+totalSteps: 6
 prerequisites:
   - "Completed Part 1: TDX Hardware Verification"
   - "Root/sudo access to the server"

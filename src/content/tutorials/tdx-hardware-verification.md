@@ -3,7 +3,7 @@ title: "TDX Hardware Verification"
 description: "Verify your hardware supports Intel TDX and check memory configuration requirements"
 section: "Host Setup"
 stepNumber: 1
-totalSteps: 5
+totalSteps: 6
 lastUpdated: 2025-10-31
 prerequisites:
   - "Ubuntu 24.04 LTS (Noble) server installation"

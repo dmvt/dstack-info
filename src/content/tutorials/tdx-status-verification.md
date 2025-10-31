@@ -3,7 +3,7 @@ title: "TDX Status Verification"
 description: "Check TDX status and understand what BIOS configuration is needed"
 section: "Host Setup"
 stepNumber: 4
-totalSteps: 5
+totalSteps: 6
 prerequisites:
   - "Completed Part 3: TDX Kernel Installation"
   - "Server rebooted successfully"
