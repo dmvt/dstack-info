@@ -3,60 +3,60 @@ import { describe, it, expect } from 'vitest';
 describe('TutorialSearch Component', () => {
   const mockTutorials = [
     {
-      slug: 'install-rust',
+      slug: 'tdx-hardware-verification',
       data: {
-        title: 'Install Rust Toolchain',
-        description: 'Learn how to install Rust',
-        section: 'Getting Started',
+        title: 'TDX Hardware Verification',
+        description: 'Verify your hardware supports Intel TDX',
+        section: 'Host Setup',
         stepNumber: 1,
-        tags: ['rust', 'installation'],
+        tags: ['tdx', 'hardware'],
       },
     },
     {
-      slug: 'deploy-app',
+      slug: 'tdx-software-setup',
       data: {
-        title: 'Deploy Application',
-        description: 'Deploy your first dstack app',
-        section: 'Deployment',
-        stepNumber: 1,
-        tags: ['deployment', 'docker'],
+        title: 'TDX Software Setup',
+        description: 'Install TDX software stack',
+        section: 'Host Setup',
+        stepNumber: 2,
+        tags: ['tdx', 'software'],
       },
     },
     {
-      slug: 'configure-env',
+      slug: 'tdx-kernel-installation',
       data: {
-        title: 'Configure Environment',
-        description: 'Set up your environment variables',
-        section: 'Configuration',
-        stepNumber: 1,
-        tags: ['config', 'env'],
+        title: 'TDX Kernel Installation',
+        description: 'Install TDX-enabled kernel',
+        section: 'Host Setup',
+        stepNumber: 3,
+        tags: ['tdx', 'kernel'],
       },
     },
   ];
 
   describe('Search filtering logic', () => {
     it('should filter by title (case insensitive)', () => {
-      const query = 'rust';
+      const query = 'hardware';
       const results = mockTutorials.filter(tutorial => {
         return tutorial.data.title.toLowerCase().includes(query.toLowerCase());
       });
 
       expect(results).toHaveLength(1);
-      expect(results[0].slug).toBe('install-rust');
+      expect(results[0].slug).toBe('tdx-hardware-verification');
     });
 
     it('should filter by description', () => {
-      const query = 'deploy';
+      const query = 'software';
       const results = mockTutorials.filter(tutorial => {
         return tutorial.data.description?.toLowerCase().includes(query.toLowerCase());
       });
 
       expect(results).toHaveLength(1);
-      expect(results[0].slug).toBe('deploy-app');
+      expect(results[0].slug).toBe('tdx-software-setup');
     });
 
     it('should filter by tags', () => {
-      const query = 'docker';
+      const query = 'kernel';
       const results = mockTutorials.filter(tutorial => {
         return tutorial.data.tags?.some((tag: string) =>
           tag.toLowerCase().includes(query.toLowerCase())
@@ -64,11 +64,11 @@ describe('TutorialSearch Component', () => {
       });
 
       expect(results).toHaveLength(1);
-      expect(results[0].slug).toBe('deploy-app');
+      expect(results[0].slug).toBe('tdx-kernel-installation');
     });
 
     it('should filter by multiple criteria (title OR description OR tags)', () => {
-      const query = 'config';
+      const query = 'tdx';
       const results = mockTutorials.filter(tutorial => {
         const titleMatch = tutorial.data.title.toLowerCase().includes(query);
         const descMatch = tutorial.data.description?.toLowerCase().includes(query);
@@ -78,14 +78,13 @@ describe('TutorialSearch Component', () => {
         return titleMatch || descMatch || tagsMatch;
       });
 
-      expect(results).toHaveLength(1);
-      expect(results[0].slug).toBe('configure-env');
+      expect(results).toHaveLength(3);
     });
 
     it('should be case insensitive', () => {
-      const lowerQuery = 'rust';
-      const upperQuery = 'RUST';
-      const mixedQuery = 'RuSt';
+      const lowerQuery = 'hardware';
+      const upperQuery = 'HARDWARE';
+      const mixedQuery = 'HaRdWaRe';
 
       const lowerResults = mockTutorials.filter(tutorial =>
         tutorial.data.title.toLowerCase().includes(lowerQuery.toLowerCase())
@@ -131,13 +130,13 @@ describe('TutorialSearch Component', () => {
     });
 
     it('should handle partial matches', () => {
-      const query = 'app';
+      const query = 'hard';
       const results = mockTutorials.filter(tutorial => {
         return tutorial.data.title.toLowerCase().includes(query.toLowerCase());
       });
 
       expect(results.length).toBeGreaterThan(0);
-      expect(results[0].data.title).toContain('App');
+      expect(results[0].data.title).toContain('Hard');
     });
   });
 

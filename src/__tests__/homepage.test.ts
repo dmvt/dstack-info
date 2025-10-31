@@ -20,7 +20,7 @@ describe('Homepage', () => {
 			expect(result).toContain('href="#what-is"');
 			expect(result).toContain('href="#features"');
 			expect(result).toContain('href="#use-cases"');
-			expect(result).toContain('href="/tutorial/sample-tutorial"');
+			expect(result).toContain('href="/tutorial/tdx-hardware-verification"');
 			expect(result).toContain('href="#examples"');
 			expect(result).toContain('href="#getting-started"');
 			expect(result).toContain('href="#resources"');
@@ -287,7 +287,7 @@ describe('Homepage', () => {
 			const result = await container.renderToString(IndexPage);
 
 			const gettingStartedSection = result.split('id="getting-started"')[1].split('id="ecosystem"')[0];
-			expect(gettingStartedSection).toContain('href="/tutorial/sample-tutorial"');
+			expect(gettingStartedSection).toContain('href="/tutorial/tdx-hardware-verification"');
 			expect(gettingStartedSection).toContain('Read Full Documentation');
 		});
 	});
@@ -359,7 +359,7 @@ describe('Homepage', () => {
 			const result = await container.renderToString(IndexPage);
 
 			const resourcesSection = result.split('id="resources"')[1].split('<footer')[0];
-			expect(resourcesSection).toContain('href="/tutorial/sample-tutorial"');
+			expect(resourcesSection).toContain('href="/tutorial/tdx-hardware-verification"');
 			expect(resourcesSection).toContain('href="https://github.com/Dstack-TEE/dstack"');
 			expect(resourcesSection).toContain('href="https://github.com/Dstack-TEE/dstack-examples"');
 			expect(resourcesSection).toContain('href="https://phala.com"');
@@ -380,7 +380,7 @@ describe('Homepage', () => {
 
 			const footer = result.split('<footer')[1];
 			expect(footer).toContain('href="https://github.com/Dstack-TEE/dstack"');
-			expect(footer).toContain('href="/tutorial/sample-tutorial"');
+			expect(footer).toContain('href="/tutorial/tdx-hardware-verification"');
 			expect(footer).toContain('href="https://github.com/Dstack-TEE/dstack-examples"');
 			expect(footer).toContain('href="https://phala.com"');
 			expect(footer).toContain('href="https://www.linuxfoundation.org/"');

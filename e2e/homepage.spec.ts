@@ -17,7 +17,7 @@ test.describe('Homepage', () => {
     await expect(page.locator('nav a[href="#what-is"]')).toBeVisible();
     await expect(page.locator('nav a[href="#features"]')).toBeVisible();
     await expect(page.locator('nav a[href="#use-cases"]')).toBeVisible();
-    await expect(page.locator('nav a[href="/tutorial/sample-tutorial"]')).toBeVisible();
+    await expect(page.locator('nav a[href="/tutorial/tdx-hardware-verification"]')).toBeVisible();
   });
 
   test('should have hero section with CTAs', async ({ page }) => {
@@ -87,13 +87,13 @@ test.describe('Homepage', () => {
 
   test('should navigate to tutorials when clicking Tutorials link', async ({ page }) => {
     // Click tutorial link in nav
-    await page.locator('nav a[href="/tutorial/sample-tutorial"]').click();
+    await page.locator('nav a[href="/tutorial/tdx-hardware-verification"]').click();
 
     // Wait for navigation
-    await page.waitForURL('**/tutorial/sample-tutorial');
+    await page.waitForURL('**/tutorial/tdx-hardware-verification');
 
     // Verify we're on tutorial page
-    await expect(page).toHaveURL(/\/tutorial\/sample-tutorial/);
+    await expect(page).toHaveURL(/\/tutorial\/tdx-hardware-verification/);
   });
 
   test('should be responsive on mobile', async ({ page }) => {

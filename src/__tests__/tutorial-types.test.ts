@@ -189,7 +189,7 @@ describe('Tutorial Types', () => {
 
   it('should validate slug format in Tutorial', () => {
     const tutorial: Tutorial = {
-      slug: 'sample-tutorial',
+      slug: 'tdx-hardware-verification',
       data: {
         title: 'Sample',
         description: 'Sample',

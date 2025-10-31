@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Tutorial Page Interactions', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/tutorial/sample-tutorial');
+    await page.goto('/tutorial/tdx-hardware-verification');
     // Wait for page to be fully loaded
     await page.waitForLoadState('networkidle');
   });
@@ -11,7 +11,7 @@ test.describe('Tutorial Page Interactions', () => {
     test('should have tutorial title visible', async ({ page }) => {
       const title = page.locator('h1').first();
       await expect(title).toBeVisible();
-      await expect(title).toContainText('Sample Tutorial');
+      await expect(title).toContainText('Hardware');
     });
 
     test('should render markdown code blocks', async ({ page }) => {
@@ -122,7 +122,7 @@ test.describe('Tutorial Page Interactions', () => {
 
     test('should highlight current tutorial', async ({ page }) => {
       // Current tutorial link should have cyan/active styling
-      const currentLink = page.locator('aside a[href="/tutorial/sample-tutorial"]');
+      const currentLink = page.locator('aside a[href="/tutorial/tdx-hardware-verification"]');
       await expect(currentLink).toBeVisible();
 
       // Should have active styling (bg-cyan or similar)
@@ -132,14 +132,14 @@ test.describe('Tutorial Page Interactions', () => {
 
     test('should navigate to another tutorial when clicked', async ({ page }) => {
       // Click on different tutorial in sidebar
-      const installRustLink = page.locator('aside a[href="/tutorial/install-rust"]');
+      const installRustLink = page.locator('aside a[href="/tutorial/tdx-software-setup"]');
       await installRustLink.click();
 
       // Wait for navigation
-      await page.waitForURL('**/tutorial/install-rust');
+      await page.waitForURL('**/tutorial/tdx-software-setup');
 
       // Verify we're on the new page
-      await expect(page).toHaveURL(/\/tutorial\/install-rust/);
+      await expect(page).toHaveURL(/\/tutorial\/tdx-software-setup/);
     });
 
     test('should update sidebar when tutorial is completed', async ({ page }) => {
@@ -155,7 +155,7 @@ test.describe('Tutorial Page Interactions', () => {
 
       // Sidebar should show checkmark for completed tutorial (if implemented)
       // Note: This may need adjustment based on actual sidebar implementation
-      const sidebarLink = page.locator('aside a[href="/tutorial/sample-tutorial"]');
+      const sidebarLink = page.locator('aside a[href="/tutorial/tdx-hardware-verification"]');
       await expect(sidebarLink).toBeVisible();
 
       // Clean up
@@ -170,7 +170,7 @@ test.describe('Tutorial Page Interactions', () => {
       await expect(sidebar).toBeVisible();
 
       // Should have section names visible (use first() to avoid strict mode)
-      await expect(sidebar.locator('text=Getting Started').first()).toBeVisible();
+      await expect(sidebar.locator('text=Host Setup').first()).toBeVisible();
     });
   });
 
@@ -223,22 +223,22 @@ test.describe('Tutorial Page Interactions', () => {
       // Wait for navigation
       await page.waitForLoadState('networkidle');
 
-      // URL should change - should be on install-rust page
-      await expect(page).toHaveURL(/\/tutorial\/install-rust/);
+      // URL should change - should be on tdx-software-setup page
+      await expect(page).toHaveURL(/\/tutorial\/tdx-software-setup/);
     });
 
     test('should have previous button when available', async ({ page }) => {
-      // On sample-tutorial, there IS a previous button (deploy-first-app comes first)
-      const prevButton = page.locator('a.nav-previous');
-      await expect(prevButton).toBeVisible();
-
-      // Navigate to deploy-first-app (the actual first tutorial)
-      await page.goto('/tutorial/deploy-first-app');
-      await page.waitForLoadState('networkidle');
-
-      // Now previous button should NOT be visible (it's the first tutorial)
+      // On tdx-hardware-verification (first tutorial), there should be NO previous button
       const prevButtonDisabled = page.locator('div.nav-previous-disabled');
       await expect(prevButtonDisabled).toBeVisible();
+
+      // Navigate to second tutorial which DOES have a previous button
+      await page.goto('/tutorial/tdx-software-setup');
+      await page.waitForLoadState('networkidle');
+
+      // Now previous button should be visible
+      const prevButton = page.locator('a.nav-previous');
+      await expect(prevButton).toBeVisible();
     });
 
     test('should have hover effect on navigation buttons', async ({ page }) => {
