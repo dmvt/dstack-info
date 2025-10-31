@@ -186,7 +186,7 @@ describe('TutorialLayout Component', () => {
 		expect(result).toContain('hidden lg:block');
 	});
 
-	it('should apply prose styling to article content', async () => {
+	it('should apply tutorial-content styling to article', async () => {
 		const result = await container.renderToString(TutorialLayout, {
 			props: {
 				title: 'Test Tutorial',
@@ -194,8 +194,7 @@ describe('TutorialLayout Component', () => {
 		});
 
 		expect(result).toContain('<article');
-		expect(result).toContain('prose');
-		expect(result).toContain('prose-invert');
+		expect(result).toContain('tutorial-content');
 	});
 
 	it('should set correct page title format', async () => {

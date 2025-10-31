@@ -32,3 +32,65 @@ body {
   color: var(--color-text-primary);
   line-height: 1.6;
 }
+
+/* Tutorial Content Styling */
+.tutorial-content h1 {
+  @apply text-4xl font-bold mb-6 mt-12 text-text-primary;
+}
+
+.tutorial-content h2 {
+  @apply text-3xl font-bold mb-4 mt-10 text-text-primary;
+}
+
+.tutorial-content h3 {
+  @apply text-2xl font-bold mb-3 mt-8 text-text-primary;
+}
+
+.tutorial-content p {
+  @apply text-text-secondary mb-4 leading-relaxed;
+}
+
+.tutorial-content ul,
+.tutorial-content ol {
+  @apply text-text-secondary mb-6 ml-6 space-y-2;
+}
+
+.tutorial-content ul {
+  @apply list-disc;
+}
+
+.tutorial-content ol {
+  @apply list-decimal;
+}
+
+.tutorial-content li {
+  @apply leading-relaxed;
+}
+
+.tutorial-content pre {
+  @apply bg-bg-deep border border-border-default rounded-lg p-4 mb-6 overflow-x-auto;
+}
+
+.tutorial-content code {
+  @apply font-mono text-sm;
+}
+
+.tutorial-content pre code {
+  @apply text-lime-green;
+}
+
+.tutorial-content p code {
+  @apply bg-bg-deep px-2 py-1 rounded text-cyber-blue;
+}
+
+.tutorial-content a {
+  @apply text-cyber-blue hover:underline;
+}
+
+.tutorial-content strong {
+  @apply text-text-primary font-semibold;
+}
+
+.tutorial-content blockquote {
+  @apply border-l-4 border-cyber-purple bg-bg-card pl-4 py-2 mb-6 italic text-text-secondary;
+}
