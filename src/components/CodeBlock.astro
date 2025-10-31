@@ -28,16 +28,16 @@ const getLanguageClass = (lang: string) => {
       <span class="text-text-secondary text-sm font-medium">{title}</span>
     </div>
   )}
-  <div class="code-block relative bg-bg-card border border-border-default rounded-lg" class:list={[title && 'rounded-t-none']}>
+  <div class="code-block relative bg-bg-card border border-border-default rounded-lg overflow-hidden" class:list={[title && 'rounded-t-none']}>
     <button
-      class="copy-button absolute top-2 right-2 px-3 py-1.5 bg-bg-deep rounded text-text-secondary hover:text-lime-green transition-colors text-sm font-medium"
+      class="copy-button absolute top-3 right-3 px-3 py-1.5 bg-bg-deep rounded text-text-secondary hover:text-lime-green transition-colors text-sm font-medium z-10"
       data-code={code}
       aria-label="Copy code to clipboard"
     >
       <i class="fa-solid fa-copy mr-1.5"></i>
       <span class="copy-text">Copy</span>
     </button>
-    <pre class="p-4 pr-24 overflow-x-auto text-sm"><code class={getLanguageClass(language)}>{code}</code></pre>
+    <pre class="py-4 pl-4 pr-24 min-h-[3rem] overflow-x-auto text-sm"><code class={getLanguageClass(language)}>{code}</code></pre>
   </div>
 </div>
 
