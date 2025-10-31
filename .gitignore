@@ -40,3 +40,9 @@ build/
 tmp/
 temp/
 *.tmp
+
+# Astro
+.astro/
+
+# Obsidian
+.obsidian/
