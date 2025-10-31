@@ -1,8 +1,8 @@
 ---
 import '../styles/global.css';
-import CodeBlock from '../components/CodeBlock.astro';
 import StepCard from '../components/StepCard.astro';
 import ProgressTracker from '../components/ProgressTracker.astro';
+import CodeBlock from '../components/CodeBlock.astro';
 import ValidationIndicator from '../components/ValidationIndicator.astro';
 import CommandOutput from '../components/CommandOutput.astro';
 import CollapsibleSection from '../components/CollapsibleSection.astro';
@@ -10,343 +10,241 @@ import NavigationButtons from '../components/NavigationButtons.astro';
 ---
 
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="generator" content={Astro.generator} />
-    <title>dstack Component Library</title>
-  </head>
-  <body class="bg-bg-space text-text-primary">
-    <div class="min-h-screen py-12 px-4">
-      <div class="max-w-6xl mx-auto">
-        <!-- Header -->
-        <header class="text-center mb-16">
-          <h1 class="text-5xl font-bold mb-4">
-            <span class="text-lime-green">d</span><span class="text-cyber-blue">stack</span>
-            <span class="text-text-primary"> Component Library</span>
-          </h1>
-          <p class="text-text-secondary text-xl mb-6">
-            Interactive Tutorial Components - Phase 0.3 Complete
-          </p>
-          <div class="flex gap-4 justify-center">
-            <a href="/" class="px-6 py-3 bg-lime-green text-bg-deep rounded-lg font-medium hover:bg-lime-green/90 transition-all">
-              View All Examples
-            </a>
-            <a href="#components" class="px-6 py-3 border border-border-default rounded-lg text-text-primary hover:border-cyber-blue transition-all">
-              Browse Components
-            </a>
-          </div>
-        </header>
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>dstack Component Library</title>
+	</head>
+	<body>
+		<div class="min-h-screen py-12 px-4">
+			<div class="max-w-4xl mx-auto">
+				<!-- Header -->
+				<div class="text-center mb-12">
+					<h1 class="text-5xl font-bold mb-4">
+						<span class="text-lime-green">d</span><span class="text-cyber-blue">stack</span>
+						<span class="text-text-primary"> Component Library</span>
+					</h1>
+					<p class="text-text-secondary text-lg">7 Interactive Tutorial Components - Phase 0.3 Complete</p>
+					<p class="text-text-secondary text-sm mt-2">90 Tests Passing | TailwindCSS Only | Fully Accessible</p>
+				</div>
 
-        <!-- Overview Stats -->
-        <section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-16">
-          <div class="bg-bg-card border border-border-default rounded-lg p-6 text-center">
-            <div class="text-4xl font-bold text-lime-green mb-2">7</div>
-            <div class="text-text-secondary text-sm">Components</div>
-          </div>
-          <div class="bg-bg-card border border-border-default rounded-lg p-6 text-center">
-            <div class="text-4xl font-bold text-cyber-blue mb-2">90</div>
-            <div class="text-text-secondary text-sm">Tests Passing</div>
-          </div>
-          <div class="bg-bg-card border border-border-default rounded-lg p-6 text-center">
-            <div class="text-4xl font-bold text-cyber-purple mb-2">100%</div>
-            <div class="text-text-secondary text-sm">TypeScript</div>
-          </div>
-          <div class="bg-bg-card border border-border-default rounded-lg p-6 text-center">
-            <div class="text-4xl font-bold text-lime-green mb-2">A11y</div>
-            <div class="text-text-secondary text-sm">Accessible</div>
-          </div>
-        </section>
+				<!-- ProgressTracker Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Progress Tracker</h2>
 
-        <!-- Component Index -->
-        <nav id="components" class="mb-12 bg-bg-card border border-border-default rounded-lg p-6">
-          <h2 class="text-2xl font-bold mb-4">Component Index</h2>
-          <ul class="grid grid-cols-1 md:grid-cols-2 gap-3 text-text-secondary">
-            <li><a href="#codeblock" class="hover:text-lime-green transition-colors">1. CodeBlock</a></li>
-            <li><a href="#stepcard" class="hover:text-lime-green transition-colors">2. StepCard</a></li>
-            <li><a href="#progresstracker" class="hover:text-lime-green transition-colors">3. ProgressTracker</a></li>
-            <li><a href="#validation" class="hover:text-lime-green transition-colors">4. ValidationIndicator</a></li>
-            <li><a href="#commandoutput" class="hover:text-lime-green transition-colors">5. CommandOutput</a></li>
-            <li><a href="#collapsible" class="hover:text-lime-green transition-colors">6. CollapsibleSection</a></li>
-            <li><a href="#navigation" class="hover:text-lime-green transition-colors">7. NavigationButtons</a></li>
-          </ul>
-        </nav>
+					<div class="space-y-6">
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Just Started (30%)</h3>
+							<ProgressTracker totalSteps={10} completedSteps={3} currentStep={4} />
+						</div>
 
-        <!-- 1. CodeBlock Component -->
-        <section id="codeblock" class="mb-20 scroll-mt-8">
-          <div class="border-l-4 border-lime-green pl-6 mb-8">
-            <h2 class="text-3xl font-bold mb-2">1. CodeBlock</h2>
-            <p class="text-text-secondary">Syntax-highlighted code blocks with copy functionality</p>
-          </div>
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Half Complete (50%)</h3>
+							<ProgressTracker totalSteps={20} completedSteps={10} />
+						</div>
 
-          <div class="space-y-6 mb-8">
-            <CodeBlock
-              code="npm install dstack-cli"
-              language="bash"
-            />
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Almost Done (75%)</h3>
+							<ProgressTracker totalSteps={8} completedSteps={6} currentStep={7} />
+						</div>
 
-            <CodeBlock
-              code={`cargo build --release
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Complete (100%)</h3>
+							<ProgressTracker totalSteps={15} completedSteps={15} />
+						</div>
+					</div>
+				</section>
+
+				<!-- StepCard Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Step Cards</h2>
+
+					<div class="space-y-4">
+						<StepCard
+							stepNumber={1}
+							title="Install Dependencies"
+							description="Install all required packages and dependencies for the dstack platform."
+							status="completed"
+						/>
+
+						<StepCard
+							stepNumber={2}
+							title="Configure Server"
+							description="Set up server configuration files and environment variables."
+							status="in-progress"
+						/>
+
+						<StepCard
+							stepNumber={3}
+							title="Deploy Application"
+							description="Deploy your first TEE application to the dstack network."
+							status="pending"
+						/>
+
+						<StepCard
+							stepNumber={4}
+							title="Verify Attestation"
+							status="pending"
+						/>
+					</div>
+				</section>
+
+				<!-- ValidationIndicator Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Validation Indicators</h2>
+
+					<div class="space-y-2 bg-bg-card border border-border-default rounded-lg p-4">
+						<ValidationIndicator label="Install system dependencies" checked={true} />
+						<ValidationIndicator label="Build dstack-vmm from source" checked={true} />
+						<ValidationIndicator label="Configure VMM settings" checked={false} />
+						<ValidationIndicator label="Start VMM service" checked={false} />
+						<ValidationIndicator label="Verify deployment" checked={false} />
+					</div>
+				</section>
+
+				<!-- CommandOutput Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Command Output</h2>
+
+					<div class="space-y-4">
+						<CommandOutput
+							output="Successfully built dstack-vmm v0.1.0"
+							title="Build Success"
+							type="success"
+						/>
+
+						<CommandOutput
+							output={`Error: failed to compile vmm
+   --> src/main.rs:42:5
+    |
+ 42 |     println!("Missing semicolon")
+    |                                  ^ expected ';'`}
+							title="Build Error"
+							type="error"
+						/>
+
+						<CommandOutput
+							output="VMM service started on port 8090"
+							type="info"
+							showPrompt={true}
+						/>
+
+						<CommandOutput
+							output={`Node version: v20.10.0
+npm version: 10.2.3
+Rust version: 1.75.0`}
+							title="System Information"
+						/>
+					</div>
+				</section>
+
+				<!-- CollapsibleSection Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Collapsible Sections</h2>
+
+					<div class="space-y-4">
+						<CollapsibleSection title="Troubleshooting: Build Errors">
+							<p class="mb-3">If you encounter build errors, try the following:</p>
+							<ul class="list-disc list-inside space-y-2 text-text-secondary">
+								<li>Ensure Rust toolchain is up to date: <code class="text-lime-green">rustup update</code></li>
+								<li>Clean the build directory: <code class="text-lime-green">cargo clean</code></li>
+								<li>Verify all dependencies are installed</li>
+							</ul>
+						</CollapsibleSection>
+
+						<CollapsibleSection title="Common Issues" variant="warning" defaultOpen={true}>
+							<p class="mb-3 text-yellow-500">⚠️ Known issues with TDX hardware:</p>
+							<ul class="list-disc list-inside space-y-2 text-text-secondary">
+								<li>Some BIOS versions require manual TDX enablement</li>
+								<li>Kernel version 5.15+ is required for TDX support</li>
+								<li>Check dmesg logs for TDX initialization errors</li>
+							</ul>
+						</CollapsibleSection>
+
+						<CollapsibleSection title="Additional Information" variant="info">
+							<p class="text-text-secondary">
+								For more detailed documentation, visit the
+								<a href="https://github.com/Dstack-TEE/dstack" class="text-cyber-blue hover:underline">dstack GitHub repository</a>.
+								You can also join our community Discord for support.
+							</p>
+						</CollapsibleSection>
+					</div>
+				</section>
+
+				<!-- NavigationButtons Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Navigation Buttons</h2>
+
+					<div class="space-y-8">
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Both Buttons Enabled</h3>
+							<NavigationButtons
+								previousUrl="/tutorial/step-1"
+								previousLabel="Step 1: Introduction"
+								nextUrl="/tutorial/step-3"
+								nextLabel="Step 3: Configuration"
+							/>
+						</div>
+
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">First Page (Previous Disabled)</h3>
+							<NavigationButtons
+								nextUrl="/tutorial/step-2"
+								nextLabel="Get Started"
+							/>
+						</div>
+
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Last Page (Next Disabled)</h3>
+							<NavigationButtons
+								previousUrl="/tutorial/step-9"
+								previousLabel="Step 9: Verification"
+							/>
+						</div>
+
+						<div>
+							<h3 class="text-lg text-text-secondary mb-3">Both Disabled (Standalone Page)</h3>
+							<NavigationButtons />
+						</div>
+					</div>
+				</section>
+
+				<!-- CodeBlock Demo -->
+				<section class="mb-12">
+					<h2 class="text-3xl font-bold text-text-primary mb-6">Code Blocks</h2>
+
+					<div class="space-y-6">
+						<CodeBlock
+							code="npm install dstack-cli"
+							title="Install dstack CLI"
+						/>
+
+						<CodeBlock
+							code={`# Build dstack VMM
+cargo build --release
+
+# Verify installation
 ./target/release/vmm --version`}
-              language="bash"
-              title="Build dstack VMM"
-            />
+							language="bash"
+							title="Build VMM from source"
+						/>
 
-            <CodeBlock
-              code={`{
+						<CodeBlock
+							code={`{
   "name": "my-tee-app",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "dependencies": {
+    "dstack-sdk": "^0.1.0"
+  }
 }`}
-              language="json"
-            />
-          </div>
-
-          <div class="bg-bg-deep border border-border-default rounded-lg p-6">
-            <h3 class="text-lg font-semibold mb-3 text-cyber-blue">Props</h3>
-            <ul class="text-text-secondary text-sm space-y-2 font-mono">
-              <li><strong>code:</strong> string (required)</li>
-              <li><strong>language:</strong> 'bash' | 'javascript' | 'typescript' | 'python' | 'yaml' | 'json'</li>
-              <li><strong>title:</strong> string (optional)</li>
-              <li><strong>showLineNumbers:</strong> boolean (default: false)</li>
-            </ul>
-          </div>
-        </section>
-
-        <!-- 2. StepCard Component -->
-        <section id="stepcard" class="mb-20 scroll-mt-8">
-          <div class="border-l-4 border-cyber-blue pl-6 mb-8">
-            <h2 class="text-3xl font-bold mb-2">2. StepCard</h2>
-            <p class="text-text-secondary">Tutorial step cards with status indicators</p>
-          </div>
-
-          <div class="space-y-4 mb-8">
-            <StepCard
-              stepNumber={1}
-              title="Completed Step"
-              description="This step has been successfully completed."
-              status="completed"
-            />
-
-            <StepCard
-              stepNumber={2}
-              title="Current Step"
-              description="This is the step you're currently working on."
-              status="in-progress"
-            />
-
-            <StepCard
-              stepNumber={3}
-              title="Upcoming Step"
-              description="This step is pending completion."
-              status="pending"
-            />
-          </div>
-
-          <div class="bg-bg-deep border border-border-default rounded-lg p-6">
-            <h3 class="text-lg font-semibold mb-3 text-cyber-blue">Props</h3>
-            <ul class="text-text-secondary text-sm space-y-2 font-mono">
-              <li><strong>stepNumber:</strong> number (required)</li>
-              <li><strong>title:</strong> string (required)</li>
-              <li><strong>description:</strong> string (optional)</li>
-              <li><strong>status:</strong> 'pending' | 'in-progress' | 'completed' (default: 'pending')</li>
-            </ul>
-          </div>
-        </section>
-
-        <!-- 3. ProgressTracker Component -->
-        <section id="progresstracker" class="mb-20 scroll-mt-8">
-          <div class="border-l-4 border-cyber-purple pl-6 mb-8">
-            <h2 class="text-3xl font-bold mb-2">3. ProgressTracker</h2>
-            <p class="text-text-secondary">Visual progress bars for tutorial completion</p>
-          </div>
-
-          <div class="space-y-6 mb-8">
-            <div>
-              <p class="text-text-secondary mb-2 text-sm">Low Progress (30%)</p>
-              <ProgressTracker totalSteps={10} completedSteps={3} />
-            </div>
-
-            <div>
-              <p class="text-text-secondary mb-2 text-sm">Medium Progress (60%)</p>
-              <ProgressTracker totalSteps={10} completedSteps={6} currentStep={7} />
-            </div>
-
-            <div>
-              <p class="text-text-secondary mb-2 text-sm">Complete (100%)</p>
-              <ProgressTracker totalSteps={10} completedSteps={10} />
-            </div>
-          </div>
-
-          <div class="bg-bg-deep border border-border-default rounded-lg p-6">
-            <h3 class="text-lg font-semibold mb-3 text-cyber-blue">Props</h3>
-            <ul class="text-text-secondary text-sm space-y-2 font-mono">
-              <li><strong>totalSteps:</strong> number (required)</li>
-              <li><strong>completedSteps:</strong> number (required)</li>
-              <li><strong>currentStep:</strong> number (optional)</li>
-              <li><strong>showPercentage:</strong> boolean (default: true)</li>
-              <li><strong>showStepCount:</strong> boolean (default: true)</li>
-            </ul>
-          </div>
-        </section>
-
-        <!-- 4. ValidationIndicator Component -->
-        <section id="validation" class="mb-20 scroll-mt-8">
-          <div class="border-l-4 border-lime-green pl-6 mb-8">
-            <h2 class="text-3xl font-bold mb-2">4. ValidationIndicator</h2>
-            <p class="text-text-secondary">Interactive checkboxes for step validation</p>
-          </div>
-
-          <div class="bg-bg-card border border-border-default rounded-lg p-6 mb-8 space-y-2">
-            <ValidationIndicator label="Server prerequisites verified" checked={true} />
-            <ValidationIndicator label="Dependencies installed" checked={true} />
-            <ValidationIndicator label="Configuration completed" checked={false} />
-            <ValidationIndicator label="Service started successfully" checked={false} />
-          </div>
-
-          <div class="bg-bg-deep border border-border-default rounded-lg p-6">
-            <h3 class="text-lg font-semibold mb-3 text-cyber-blue">Props</h3>
-            <ul class="text-text-secondary text-sm space-y-2 font-mono">
-              <li><strong>label:</strong> string (required)</li>
-              <li><strong>checked:</strong> boolean (default: false)</li>
-              <li><strong>id:</strong> string (optional, auto-generated if not provided)</li>
-            </ul>
-          </div>
-        </section>
-
-        <!-- 5. CommandOutput Component -->
-        <section id="commandoutput" class="mb-20 scroll-mt-8">
-          <div class="border-l-4 border-cyan-500 pl-6 mb-8">
-            <h2 class="text-3xl font-bold mb-2">5. CommandOutput</h2>
-            <p class="text-text-secondary">Terminal-style output display with type variants</p>
-          </div>
-
-          <div class="space-y-4 mb-8">
-            <CommandOutput
-              output="Build completed successfully!"
-              title="Success"
-              type="success"
-            />
-
-            <CommandOutput
-              output={`Error: compilation failed
-  --> src/main.rs:42:5`}
-              title="Error"
-              type="error"
-            />
-
-            <CommandOutput
-              output="Service started on port 8090"
-              type="info"
-              showPrompt={true}
-            />
-
-            <CommandOutput
-              output="Node: v20.10.0
-npm: 10.2.3"
-              title="Version Info"
-            />
-          </div>
-
-          <div class="bg-bg-deep border border-border-default rounded-lg p-6">
-            <h3 class="text-lg font-semibold mb-3 text-cyber-blue">Props</h3>
-            <ul class="text-text-secondary text-sm space-y-2 font-mono">
-              <li><strong>output:</strong> string (required)</li>
-              <li><strong>title:</strong> string (optional)</li>
-              <li><strong>type:</strong> 'success' | 'error' | 'info' | 'default' (default: 'default')</li>
-              <li><strong>showPrompt:</strong> boolean (default: false)</li>
-            </ul>
-          </div>
-        </section>
-
-        <!-- 6. CollapsibleSection Component -->
-        <section id="collapsible" class="mb-20 scroll-mt-8">
-          <div class="border-l-4 border-yellow-500 pl-6 mb-8">
-            <h2 class="text-3xl font-bold mb-2">6. CollapsibleSection</h2>
-            <p class="text-text-secondary">Expandable sections for troubleshooting and additional info</p>
-          </div>
-
-          <div class="space-y-4 mb-8">
-            <CollapsibleSection title="Default Collapsible">
-              <p class="text-text-secondary">This is a basic collapsible section. Click the header to expand or collapse.</p>
-            </CollapsibleSection>
-
-            <CollapsibleSection title="Warning Section" variant="warning" defaultOpen={true}>
-              <p class="text-yellow-500 mb-2">⚠️ Important Warning</p>
-              <p class="text-text-secondary">This section uses the warning variant and is open by default.</p>
-            </CollapsibleSection>
-
-            <CollapsibleSection title="Info Section" variant="info">
-              <p class="text-text-secondary">This section uses the info variant with blue styling.</p>
-            </CollapsibleSection>
-          </div>
-
-          <div class="bg-bg-deep border border-border-default rounded-lg p-6">
-            <h3 class="text-lg font-semibold mb-3 text-cyber-blue">Props</h3>
-            <ul class="text-text-secondary text-sm space-y-2 font-mono">
-              <li><strong>title:</strong> string (required)</li>
-              <li><strong>defaultOpen:</strong> boolean (default: false)</li>
-              <li><strong>variant:</strong> 'default' | 'warning' | 'info' (default: 'default')</li>
-            </ul>
-            <p class="text-text-secondary text-xs mt-4">Slot content goes inside the component tags</p>
-          </div>
-        </section>
-
-        <!-- 7. NavigationButtons Component -->
-        <section id="navigation" class="mb-20 scroll-mt-8">
-          <div class="border-l-4 border-lime-green pl-6 mb-8">
-            <h2 class="text-3xl font-bold mb-2">7. NavigationButtons</h2>
-            <p class="text-text-secondary">Previous/Next navigation for tutorial pages</p>
-          </div>
-
-          <div class="space-y-8 mb-8">
-            <div>
-              <p class="text-text-secondary mb-3 text-sm">Both Enabled</p>
-              <NavigationButtons
-                previousUrl="/step-1"
-                previousLabel="Introduction"
-                nextUrl="/step-3"
-                nextLabel="Configuration"
-              />
-            </div>
-
-            <div>
-              <p class="text-text-secondary mb-3 text-sm">First Page</p>
-              <NavigationButtons
-                nextUrl="/step-2"
-                nextLabel="Get Started"
-              />
-            </div>
-
-            <div>
-              <p class="text-text-secondary mb-3 text-sm">Last Page</p>
-              <NavigationButtons
-                previousUrl="/step-9"
-                previousLabel="Verification"
-              />
-            </div>
-          </div>
-
-          <div class="bg-bg-deep border border-border-default rounded-lg p-6">
-            <h3 class="text-lg font-semibold mb-3 text-cyber-blue">Props</h3>
-            <ul class="text-text-secondary text-sm space-y-2 font-mono">
-              <li><strong>previousUrl:</strong> string (optional)</li>
-              <li><strong>previousLabel:</strong> string (default: 'Previous')</li>
-              <li><strong>nextUrl:</strong> string (optional)</li>
-              <li><strong>nextLabel:</strong> string (default: 'Next')</li>
-            </ul>
-          </div>
-        </section>
-
-        <!-- Footer Navigation -->
-        <footer class="border-t border-border-default pt-8 mt-16">
-          <NavigationButtons
-            previousUrl="/"
-            previousLabel="Home"
-          />
-        </footer>
-      </div>
-    </div>
-  </body>
+							language="json"
+						/>
+					</div>
+				</section>
+			</div>
+		</div>
+	</body>
 </html>
