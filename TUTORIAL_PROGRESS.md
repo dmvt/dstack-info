@@ -1264,6 +1264,66 @@ All 4 sub-phases completed successfully:
 
 ---
 
+---
+
+## Phase 1.2: Domain & DNS Setup - IN PROGRESS 🔄
+
+**Date:** 2025-11-01
+**Status:** Documentation complete, awaiting user DNS configuration
+
+### What Was Accomplished
+
+**DNS Configuration Tutorial Created:**
+- ✅ Comprehensive DNS configuration tutorial (`dns-configuration.md`)
+- ✅ Step-by-step Cloudflare setup guide
+- ✅ Wildcard DNS configuration for application subdomains
+- ✅ CAA record configuration for certificate authority restrictions
+- ✅ Cloudflare API token generation and testing instructions
+- ✅ DNS resolution verification from multiple resolvers
+- ✅ Troubleshooting section with common DNS issues
+
+**Ansible DNS Verification Playbook Created:**
+- ✅ `ansible/playbooks/verify-dns.yml` - DNS verification playbook
+- ✅ Verifies base subdomain resolution
+- ✅ Tests wildcard DNS across multiple test subdomains (test, app, example)
+- ✅ Checks consistency across DNS resolvers (Cloudflare 1.1.1.1, Google 8.8.8.8)
+- ✅ Reports CAA record status (informational)
+- ✅ Provides helpful error messages with tutorial references
+
+**Documentation Updates:**
+- ✅ Updated `ansible/README.md` with Phase 1.2 usage
+- ✅ Updated `ansible/group_vars/all.example.yml` with DNS variables
+- ✅ Added verify-dns.yml documentation to playbook section
+
+**Git Commits (1 total):**
+1. `3f0c5f4` - Add DNS configuration tutorial and Ansible verification playbook
+
+**Deployment:**
+- ✅ Committed and pushed to GitHub
+- ✅ Built successfully (12 pages generated)
+- ✅ Deployed to Cloudflare Pages: https://c74358bb.dstack-info.pages.dev
+
+**Testing:**
+- ✅ Ansible playbook syntax check passed
+- ⏸️ Functional testing pending user DNS configuration
+
+### Next Steps
+
+**User must complete manually:**
+1. Add domain to Cloudflare
+2. Update nameservers at registrar
+3. Configure DNS records (A, wildcard, CAA)
+4. Generate Cloudflare API token
+5. Test DNS resolution
+6. Run Ansible verification playbook
+
+**After user completes DNS configuration:**
+- Run `ansible-playbook playbooks/verify-dns.yml -e "domain=..." -e "dstack_subdomain=..." -e "server_ip=..."`
+- Verify all checks pass
+- Proceed to Phase 1.3: Blockchain Wallet Setup
+
+---
+
 **End of Progress Document**
 
 This document is updated after every checkpoint approval to preserve context during conversation compression.
