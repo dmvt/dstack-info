@@ -7,12 +7,27 @@ import TutorialProgress from '../../components/TutorialProgress.svelte';
 export async function getStaticPaths() {
   const tutorials = await getCollection('tutorials');
 
-  // Sort tutorials by section and stepNumber
+  // Sort tutorials by section, then numbered steps, then appendices
   const sortedTutorials = tutorials.sort((a, b) => {
-    if (a.data.section === b.data.section) {
+    // First sort by section
+    if (a.data.section !== b.data.section) {
+      return a.data.section.localeCompare(b.data.section);
+    }
+
+    // Within same section, appendices come last
+    const aIsAppendix = a.data.isAppendix || a.data.stepNumber === null;
+    const bIsAppendix = b.data.isAppendix || b.data.stepNumber === null;
+
+    if (aIsAppendix && !bIsAppendix) return 1;
+    if (!aIsAppendix && bIsAppendix) return -1;
+
+    // Both are numbered steps or both are appendices
+    if (a.data.stepNumber !== null && b.data.stepNumber !== null) {
       return a.data.stepNumber - b.data.stepNumber;
     }
-    return a.data.section.localeCompare(b.data.section);
+
+    // Both are appendices, sort by title
+    return a.data.title.localeCompare(b.data.title);
   });
 
   return sortedTutorials.map((tutorial, index) => {

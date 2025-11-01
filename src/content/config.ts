@@ -8,6 +8,7 @@ const tutorialsCollection = defineCollection({
     section: z.string(),
     stepNumber: z.number().nullable(),
     totalSteps: z.number().nullable(),
+    isAppendix: z.boolean().optional(),
     lastUpdated: z.date(),
     prerequisites: z.array(z.string()).optional(),
     tags: z.array(z.string()).optional(),

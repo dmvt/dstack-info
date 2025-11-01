@@ -18,10 +18,25 @@
     return acc;
   }, {} as Record<string, any[]>);
 
-  // Sort tutorials within each section by stepNumber
+  // Sort tutorials within each section: numbered steps first, then appendices
   $: sortedSections = Object.entries(tutorialsBySection).map(([section, tutList]) => ({
     section,
-    tutorials: tutList.sort((a, b) => a.data.stepNumber - b.data.stepNumber)
+    tutorials: tutList.sort((a, b) => {
+      // Appendices come last
+      const aIsAppendix = a.data.isAppendix || a.data.stepNumber === null;
+      const bIsAppendix = b.data.isAppendix || b.data.stepNumber === null;
+
+      if (aIsAppendix && !bIsAppendix) return 1;
+      if (!aIsAppendix && bIsAppendix) return -1;
+
+      // Both are numbered steps or both are appendices
+      if (a.data.stepNumber !== null && b.data.stepNumber !== null) {
+        return a.data.stepNumber - b.data.stepNumber;
+      }
+
+      // Both are appendices, sort alphabetically by title
+      return a.data.title.localeCompare(b.data.title);
+    })
   }));
 
   function updateCompletionStatus() {
@@ -75,7 +90,11 @@
                 : 'text-text-secondary hover:bg-bg-card hover:text-text-primary'}"
             >
               <span class="flex-1 text-sm">
-                {tutorial.data.stepNumber}. {tutorial.data.title}
+                {#if tutorial.data.stepNumber !== null}
+                  {tutorial.data.stepNumber}. {tutorial.data.title}
+                {:else}
+                  {tutorial.data.title}
+                {/if}
               </span>
               {#if completionStatus[tutorial.slug]}
                 <i class="fas fa-check-circle text-lime-green text-sm ml-2"></i>

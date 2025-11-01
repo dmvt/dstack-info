@@ -130,4 +130,148 @@ describe('TutorialSidebar Component', () => {
     expect(sortedSections[0].section).toBe('Getting Started');
     expect(sortedSections[0].tutorials).toHaveLength(2);
   });
+
+  describe('Appendix sorting', () => {
+    it('should place appendices after numbered tutorials', () => {
+      const mixedTutorials = [
+        {
+          slug: 'appendix-a',
+          data: {
+            title: 'Appendix A: Troubleshooting',
+            section: 'Host Setup',
+            stepNumber: null,
+            isAppendix: true,
+          },
+        },
+        {
+          slug: 'step-2',
+          data: {
+            title: 'Step 2',
+            section: 'Host Setup',
+            stepNumber: 2,
+            isAppendix: false,
+          },
+        },
+        {
+          slug: 'step-1',
+          data: {
+            title: 'Step 1',
+            section: 'Host Setup',
+            stepNumber: 1,
+            isAppendix: false,
+          },
+        },
+        {
+          slug: 'appendix-b',
+          data: {
+            title: 'Appendix B: Automation',
+            section: 'Host Setup',
+            stepNumber: null,
+            isAppendix: true,
+          },
+        },
+      ];
+
+      const sorted = mixedTutorials.sort((a, b) => {
+        const aIsAppendix = a.data.isAppendix || a.data.stepNumber === null;
+        const bIsAppendix = b.data.isAppendix || b.data.stepNumber === null;
+
+        if (aIsAppendix && !bIsAppendix) return 1;
+        if (!aIsAppendix && bIsAppendix) return -1;
+
+        if (a.data.stepNumber !== null && b.data.stepNumber !== null) {
+          return a.data.stepNumber - b.data.stepNumber;
+        }
+
+        return a.data.title.localeCompare(b.data.title);
+      });
+
+      // First two should be numbered steps
+      expect(sorted[0].data.stepNumber).toBe(1);
+      expect(sorted[1].data.stepNumber).toBe(2);
+
+      // Last two should be appendices
+      expect(sorted[2].data.isAppendix).toBe(true);
+      expect(sorted[3].data.isAppendix).toBe(true);
+    });
+
+    it('should sort appendices alphabetically by title', () => {
+      const appendices = [
+        {
+          slug: 'appendix-b',
+          data: {
+            title: 'Appendix B: Automation',
+            section: 'Host Setup',
+            stepNumber: null,
+            isAppendix: true,
+          },
+        },
+        {
+          slug: 'appendix-a',
+          data: {
+            title: 'Appendix A: Troubleshooting',
+            section: 'Host Setup',
+            stepNumber: null,
+            isAppendix: true,
+          },
+        },
+      ];
+
+      const sorted = appendices.sort((a, b) => a.data.title.localeCompare(b.data.title));
+
+      expect(sorted[0].data.title).toBe('Appendix A: Troubleshooting');
+      expect(sorted[1].data.title).toBe('Appendix B: Automation');
+    });
+
+    it('should treat null stepNumber as appendix', () => {
+      const tutorial = {
+        slug: 'appendix-test',
+        data: {
+          title: 'Test Appendix',
+          section: 'Host Setup',
+          stepNumber: null,
+          isAppendix: undefined,
+        },
+      };
+
+      const isAppendix = tutorial.data.isAppendix || tutorial.data.stepNumber === null;
+      expect(isAppendix).toBe(true);
+    });
+
+    it('should not display step numbers for appendices in sidebar', () => {
+      const appendix = {
+        slug: 'appendix-a',
+        data: {
+          title: 'Appendix A: Troubleshooting',
+          section: 'Host Setup',
+          stepNumber: null,
+          isAppendix: true,
+        },
+      };
+
+      const numberedStep = {
+        slug: 'step-1',
+        data: {
+          title: 'Step 1',
+          section: 'Host Setup',
+          stepNumber: 1,
+          isAppendix: false,
+        },
+      };
+
+      // For appendix, display title without number
+      const appendixDisplay = appendix.data.stepNumber !== null
+        ? `${appendix.data.stepNumber}. ${appendix.data.title}`
+        : appendix.data.title;
+
+      expect(appendixDisplay).toBe('Appendix A: Troubleshooting');
+
+      // For numbered step, display with number
+      const stepDisplay = numberedStep.data.stepNumber !== null
+        ? `${numberedStep.data.stepNumber}. ${numberedStep.data.title}`
+        : numberedStep.data.title;
+
+      expect(stepDisplay).toBe('1. Step 1');
+    });
+  });
 });

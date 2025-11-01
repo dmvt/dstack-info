@@ -1,9 +1,10 @@
 ---
-title: "Ansible TDX Automation Setup"
+title: "Appendix B: Ansible TDX Automation Setup"
 description: "Set up Ansible automation for TDX verification and future server deployments"
 section: "Host Setup"
 stepNumber: null
 totalSteps: null
+isAppendix: true
 prerequisites:
   - "Completed Part 6: TDX Troubleshooting & Next Steps"
   - "TDX fully enabled and verified on at least one server"

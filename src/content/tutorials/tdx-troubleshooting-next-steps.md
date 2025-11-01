@@ -1,9 +1,10 @@
 ---
-title: "TDX Troubleshooting & Next Steps"
+title: "Appendix A: TDX Troubleshooting & Next Steps"
 description: "Troubleshoot common TDX issues and learn what to do after TDX is enabled"
 section: "Host Setup"
 stepNumber: null
 totalSteps: null
+isAppendix: true
 prerequisites:
   - "Completed Part 5: TDX BIOS Configuration"
   - "TDX hardware features enabled in BIOS"
