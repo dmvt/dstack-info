@@ -105,6 +105,41 @@ Once you've manually verified TDX is enabled, you can use the Ansible playbook t
 
 ### Prerequisites
 
+#### 1. Set up Ubuntu user on TDX server (if not already done)
+
+The Ansible playbook expects an `ubuntu` user with passwordless sudo. SSH into your TDX server and run:
+
+```bash
+# Create ubuntu user
+sudo adduser ubuntu
+
+# Add to sudo group
+sudo usermod -aG sudo ubuntu
+
+# Configure passwordless sudo
+echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/ubuntu
+sudo chmod 0440 /etc/sudoers.d/ubuntu
+
+# Set up SSH access
+sudo mkdir -p /home/ubuntu/.ssh
+sudo chmod 700 /home/ubuntu/.ssh
+sudo cp ~/.ssh/authorized_keys /home/ubuntu/.ssh/authorized_keys
+sudo chown -R ubuntu:ubuntu /home/ubuntu/.ssh
+sudo chmod 600 /home/ubuntu/.ssh/authorized_keys
+
+# Test sudo access
+sudo -u ubuntu sudo whoami
+# Should output: root
+```
+
+Test from your local machine:
+```bash
+ssh ubuntu@YOUR_SERVER_IP sudo whoami
+# Should output: root (without asking for password)
+```
+
+#### 2. Install Ansible on your local machine
+
 Install Ansible on your local machine:
 
 ```bash
@@ -120,14 +155,23 @@ ansible --version
 
 ### Configure Inventory
 
-Create your Ansible inventory file:
+**Step 1: Create your inventory file from the example:**
 
 ```bash
 cd ansible
 cp inventory/hosts.example.yml inventory/hosts.yml
 ```
 
-Edit `inventory/hosts.yml` with your server details:
+**Step 2: Edit the inventory file with your server details:**
+
+```bash
+# Open the file in your editor
+nano inventory/hosts.yml
+# or
+vim inventory/hosts.yml
+```
+
+**Step 3: Replace `YOUR_SERVER_IP` with your actual server IP address:**
 
 ```yaml
 all:
@@ -135,9 +179,17 @@ all:
     dstack_servers:
       hosts:
         tdx-host:
-          ansible_host: 173.231.234.133  # Your server IP
-          ansible_user: ubuntu            # Your SSH user
+          ansible_host: 192.168.1.100  # Replace with YOUR server IP
+          ansible_user: ubuntu          # User with passwordless sudo
 ```
+
+**Important notes:**
+- Replace `192.168.1.100` with your actual TDX server IP address
+- The `ubuntu` user must have:
+  - SSH key access (password authentication not recommended)
+  - Passwordless sudo configured
+- The inventory file (`hosts.yml`) is excluded from git for security
+- Only the example file (`hosts.example.yml`) is version controlled
 
 ### Run TDX Verification Playbook
 

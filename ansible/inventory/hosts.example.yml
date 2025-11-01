@@ -15,9 +15,11 @@ all:
         # Replace with your actual server details
         tdx-host:
           # Server IP address or hostname
-          ansible_host: 173.231.234.133
+          # Replace with your server's IP
+          ansible_host: YOUR_SERVER_IP
 
           # SSH user (must have sudo privileges)
+          # Default: ubuntu (if following the setup instructions)
           ansible_user: ubuntu
 
           # Optional: SSH port (default: 22)
