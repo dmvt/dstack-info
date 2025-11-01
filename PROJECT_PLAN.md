@@ -1,8 +1,8 @@
 # dstack Installation Tutorial Project - Complete Plan
 
 **Project Start Date:** 2025-10-31
-**Status:** Phase 0 - Planning
-**Last Updated:** 2025-10-31
+**Status:** Phase 1.1 - TDX Enablement Complete, Ansible Verification In Progress
+**Last Updated:** 2025-11-01
 
 ---
 
@@ -10,11 +10,12 @@
 
 1. [Project Overview](#project-overview)
 2. [Core Principles & Methodology](#core-principles--methodology)
-3. [Server Information](#server-information)
-4. [Technology Decisions](#technology-decisions)
-5. [Detailed Phase Plan](#detailed-phase-plan)
-6. [Deliverables Summary](#deliverables-summary)
-7. [Current Status](#current-status)
+3. [Single System Testing Strategy](#single-system-testing-strategy)
+4. [Server Information](#server-information)
+5. [Technology Decisions](#technology-decisions)
+6. [Detailed Phase Plan](#detailed-phase-plan)
+7. [Deliverables Summary](#deliverables-summary)
+8. [Current Status](#current-status)
 
 ---
 
@@ -57,50 +58,60 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 - Users must get real, working deployments from these tutorials
 
 #### 2. **Dual Approach - Manual + Ansible**
-- Every step must work via SSH (manual commands)
-- Every step must work via Ansible (automation)
+- **Phase 1 Exception:** Manual tutorials + Ansible **verification** only (BIOS changes cannot be automated)
+- **Phase 2+:** Every step must work via SSH (manual commands) AND via Ansible (automation)
 - Ansible playbooks built DURING tutorial writing, not after
 - By end of each tutorial section, both approaches are complete and tested
+- Single-system testing: Rebuild OS between phases to validate equivalence
 
-#### 3. **Multi-User Verification**
-- Create multiple test users on server (user1, user2, user3, etc.)
-- Each checkpoint: Different users test manual and Ansible approaches
-- Verify identical results between manual and automated deployment
+#### 3. **Single-System Testing with OS Rebuilds**
+- We have one TDX-capable server (173.231.234.133)
+- Testing validation via OS reinstalls between phases (self-service via OpenMetal IPMI)
+- **First pass:** Fresh OS → Ansible speedrun previous phases → Manual execution current phase
+- **Second pass:** Fresh OS → Ansible speedrun all phases (including current) → Verify equivalence
+- Compare results: Manual vs Ansible end states must be identical
 - Document any discrepancies immediately
 
-#### 4. **Git Best Practices**
+#### 4. **Self-Service OS Reinstallation**
+- OpenMetal provides IPMI access via Central Dashboard
+- HTML5 web console for remote server management
+- Mount ISO files and reinstall Ubuntu 24.04 LTS as needed
+- No support ticket required - completely self-service
+- Used for per-phase validation testing (rebuild → test equivalence)
+
+#### 5. **Git Best Practices**
 - Commit early and often (after each logical step)
 - All commits MUST be GPG signed
 - NO AI attribution in commits (no "Co-Authored-By: Claude")
 - Commit messages focus on what changed and why
 - Every commit deployed to Cloudflare Pages for review
 
-#### 5. **Checkpoint-Driven Development**
+#### 6. **Checkpoint-Driven Development**
 - After EVERY commit: Deploy to Cloudflare Pages
 - Present complete testing plan for review
 - Wait for explicit approval before proceeding
 - Update TUTORIAL_PROGRESS.md after each confirmation to preserve context
 
-#### 6. **Small, Manageable Chunks**
+#### 7. **Small, Manageable Chunks**
 - Work sized to fit in single context window
 - Never try to do too much at once
 - Break large tasks into smaller sub-tasks
 - Each chunk must be completable and testable
 
-#### 7. **Documentation First**
+#### 8. **Documentation First**
 - Document what we're doing WHILE doing it
 - Capture errors and solutions immediately
 - Add troubleshooting sections based on real issues encountered
 - Memory document (TUTORIAL_PROGRESS.md) updated after every approval
 
-#### 8. **Linux Foundation Standards**
+#### 9. **Linux Foundation Standards**
 - Production-quality code
 - Clear, maintainable architecture
 - Comprehensive documentation
 - Built for future contributors
 - Professional design and UX
 
-#### 9. **Plan Adherence & Verification**
+#### 10. **Plan Adherence & Verification**
 - Before starting any work: Verify it matches the current phase in PROJECT_PLAN.md
 - If user requests work outside the plan or methodology: STOP and inform them
 - Clearly state what conflicts with the plan/methodology
@@ -108,7 +119,7 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 - Never silently deviate from the documented plan
 - If uncertain whether request aligns with plan: Ask for clarification
 
-#### 10. **TailwindCSS-Only Styling**
+#### 11. **TailwindCSS-Only Styling**
 - ALL styling must use TailwindCSS utility classes in the HTML/JSX
 - NEVER use custom `<style>` blocks or inline styles for layout, spacing, colors, typography
 - Only exception: Truly unique CSS that TailwindCSS cannot handle (rare)
@@ -118,36 +129,147 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 
 ### Working Methodology
 
-**For Each Tutorial Section:**
+#### **Phase 1: TDX Enablement (Manual + Verification Only)**
 
-1. **Plan** - Define what we're installing/configuring
-2. **Execute Manually** - Claude: SSH to server, run commands, document results
-3. **Build Ansible** - Claude: Create role/playbook for same task
-4. **Test Both Approaches** - Claude: Verify both manual and Ansible work correctly
-5. **Verify Equivalence** - Claude: Confirm both approaches yield identical results
-6. **Document Tutorial** - Claude: Write complete tutorial section with:
-   - Prerequisites
-   - Manual step-by-step instructions (tested and verified)
-   - Ansible automation instructions (tested and verified)
-   - Verification steps
-   - Troubleshooting section (from real issues encountered)
-7. **Create Validation Widget** - Claude: Build interactive validation component
-8. **Git Commit** - Claude: Commit tutorial + Ansible + widget (signed)
-9. **Deploy** - Claude:
-   - Build: `npm run build`
-   - Deploy: `wrangler pages deploy dist --project-name=dstack-info`
-   - **IMPORTANT:** No automatic webhooks - must deploy manually after each commit
-10. **Checkpoint** - Claude: Present testing plan for user to dogfood the tutorial
-11. **User Testing** - User: Follow tutorial as written, verify everything works
-12. **User Approval** - User: Confirm tutorial works or request fixes
-13. **Update Memory** - Claude: Add progress to TUTORIAL_PROGRESS.md after approval
-14. **Proceed** - Move to next section
+**For Phase 1 Sections:**
 
-**Key Principle: Dogfooding**
-- Claude does all the work first and verifies it works
-- Tutorial is written based on what actually worked
-- User tests by following the tutorial as a new user would
-- This ensures tutorials are accurate and complete
+1. **Manual Tutorials Already Complete** - TDX hardware through troubleshooting
+2. **Build Ansible Verification** - Create playbook that verifies TDX is fully enabled
+3. **Playbook Should:**
+   - Check TDX status (enabled/disabled)
+   - Provide helpful error messages if not enabled
+   - Reference specific tutorial sections for fixing issues
+   - Exit gracefully with actionable guidance
+4. **Document in Tutorial** - Add Ansible verification playbook usage to `tdx-status-verification.md`
+5. **Git Commit** - Commit Ansible playbook + updated tutorial (signed)
+6. **Deploy** - Build and deploy to Cloudflare Pages (manual: `wrangler pages deploy dist`)
+7. **Checkpoint** - Present testing plan (syntax check, ansible-lint, test on TDX system)
+8. **User Approval** - Confirm playbook works correctly
+9. **Update Memory** - Add progress to TUTORIAL_PROGRESS.md
+
+**Why Phase 1 is Different:**
+- BIOS configuration requires physical/IPMI access (cannot be automated)
+- Kernel installation for TDX requires manual steps
+- Ansible can only **verify** TDX is enabled, not enable it
+
+---
+
+#### **Phase 2+: Infrastructure Deployment (Manual + Ansible Automation)**
+
+**For Each Phase 2+ Tutorial Section:**
+
+**First Pass - Manual Execution:**
+1. **Rebuild System** - Fresh Ubuntu 24.04 via OpenMetal IPMI (self-service)
+2. **Speed Through Previous Phases** - Run all previous Ansible playbooks
+3. **Execute Manually** - SSH to server, run commands for current phase, document results
+4. **Document Tutorial** - Write manual step-by-step instructions with troubleshooting
+
+**Second Pass - Create Ansible Automation:**
+5. **Build Ansible** - Create role/playbook for current phase
+6. **Test Playbook** - Run ansible-lint, syntax check, dry-run
+
+**Third Pass - Validate Equivalence:**
+7. **Rebuild System** - Fresh Ubuntu 24.04 via OpenMetal IPMI
+8. **Ansible All Phases** - Run all Ansible playbooks (including current phase)
+9. **Verify Equivalence** - Compare manual vs Ansible results:
+   - Configuration files (checksums, content)
+   - Installed packages (versions)
+   - Running services (status, ports)
+   - Binary files (checksums)
+   - System state (users, permissions, etc.)
+10. **Document Both Approaches** - Update tutorial with Ansible instructions
+
+**Finalize and Deploy:**
+11. **Create Validation Widget** - Build interactive validation component (if applicable)
+12. **Git Commit** - Commit tutorial + Ansible + widget (signed)
+13. **Deploy** - Build: `npm run build`, Deploy: `wrangler pages deploy dist --project-name=dstack-info`
+14. **Checkpoint** - Present testing plan for user verification
+15. **User Approval** - User confirms or requests fixes
+16. **Update Memory** - Add progress to TUTORIAL_PROGRESS.md after approval
+17. **Proceed** - Move to next section
+
+**Key Principle: Rebuild-Based Validation**
+- Single TDX server (173.231.234.133) requires OS reinstalls for testing
+- OpenMetal IPMI provides self-service OS reinstallation (no support ticket needed)
+- Fresh OS install proves Ansible playbooks work from clean state
+- Comparison between manual and Ansible validates equivalence
+- Later phases use Ansible to speed through earlier phases (dogfooding our automation)
+
+---
+
+## Single System Testing Strategy
+
+### The Challenge
+- We have **one TDX-capable server** (Intel Xeon Gold 6530 @ 173.231.234.133)
+- TDX hardware is expensive and rare (cannot easily provision multiple test servers)
+- Need to validate that manual steps and Ansible automation produce identical results
+- Traditional multi-user testing on same system doesn't prove equivalence
+
+### The Solution: Rebuild-Based Validation
+
+**Self-Service OS Reinstallation via OpenMetal IPMI:**
+- OpenMetal provides HTML5 IPMI web console via Central Dashboard
+- No support ticket required - completely self-service
+- Can mount Ubuntu ISO and reinstall OS remotely
+- Process takes approximately 30-60 minutes per reinstall
+
+**Testing Workflow for Phase 2+ (Each Phase):**
+
+```
+Phase N Testing Cycle:
+
+┌─────────────────────────────────────────────────────────┐
+│ FIRST PASS - Manual Execution                          │
+├─────────────────────────────────────────────────────────┤
+│ 1. Fresh Ubuntu 24.04 install via IPMI                 │
+│ 2. Run Ansible for Phases 1 through N-1 (speedrun)     │
+│ 3. Manually execute Phase N steps via SSH              │
+│ 4. Document results, create tutorial                   │
+│ 5. Create Ansible playbook for Phase N                 │
+└─────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────┐
+│ SECOND PASS - Ansible Validation                       │
+├─────────────────────────────────────────────────────────┤
+│ 6. Fresh Ubuntu 24.04 install via IPMI                 │
+│ 7. Run Ansible for Phases 1 through N (all phases)     │
+│ 8. Compare results: Manual vs Ansible                  │
+│    - Config files (checksums, content)                 │
+│    - Installed packages (versions)                     │
+│    - Running services (status, ports)                  │
+│    - Binary files (checksums)                          │
+│    - System state (users, permissions)                 │
+│ 9. Fix discrepancies, update playbook if needed        │
+└─────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────┐
+│ FINALIZE - Documentation & Deploy                      │
+├─────────────────────────────────────────────────────────┤
+│ 10. Update tutorial with both approaches               │
+│ 11. Git commit (signed), deploy to Cloudflare          │
+│ 12. Checkpoint with user verification                  │
+│ 13. Update TUTORIAL_PROGRESS.md                        │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Benefits of This Approach:**
+- ✅ Proves Ansible playbooks work from clean state (catches missing dependencies)
+- ✅ Validates exact equivalence between manual and automated approaches
+- ✅ Dogfoods our automation (later phases use Ansible to speed through earlier work)
+- ✅ Non-destructive (fresh OS each time, no need for "undo" playbooks)
+- ✅ Realistic (matches how users actually deploy: manual first, automate later)
+- ✅ Sustainable (self-service reinstall makes per-phase testing practical)
+
+**Time Investment:**
+- OS reinstall: ~30-60 minutes
+- Phase 1 TDX enablement: ~1-2 hours (manual tutorials, cannot automate)
+- Phases 2+ speedrun via Ansible: ~5-30 minutes per phase (cumulative)
+- **Total per rebuild:** ~2-3 hours for full validation
+
+**When to Rebuild:**
+- After **every Phase 2+ section** for most thorough validation
+- Rebuilds become faster as Ansible automation accumulates
+- Example: Phase 5 testing speedruns Phases 1-4 via Ansible in ~20 minutes
 
 ---
 
@@ -155,11 +277,12 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 
 ### Target Server
 - **IP Address:** 173.231.234.133
+- **Hardware:** Intel Xeon Gold 6530 (5th Gen Emerald Rapids)
+- **TDX Support:** Yes (verified on Intel ARK)
 - **SSH Access:** Available
-- **Operating System:** Ubuntu (version to be confirmed)
-- **TDX Hardware:** Status unknown (MUST verify in Phase 1.1)
-  - If not available: STOP and request help
-  - Never simulate or skip TDX verification
+- **Operating System:** Ubuntu 24.04 LTS (Noble)
+- **TDX Status:** Enabled (manual tutorials completed)
+- **IPMI Access:** OpenMetal Central Dashboard (self-service)
 
 ### Domain Configuration
 - **Status:** Domain owned, needs Cloudflare configuration
@@ -171,11 +294,6 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 - **Network:** Sepolia or Holesky testnet
 - **Requirement:** Wallet with testnet ETH for KMS deployment
 - **Setup Required:** Yes, as part of Phase 1.3
-
-### Test Users
-- Will create multiple users: user1, user2, user3, etc.
-- Each user tests either manual or Ansible approach
-- Verifies tutorial instructions work for new users
 
 ---
 
@@ -255,7 +373,7 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 
 **Total: ~21 days (3 weeks)**
 
-#### 0.1 Framework & Tooling Decision ✅ IN PROGRESS
+#### 0.1 Framework & Tooling Decision
 **Status:** Awaiting approval on Astro + TailwindCSS
 
 **Deliverable:** ARCHITECTURE_DECISION.md
@@ -680,78 +798,124 @@ Add comprehensive E2E browser testing to complement Vitest unit tests. This phas
 
 ---
 
-### Phase 1: Server Preparation & Hardware Verification (Week 4)
+### Phase 1: TDX Enablement & Prerequisites (Week 4)
 
-#### 1.1 Server Access & Initial Verification
+#### 1.1 TDX Host Setup & Ansible Verification Playbook
 
-**What we'll do manually:**
-1. SSH to 173.231.234.133
-2. Verify Ubuntu version: `lsb_release -a`
-3. Check CPU info: `cat /proc/cpuinfo | grep -i tdx`
-4. Verify TDX capabilities: `cpuid -1 | grep -i tdx`
-5. Check BIOS/firmware for TDX enablement
-6. Document baseline system state
-7. Check available resources (RAM, disk, network)
+**Manual Tutorials (Already Complete):**
+- ✅ **Part 1:** TDX Hardware Verification (`tdx-hardware-verification.md`)
+- ✅ **Part 2:** TDX BIOS Configuration (`tdx-bios-configuration.md`)
+- ✅ **Part 3:** TDX Software Setup (`tdx-software-setup.md`)
+- ✅ **Part 4:** TDX Kernel Installation (`tdx-kernel-installation.md`)
+- ✅ **Part 5:** TDX Status Verification (`tdx-status-verification.md`)
+- ✅ **Part 6:** TDX Troubleshooting & Next Steps (`tdx-troubleshooting-next-steps.md`)
 
-**If TDX not available/enabled:** STOP and ask for help - DO NOT PROCEED
+**What we'll build:**
 
-**Ansible:** Create `ansible/playbooks/00-verify-hardware.yml`
+**Ansible Verification Playbook** (`ansible/playbooks/verify-tdx.yml`)
+
+The playbook should:
+1. Check if TDX is enabled in BIOS/firmware
+2. Check if correct kernel is installed (Ubuntu's TDX-enabled kernel)
+3. Check if TDX kernel modules are loaded
+4. Check if attestation services are running (if attestation path chosen)
+5. Provide helpful error messages referencing specific tutorial sections
+6. Exit with appropriate status codes
+
+**Example playbook structure:**
 ```yaml
-- name: Verify TDX Hardware Capabilities
+---
+- name: Verify Intel TDX Host Setup
   hosts: dstack_servers
+  become: yes
   tasks:
-    - name: Check CPU flags for TDX
-      shell: cat /proc/cpuinfo | grep -i tdx
-      register: tdx_check
+    - name: Check TDX CPU capability
+      shell: grep -q tdx /proc/cpuinfo
+      register: tdx_cpu_check
+      failed_when: false
+      changed_when: false
+
+    - name: Fail if TDX not supported by CPU
+      fail:
+        msg: |
+          TDX not supported by CPU.
+          See tutorial: TDX Hardware Verification
+          https://dstack.info/tutorial/tdx-hardware-verification
+      when: tdx_cpu_check.rc != 0
+
+    - name: Check TDX firmware enablement
+      # Check SEAM module, TDX BIOS settings, etc.
+
+    - name: Check TDX kernel modules
+      # Verify kvm_intel with tdx=1, tdx modules loaded
+
+    - name: Verify attestation services (if applicable)
+      # Check tdx-attest, tdx-qgs services
 
     - name: Report TDX status
       debug:
-        msg: "TDX Status: {{ tdx_check.stdout }}"
-
-    - name: Fail if TDX not available
-      fail:
-        msg: "TDX not available on this hardware"
-      when: tdx_check.stdout == ""
+        msg: "✓ TDX is fully enabled and ready for use"
 ```
 
-**Ansible Directory Structure:**
+**Ansible Directory Structure to Create:**
 ```
 ansible/
+├── README.md                    # Ansible documentation
 ├── playbooks/
-│   └── 00-verify-hardware.yml
+│   └── verify-tdx.yml          # TDX verification playbook
 ├── inventory/
-│   └── hosts.yml
-├── group_vars/
-│   └── all.yml
-└── roles/
-    (to be added in subsequent phases)
+│   └── hosts.example.yml       # Example inventory template
+└── group_vars/
+    └── all.example.yml         # Example variables template
 ```
 
+**Location:** Keep in dstack-info repo (not separate repo/submodule)
+
 **Git Commits:**
-1. Add ansible directory structure and inventory
-2. Add hardware verification playbook
-3. Add tutorial content for server preparation
-4. Document baseline server state in TUTORIAL_PROGRESS.md
+1. Add ansible directory structure with README
+2. Add TDX verification playbook with comprehensive checks
+3. Update `tdx-status-verification.md` with Ansible playbook documentation
 
 **Testing Plan for Checkpoint:**
-- [ ] SSH access verified as root/sudo user
-- [ ] SSH access verified as regular user
-- [ ] Hardware specifications documented
-- [ ] TDX status confirmed (if not available: STOP)
-- [ ] Ansible playbook runs successfully
-- [ ] Ansible reports accurate hardware info
-- [ ] Tutorial content written and deployed
-- [ ] All information in TUTORIAL_PROGRESS.md
 
-**Tutorial Section:** "Prerequisites: Hardware Verification"
+**Ansible Best Practices Testing:**
+- [ ] **Syntax check:** `ansible-playbook --syntax-check playbooks/verify-tdx.yml`
+- [ ] **Ansible-lint:** `ansible-lint playbooks/verify-tdx.yml` (no errors)
+- [ ] **Dry-run:** `ansible-playbook --check playbooks/verify-tdx.yml -i inventory/hosts.yml`
+
+**Functional Testing on TDX Server (173.231.234.133):**
+- [ ] Run playbook: `ansible-playbook playbooks/verify-tdx.yml -i inventory/hosts.yml`
+- [ ] Expected: All checks pass (TDX is enabled)
+- [ ] Verify: Exit code 0
+- [ ] Verify: Output is clear and helpful
+
+**Error Handling Testing (if possible):**
+- [ ] If non-TDX server available: Test playbook fails gracefully
+- [ ] Error messages reference specific tutorial sections
+- [ ] Exit code non-zero on failure
+
+**Idempotence Testing:**
+- [ ] Run playbook twice on same server
+- [ ] Expected: Identical results both times
+- [ ] Verify: No changes reported on second run (verification only, no modifications)
+
+**Documentation Testing:**
+- [ ] Tutorial updated with clear Ansible instructions
+- [ ] Example inventory and variables provided
+- [ ] Prerequisites documented
+- [ ] Build and deploy to Cloudflare Pages
+- [ ] Verify tutorial renders correctly
+
+**Tutorial Section:** "Host Setup: Part 5 - TDX Status Verification" (updated with Ansible playbook)
 
 **Checkpoint:**
-- Share hardware verification results
-- Share TDX status
-- If TDX not available: Request guidance before proceeding
-- Await confirmation to continue
+- Share Ansible playbook code
+- Share test results (syntax check, ansible-lint, functional test)
+- Demo playbook running on TDX server
+- Show updated tutorial with Ansible documentation
+- Await confirmation to proceed to Phase 1.2
 
-**Update:** Add Phase 1.1 completion to TUTORIAL_PROGRESS.md
+**Update:** Add Phase 1.1 Ansible completion to TUTORIAL_PROGRESS.md
 
 ---
 
