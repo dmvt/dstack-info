@@ -56,11 +56,13 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 - If configuration doesn't work: Debug and document, never simulate
 - If service fails: Fix it properly, never skip
 - Users must get real, working deployments from these tutorials
+- Always reread this document and follow this section with strict adherence to instructions after every time the context is compacted
 
 #### 2. **Dual Approach - Manual + Ansible**
 - **Phase 1 Exception:** Manual tutorials + Ansible **verification** only (BIOS changes cannot be automated)
 - **Phase 2+:** Every step must work via SSH (manual commands) AND via Ansible (automation)
 - Ansible playbooks built DURING tutorial writing, not after
+- After verifying that the phase works manually, the os is rebuilt to verify that the ansible playbooks work
 - By end of each tutorial section, both approaches are complete and tested
 - Single-system testing: Rebuild OS between phases to validate equivalence
 
