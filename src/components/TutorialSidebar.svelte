@@ -10,6 +10,7 @@
   let mounted = false;
   let completionStatus: Record<string, boolean> = {};
   let collapsedSections: Record<string, boolean> = {};
+  let initializedForSlug = '';
 
   // Group tutorials by section
   $: tutorialsBySection = tutorials.reduce((acc, tutorial) => {
@@ -43,20 +44,23 @@
   }));
 
   // Initialize collapsed state: expand section containing current tutorial
+  // Only initialize when slug changes, don't override user's manual toggles
   $: {
     const currentTutorial = tutorials.find(t => t.slug === currentSlug);
-    if (currentTutorial && mounted) {
+    if (currentTutorial && mounted && initializedForSlug !== currentSlug) {
       const currentSection = currentTutorial.data.section;
 
       // Collapse all sections by default, except the one with current tutorial
       sortedSections.forEach(({ section }) => {
         if (!(section in collapsedSections)) {
           collapsedSections[section] = section !== currentSection;
-        } else if (section === currentSection) {
-          // Always expand section containing current tutorial
-          collapsedSections[section] = false;
         }
       });
+
+      // Expand the current section on initial load only
+      collapsedSections[currentSection] = false;
+      collapsedSections = { ...collapsedSections };
+      initializedForSlug = currentSlug;
     }
   }
 

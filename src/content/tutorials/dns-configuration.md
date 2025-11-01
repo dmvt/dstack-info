@@ -174,6 +174,8 @@ curl -X GET "https://api.cloudflare.com/client/v4/zones/ZONE_ID/dns_records" \
 
 Expected response: JSON with `"success": true` and list of your DNS records.
 
+NOTE: You can find the zone id on the right site of your domains overview page, under the API section. You may need to scroll to find it.
+
 ## Step 4: Test DNS Resolution
 
 Verify your DNS configuration is working correctly.

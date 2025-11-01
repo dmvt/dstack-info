@@ -91,8 +91,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
     test('should allow multiple sections to be toggled independently', async ({ page }) => {
       await page.goto('/tutorial/tdx-hardware-verification');
 
-      // Expand another section
-      const prerequisitesSection = page.locator('aside button:has-text("Prerequisites")');
+      // Expand another section (use uppercase class to distinguish from TOC buttons)
+      const prerequisitesSection = page.locator('aside button.uppercase:has-text("Prerequisites")');
       await prerequisitesSection.click();
       await page.waitForTimeout(200);
 
@@ -149,8 +149,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
     test('should hide TOC for non-current tutorials', async ({ page }) => {
       await page.goto('/tutorial/tdx-hardware-verification');
 
-      // Expand another section to see other tutorials
-      const prerequisitesSection = page.locator('aside button:has-text("Prerequisites")');
+      // Expand another section to see other tutorials (use uppercase class)
+      const prerequisitesSection = page.locator('aside button.uppercase:has-text("Prerequisites")');
       await prerequisitesSection.click();
       await page.waitForTimeout(200);
 
@@ -374,9 +374,12 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
       await page.goto('/tutorial/complete');
 
+      // Wait for component to mount
+      await page.waitForSelector('i.fa-trophy', { timeout: 5000 });
+
       // Should show congratulations
       await expect(page.locator('text="Congratulations!"')).toBeVisible();
-      await expect(page.locator('text="completed all"')).toBeVisible();
+      await expect(page.locator('text=/completed all/i')).toBeVisible();
 
       // Should show trophy icon
       await expect(page.locator('i.fa-trophy')).toBeVisible();
@@ -394,9 +397,12 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
       await page.goto('/tutorial/complete');
 
+      // Wait for component to mount
+      await page.waitForSelector('text="Overall Progress"', { timeout: 5000 });
+
       // Should show progress (2 of 8 = 25%)
       await expect(page.locator('text="25%"')).toBeVisible();
-      await expect(page.locator('text="2 of 8 tutorials"')).toBeVisible();
+      await expect(page.locator('text=/2 of 8 tutorial/i')).toBeVisible();
     });
 
     test('should show section-level breakdown', async ({ page }) => {
@@ -405,9 +411,9 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Should have section breakdown
       await expect(page.locator('text="Progress by Section"')).toBeVisible();
 
-      // Should list sections
-      await expect(page.locator('text="Host Setup"')).toBeVisible();
-      await expect(page.locator('text="Prerequisites"')).toBeVisible();
+      // Should list sections (use specific selector for section breakdown)
+      await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("Host Setup")')).toBeVisible();
+      await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("Prerequisites")')).toBeVisible();
     });
 
     test('should clear progress when reset button clicked and confirmed', async ({ page }) => {
@@ -466,8 +472,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Should redirect to first tutorial
       await page.waitForURL('**/tutorial/tdx-hardware-verification', { timeout: 3000 });
 
-      // Mark tutorial complete
-      await page.locator('button:has-text("Mark as Complete")').click();
+      // Mark tutorial complete (click the checkbox button)
+      await page.locator('button[aria-label="Mark as complete"]').click();
 
       // Verify checkmark appears in sidebar
       await expect(page.locator('aside i.fa-check-circle').first()).toBeVisible();
@@ -476,8 +482,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
     test('should persist progress across page refreshes', async ({ page }) => {
       await page.goto('/tutorial/tdx-hardware-verification');
 
-      // Mark complete
-      await page.locator('button:has-text("Mark as Complete")').click();
+      // Mark complete (click the checkbox button)
+      await page.locator('button[aria-label="Mark as complete"]').click();
 
       // Refresh page
       await page.reload();
@@ -490,7 +496,7 @@ test.describe('Tutorial Navigation Enhancements', () => {
       await page.goto('/tutorial/tdx-hardware-verification');
 
       // Collapse and expand section
-      const tdxSection = page.locator('aside button:has-text("TDX Host Setup")');
+      const tdxSection = page.locator('aside button.uppercase:has-text("Host Setup")');
       await tdxSection.click();
       await page.waitForTimeout(200);
       await tdxSection.click();

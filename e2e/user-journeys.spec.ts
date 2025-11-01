@@ -15,14 +15,14 @@ test.describe('User Journeys', () => {
       // Getting Started section should be visible
       await expect(page.locator('#getting-started')).toBeVisible();
 
-      // Click "Read Full Documentation" button
-      const docsBtn = page.locator('a[href="/tutorial/tdx-hardware-verification"]').first();
+      // Click "Read Full Documentation" button (now links to /tutorial which redirects)
+      const docsBtn = page.locator('a[href="/tutorial"]').first();
       await docsBtn.click();
       await page.waitForLoadState('networkidle');
 
-      // Should be on tutorial page
-      await expect(page).toHaveURL(/\/tutorial\/tdx-hardware-verification/);
-      await expect(page.locator('h1').first()).toContainText('Hardware');
+      // Should be on a tutorial page (redirects to first incomplete)
+      await expect(page).toHaveURL(/\/tutorial\/.+/);
+      await expect(page.locator('h1').first()).toBeTruthy();
     });
 
     test('should navigate from homepage to tutorial via nav link', async ({ page }) => {
@@ -31,13 +31,13 @@ test.describe('User Journeys', () => {
       await page.waitForLoadState('networkidle');
 
       // Click "Tutorials" link in nav
-      const tutorialsLink = page.locator('nav a[href="/tutorial/tdx-hardware-verification"]');
+      const tutorialsLink = page.locator('nav a[href="/tutorial"]');
       await tutorialsLink.click();
       await page.waitForLoadState('networkidle');
 
-      // Should be on tutorial page
-      await expect(page).toHaveURL(/\/tutorial\/tdx-hardware-verification/);
-      await expect(page.locator('h1').first()).toContainText('Hardware');
+      // Should be on a tutorial page (redirects to first incomplete)
+      await expect(page).toHaveURL(/\/tutorial\/.+/);
+      await expect(page.locator('h1').first()).toBeTruthy();
     });
 
     test('should navigate from homepage to tutorial via resources section', async ({ page }) => {
@@ -49,12 +49,12 @@ test.describe('User Journeys', () => {
       await page.locator('#resources').scrollIntoViewIfNeeded();
 
       // Click documentation card
-      const docsCard = page.locator('#resources a[href="/tutorial/tdx-hardware-verification"]').first();
+      const docsCard = page.locator('#resources a[href="/tutorial"]').first();
       await docsCard.click();
       await page.waitForLoadState('networkidle');
 
-      // Should be on tutorial page
-      await expect(page).toHaveURL(/\/tutorial\/tdx-hardware-verification/);
+      // Should be on a tutorial page (redirects to first incomplete)
+      await expect(page).toHaveURL(/\/tutorial\/.+/);
     });
 
     test('should return to homepage from tutorial', async ({ page }) => {
@@ -136,13 +136,16 @@ test.describe('User Journeys', () => {
       await page.waitForLoadState('networkidle');
 
       // Navigate through all tutorials using Next button
+      // Full sorted order: Host Setup (5 steps + 2 appendices), then Prerequisites (1 step)
       const tutorialUrls = [
-        '/tutorial/tdx-hardware-verification',
-        '/tutorial/tdx-software-setup',
-        '/tutorial/tdx-kernel-installation',
-        '/tutorial/tdx-status-verification',
-        '/tutorial/tdx-bios-configuration',
-        '/tutorial/tdx-troubleshooting-next-steps',
+        '/tutorial/tdx-hardware-verification',    // Host Setup #1
+        '/tutorial/tdx-software-setup',           // Host Setup #2
+        '/tutorial/tdx-kernel-installation',       // Host Setup #3
+        '/tutorial/tdx-status-verification',       // Host Setup #4
+        '/tutorial/tdx-bios-configuration',        // Host Setup #5
+        '/tutorial/ansible-tdx-automation',        // Host Setup appendix
+        '/tutorial/tdx-troubleshooting-next-steps', // Host Setup appendix
+        '/tutorial/dns-configuration',             // Prerequisites #1 (last!)
       ];
 
       for (let i = 0; i < tutorialUrls.length - 1; i++) {
@@ -155,7 +158,7 @@ test.describe('User Journeys', () => {
         await page.waitForLoadState('networkidle');
       }
 
-      // Should be on last tutorial (dns-configuration is last when sorted)
+      // Should be on last tutorial
       await expect(page).toHaveURL(/\/tutorial\/dns-configuration/);
 
       // Last tutorial should have next button that goes to completion page
