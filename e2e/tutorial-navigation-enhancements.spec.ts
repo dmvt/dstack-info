@@ -437,6 +437,25 @@ test.describe('Tutorial Navigation Enhancements', () => {
   });
 
   test.describe('Integration Tests', () => {
+    test('should navigate to completion page from last tutorial next button', async ({ page }) => {
+      // Go to last tutorial (dns-configuration is last in Advanced Topics)
+      await page.goto('/tutorial/dns-configuration');
+
+      // Wait for page to load
+      await page.waitForLoadState('networkidle');
+
+      // Find and click the Next button
+      const nextButton = page.locator('a.nav-next');
+      await expect(nextButton).toBeVisible();
+      await expect(nextButton).toContainText('View Progress');
+
+      await nextButton.click();
+
+      // Should navigate to completion page
+      await page.waitForURL('**/tutorial/complete', { timeout: 3000 });
+      expect(page.url()).toContain('/tutorial/complete');
+    });
+
     test('should complete full navigation flow from home to tutorial to complete', async ({ page }) => {
       // Start at home
       await page.goto('/');

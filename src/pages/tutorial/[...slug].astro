@@ -77,8 +77,8 @@ const headings = extractHeadings(tutorial.body);
     <NavigationButtons
       previousUrl={previousTutorial ? `/tutorial/${previousTutorial.slug}` : undefined}
       previousLabel={previousTutorial ? previousTutorial.data.title : undefined}
-      nextUrl={nextTutorial ? `/tutorial/${nextTutorial.slug}` : undefined}
-      nextLabel={nextTutorial ? nextTutorial.data.title : undefined}
+      nextUrl={nextTutorial ? `/tutorial/${nextTutorial.slug}` : '/tutorial/complete'}
+      nextLabel={nextTutorial ? nextTutorial.data.title : 'View Progress'}
     />
   </div>
 </TutorialLayout>
