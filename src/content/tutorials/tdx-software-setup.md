@@ -23,7 +23,7 @@ lastUpdated: 2025-10-31
 
 This tutorial guides you through installing Canonical's TDX software stack, including the TDX-enabled kernel, QEMU, and libvirt components necessary for running Trust Domains.
 
-## Step 1: Set Up Ubuntu User (if not already done)
+## Set Up Ubuntu User (if not already done)
 
 For this setup, you'll need an `ubuntu` user with passwordless sudo. If you haven't set this up yet:
 
@@ -51,7 +51,7 @@ From now on, SSH as the ubuntu user:
 ssh ubuntu@YOUR_SERVER_IP
 ```
 
-## Step 2: Clone Canonical TDX Repository
+## Clone Canonical TDX Repository
 
 Canonical provides official scripts and tools for TDX setup in their GitHub repository.
 
@@ -77,7 +77,7 @@ You should see:
 -   `guest-tools/` - Tools for guest VMs
 -   `tests/` - Test scripts
 
-## Step 3: Review TDX Configuration
+## Review TDX Configuration
 
 Before running the setup, review the configuration file:
 

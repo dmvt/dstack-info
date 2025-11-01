@@ -21,7 +21,7 @@ lastUpdated: 2025-10-31
 
 This tutorial covers verifying that the TDX kernel loaded successfully and checking the TDX status to determine what BIOS configuration is needed.
 
-## Step 7: Verify TDX Kernel Loaded
+## Verify TDX Kernel Loaded
 
 After reboot, SSH back into the server and verify the TDX kernel is running:
 
@@ -37,7 +37,7 @@ uname -r
 
 ✓ Success! You're now running the TDX-enabled Intel kernel.
 
-## Step 8: Check TDX Status
+## Check TDX Status
 
 Now let's check if TDX is enabled in the system.
 

@@ -45,28 +45,22 @@ Visit https://dash.cloudflare.com and log into your account.
 
 ### 1.2 Add Your Domain
 
-1. Click **"Add a Site"** in the top navigation
-2. Enter your domain name (e.g., `yourdomain.com`)
-3. Click **"Add site"**
-4. Select the **Free** plan (unless you need paid features)
-5. Click **"Continue"**
+1. Click **"+ Add"** in the top right navigation
+2. Click **"Connect a domain"** in the submenu
+3. Enter your domain name (e.g., `yourdomain.com`) and fill out the rest of the form according to your preferences
+4. Click **"Continue"**
+5. Select the **Free** plan (unless you need paid features)
 
 ### 1.3 Update Nameservers at Your Registrar
 
-Cloudflare will display two nameservers (e.g., `aden.ns.cloudflare.com` and `olga.ns.cloudflare.com`).
+Cloudflare will display two nameservers (e.g., `aden.ns.cloudflare.com` and `olga.ns.cloudflare.com`) and instructions for updating your domain. For ease, these steps are:
 
-1. Log into your domain registrar (where you purchased the domain)
-2. Navigate to DNS or nameserver settings
-3. Replace existing nameservers with Cloudflare's nameservers
-4. Save changes
+1. Log into your DNS provider (most likely your registrar)
+2. Make sure DNSSEC is off
+3. Replace your current nameservers with Cloudflare nameservers
+4. Use the **"Check nameservers now"** button to confirm completion
 
 **Note:** Nameserver changes can take 24-48 hours to fully propagate, but often complete within a few hours.
-
-### 1.4 Verify Domain
-
-Return to Cloudflare dashboard and click **"Done, check nameservers"**.
-
-Cloudflare will verify the nameserver change. You'll receive an email once verification completes.
 
 ## Step 2: Configure DNS Records
 

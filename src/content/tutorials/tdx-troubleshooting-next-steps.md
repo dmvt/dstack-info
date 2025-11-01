@@ -124,19 +124,13 @@ Now that TDX is enabled on your host, you can:
 - Run Canonical's test suite: `cd tests && ./test-tdx.sh`
 - Verify TD attestation
 
-### 3. Enable TD Attestation (If Not Already Enabled)
-
-- If you skipped attestation during initial setup, re-run with `TDX_SETUP_ATTESTATION=1`
-- Attestation is **required for dstack production deployments**
-- Provides cryptographic proof of confidential computing guarantees
-
-### 4. Test TDX Attestation
+### 3. Test TDX Attestation
 
 - Verify attestation quote generation
 - Test remote attestation flow
 - Validate DCAP configuration
 
-### 5. Deploy dstack
+### 4. Deploy dstack
 
 - Install dstack SDK
 - Deploy confidential applications to TDX VMs

@@ -20,7 +20,7 @@ lastUpdated: 2025-10-31
 
 This tutorial covers verifying the TDX kernel installation and rebooting your system to load the TDX-enabled kernel.
 
-## Step 4: Run TDX Host Setup Script
+## Run TDX Host Setup Script
 
 The setup script will:
 
@@ -120,7 +120,7 @@ The host OS setup has been done successfully. Now, please enable Intel TDX in th
 ========================================================================
 ```
 
-## Step 5: Verify Kernel Installation
+## Verify Kernel Installation
 
 Before rebooting, verify the TDX kernel was installed:
 
