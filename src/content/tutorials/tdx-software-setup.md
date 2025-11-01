@@ -6,7 +6,7 @@ stepNumber: 2
 totalSteps: 6
 prerequisites:
     - "Completed Part 1: TDX Hardware Verification"
-    - "Root/sudo access to the server"
+    - "Ubuntu user with passwordless sudo access"
     - "Network connectivity for package downloads"
 tags:
     - "tdx"
@@ -23,34 +23,32 @@ lastUpdated: 2025-10-31
 
 This tutorial guides you through installing Canonical's TDX software stack, including the TDX-enabled kernel, QEMU, and libvirt components necessary for running Trust Domains.
 
-## Step 1: Enable Root SSH Access
+## Step 1: Set Up Ubuntu User (if not already done)
 
-For this setup, you'll need root access. If you're using a non-root user with sudo privileges, you can enable root SSH access:
+For this setup, you'll need an `ubuntu` user with passwordless sudo. If you haven't set this up yet:
 
 ```bash
-# As your regular user with sudo
-sudo sed -i 's/^#*PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
+# Create ubuntu user
+sudo adduser ubuntu
+
+# Add to sudo group
+sudo usermod -aG sudo ubuntu
+
+# Configure passwordless sudo
+echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/ubuntu
+sudo chmod 0440 /etc/sudoers.d/ubuntu
+
+# Set up SSH access
+sudo mkdir -p /home/ubuntu/.ssh
+sudo cp ~/.ssh/authorized_keys /home/ubuntu/.ssh/authorized_keys
+sudo chown -R ubuntu:ubuntu /home/ubuntu/.ssh
+sudo chmod 600 /home/ubuntu/.ssh/authorized_keys
 ```
 
-Restart SSH service:
+From now on, SSH as the ubuntu user:
 
 ```bash
-sudo systemctl restart ssh
-```
-
-Copy your SSH keys to root:
-
-```bash
-sudo mkdir -p /root/.ssh
-sudo cp ~/.ssh/authorized_keys /root/.ssh/authorized_keys
-sudo chmod 600 /root/.ssh/authorized_keys
-sudo chmod 700 /root/.ssh
-```
-
-Test root SSH access:
-
-```bash
-ssh root@YOUR_SERVER_IP 'echo "Root access working"'
+ssh ubuntu@YOUR_SERVER_IP
 ```
 
 ## Step 2: Clone Canonical TDX Repository
@@ -58,7 +56,7 @@ ssh root@YOUR_SERVER_IP 'echo "Root access working"'
 Canonical provides official scripts and tools for TDX setup in their GitHub repository.
 
 ```bash
-cd /root
+cd ~
 git clone -b main https://github.com/canonical/tdx.git
 cd tdx
 ```

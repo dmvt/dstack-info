@@ -154,7 +154,7 @@ This shows you're still running the generic kernel. After reboot, you'll be runn
 Reboot the server to load the TDX-enabled kernel:
 
 ```bash
-reboot
+sudo reboot
 ```
 
 **Note:** The server may take 2-3 minutes to reboot depending on hardware.
