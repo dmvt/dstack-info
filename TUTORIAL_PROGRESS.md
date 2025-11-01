@@ -1190,6 +1190,80 @@ All 4 sub-phases completed successfully:
 
 ---
 
+## Phase 1.1: TDX Host Setup & Ansible Verification - COMPLETE ✅
+
+**Date:** 2025-11-01
+**Status:** Complete and deployed
+
+### What Was Accomplished
+
+**TDX Manual Tutorials Created (6 parts):**
+1. ✅ TDX Hardware Verification
+2. ✅ TDX Software Setup
+3. ✅ TDX Kernel Installation
+4. ✅ TDX Status Verification
+5. ✅ TDX BIOS Configuration
+6. ✅ Appendix A: TDX Troubleshooting & Next Steps (optional)
+
+**Ansible Automation Created:**
+- ✅ Ansible verification playbook (`ansible/playbooks/verify-tdx.yml`)
+- ✅ Comprehensive 7-point TDX verification checks
+- ✅ Helpful error messages referencing tutorials
+- ✅ Example inventory and variables templates
+- ✅ Ansible README with documentation
+- ✅ Appendix B: Ansible TDX Automation Setup tutorial (optional)
+
+**Security Improvements:**
+- ✅ Updated all tutorials to use ubuntu user with passwordless sudo
+- ✅ Removed root SSH access requirements
+- ✅ Improved security posture following Linux best practices
+
+**Technical Improvements:**
+- ✅ Fixed progress bar (5 core steps, appendices excluded)
+- ✅ Added "Appendix" prefix to optional tutorials
+- ✅ Fixed sidebar sorting (numbered steps first, then appendices)
+- ✅ Made stepNumber/totalSteps nullable in schema
+- ✅ Added comprehensive tests for appendix sorting (11/11 passing)
+
+**Git Commits (9 total):**
+1. `08ef248` - Update PROJECT_PLAN.md with single-system testing strategy
+2. `67b501f` - Clarify manual deployment requirement in Core Principle #5
+3. `4c2124b` - Add context compaction reminder and OS rebuild timing clarification
+4. `4df0835` - Add Ansible verification playbook for Phase 1.1
+5. `b15e3db` - Improve Ansible inventory setup instructions
+6. `68c2102` - Update TDX tutorials to use ubuntu user with passwordless sudo
+7. `62d1b50` - Move Ansible automation to separate tutorial (Part 7)
+8. `4bb67c7` + `63f051c` - Fix tutorial progress bar: 5 core steps + 2 optional
+9. `b2219e1` - Add Appendix prefix and fix sidebar/navigation sorting
+
+**Deployments:**
+- All commits deployed to Cloudflare Pages
+- Final deployment: https://c4af4aba.dstack-info.pages.dev
+
+**Testing:**
+- ✅ Ansible playbook syntax check passed
+- ✅ Ansible playbook tested successfully on TDX server (173.231.234.133)
+- ✅ All verification checks passed (7/7)
+- ✅ Unit tests added and passing (11/11)
+- ✅ Build successful (11 pages generated)
+
+### Key Decisions Made
+
+1. **Ansible in dstack-info repo** - Kept Ansible playbooks in main repo (not separate/submodule)
+2. **Phase 1 = Verification only** - Ansible verifies TDX but doesn't automate BIOS config
+3. **Ubuntu user with passwordless sudo** - Better security than root SSH access
+4. **Appendices for optional content** - Troubleshooting and Ansible clearly marked as optional
+5. **Per-phase OS rebuilds** - Testing strategy using OpenMetal IPMI self-service
+
+### What's Next
+
+**Phase 1.2: Domain & DNS Setup**
+- Configure Cloudflare DNS
+- Set up wildcard domain for dstack
+- Create Ansible verification playbook for DNS
+
+---
+
 **End of Progress Document**
 
 This document is updated after every checkpoint approval to preserve context during conversation compression.
