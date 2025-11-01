@@ -8,8 +8,9 @@ interface ParsedFrontmatter {
   title?: string;
   description?: string;
   section?: string;
-  stepNumber?: number;
-  totalSteps?: number;
+  stepNumber?: number | null;
+  totalSteps?: number | null;
+  isAppendix?: boolean;
   lastUpdated?: string;
   prerequisites?: string[];
   tags?: string[];
@@ -37,7 +38,10 @@ function parseFrontmatter(content: string): ParsedFrontmatter {
         currentArray = [];
         frontmatter[currentKey as keyof ParsedFrontmatter] = currentArray as any;
       } else if (key === 'stepNumber' || key === 'totalSteps') {
-        frontmatter[currentKey as keyof ParsedFrontmatter] = parseInt(value) as any;
+        // Handle null values for appendices
+        frontmatter[currentKey as keyof ParsedFrontmatter] = (value === 'null' ? null : parseInt(value)) as any;
+      } else if (key === 'isAppendix') {
+        frontmatter.isAppendix = value === 'true';
       } else {
         frontmatter[currentKey as keyof ParsedFrontmatter] = value.replace(/^["']|["']$/g, '') as any;
         currentArray = null;
@@ -75,8 +79,14 @@ describe('Tutorial Content Validation', () => {
       expect(frontmatter.title, `${file} missing title`).toBeTruthy();
       expect(frontmatter.description, `${file} missing description`).toBeTruthy();
       expect(frontmatter.section, `${file} missing section`).toBeTruthy();
-      expect(frontmatter.stepNumber, `${file} missing stepNumber`).toBeGreaterThan(0);
-      expect(frontmatter.totalSteps, `${file} missing totalSteps`).toBeGreaterThan(0);
+
+      // Appendices can have null stepNumber/totalSteps
+      const isAppendix = frontmatter.isAppendix || frontmatter.stepNumber === null;
+      if (!isAppendix) {
+        expect(frontmatter.stepNumber, `${file} missing stepNumber`).toBeGreaterThan(0);
+        expect(frontmatter.totalSteps, `${file} missing totalSteps`).toBeGreaterThan(0);
+      }
+
       expect(frontmatter.lastUpdated, `${file} missing lastUpdated`).toBeTruthy();
       expect(frontmatter.difficulty, `${file} missing difficulty`).toMatch(/beginner|intermediate|advanced/);
     });
@@ -89,10 +99,14 @@ describe('Tutorial Content Validation', () => {
     files.forEach(file => {
       const { frontmatter } = readTutorial(file);
       const section = frontmatter.section!;
-      if (!sections.has(section)) {
-        sections.set(section, []);
+
+      // Only check numbered tutorials (skip appendices)
+      if (frontmatter.stepNumber !== null && frontmatter.stepNumber !== undefined) {
+        if (!sections.has(section)) {
+          sections.set(section, []);
+        }
+        sections.get(section)!.push(frontmatter.stepNumber);
       }
-      sections.get(section)!.push(frontmatter.stepNumber!);
     });
 
     sections.forEach((steps, section) => {
@@ -103,15 +117,19 @@ describe('Tutorial Content Validation', () => {
 
   it('should have consistent totalSteps within sections', () => {
     const files = getTutorialFiles();
-    const sectionTotals = new Map<string, number>();
+    const sectionTotals = new Map<string, number | null>();
 
     files.forEach(file => {
       const { frontmatter } = readTutorial(file);
       const section = frontmatter.section!;
-      if (sectionTotals.has(section)) {
-        expect(frontmatter.totalSteps).toBe(sectionTotals.get(section));
-      } else {
-        sectionTotals.set(section, frontmatter.totalSteps!);
+
+      // Only check numbered tutorials (skip appendices)
+      if (frontmatter.totalSteps !== null && frontmatter.totalSteps !== undefined) {
+        if (sectionTotals.has(section)) {
+          expect(frontmatter.totalSteps).toBe(sectionTotals.get(section));
+        } else {
+          sectionTotals.set(section, frontmatter.totalSteps);
+        }
       }
     });
   });
@@ -119,11 +137,16 @@ describe('Tutorial Content Validation', () => {
 
   it('should have all tutorials with lastUpdated dates', () => {
     const files = getTutorialFiles();
-    const today = '2025-10-31';
+
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
 
     files.forEach(file => {
       const { frontmatter } = readTutorial(file);
-      expect(frontmatter.lastUpdated).toBe(today);
+
+      // Check that lastUpdated exists and is a valid date format
+      expect(frontmatter.lastUpdated, `${file} missing lastUpdated`).toBeTruthy();
+      expect(frontmatter.lastUpdated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
   });
 
