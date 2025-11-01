@@ -80,13 +80,26 @@ dmesg | grep -i tdx
 
 ### Issue: No SEAM Firmware After Enabling TDX
 
+**What this actually means:**
+
+If you see your TDX status checks and do NOT see `virt/tdx: module initialized` in dmesg, or you see TDX-related errors during boot, this indicates the SEAM (Secure Arbitration Mode) firmware module failed to load.
+
+**Important:** There is no `/sys/firmware/tdx*` directory to check. The absence of that path is normal and expected on all TDX systems. SEAM firmware is verified only through dmesg messages showing `virt/tdx: TDX module: ... module initialized`.
+
+**Symptoms:**
+- `dmesg | grep -i tdx` shows errors or no "module initialized" message
+- `cat /sys/module/kvm_intel/parameters/tdx` returns `N` after enabling TDX in BIOS
+- TDX-related error messages in dmesg
+
 **Possible causes:**
 1. Server firmware/BIOS needs update
 2. Intel TDX SEAM module not installed in firmware
+3. BIOS TDX settings not properly saved
 
 **Solution:**
 - Update server BIOS/firmware to latest version
 - Check with server vendor for TDX support
+- Verify BIOS settings were saved and applied (re-enter BIOS to confirm)
 - Some early TDX-capable CPUs may need firmware updates
 
 ### Issue: Kernel Panic After Enabling TDX

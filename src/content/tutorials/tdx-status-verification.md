@@ -98,23 +98,28 @@ dmesg | grep -i tme
 [    0.000000] x86/tme: enabled by BIOS
 ```
 
-### Check for SEAM Firmware
+### Verify TDX Module (SEAM) is Loaded
+
+The Intel TDX SEAM (Secure Arbitration Mode) firmware is verified through the TDX module initialization message in dmesg. There is **no `/sys/firmware/tdx*` path** - that does not exist on TDX systems.
+
+The correct verification is the dmesg output you checked earlier:
 
 ```bash
-ls -la /sys/firmware/tdx* 2>/dev/null || echo "No TDX firmware found"
+dmesg | grep -i "tdx module"
 ```
 
-**If TDX is NOT enabled:**
+**If SEAM firmware loaded successfully (after BIOS config):**
 
 ```
-No TDX firmware found
+[  XXX.XXXXXX] virt/tdx: TDX module: attributes 0x0, vendor_id 0x8086, major_version 1, minor_version 5, build_date 20240725, build_num 784
+[  XXX.XXXXXX] virt/tdx: module initialized
 ```
 
-**If TDX is enabled, you'll see:**
+The message `virt/tdx: module initialized` confirms that the Intel TDX SEAM module loaded successfully.
 
-```
-/sys/firmware/tdx_seam/
-```
+**If SEAM firmware is missing or failed to load:**
+
+You would see error messages during boot, or the `module initialized` message would be absent. This indicates a BIOS firmware issue that requires updating your server BIOS.
 
 ## Next Steps
 
