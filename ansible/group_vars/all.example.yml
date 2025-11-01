@@ -7,11 +7,25 @@
 # These variables apply to all hosts in the inventory.
 
 # ============================================================================
-# Phase 1: TDX Verification
+# Phase 1.1: TDX Verification
 # ============================================================================
 
-# No variables needed for TDX verification (Phase 1)
+# No variables needed for TDX verification
 # Verification playbook only checks system state
+
+# ============================================================================
+# Phase 1.2: DNS Configuration
+# ============================================================================
+
+# DNS configuration for dstack gateway
+# Required for: ansible/playbooks/verify-dns.yml
+# domain: yourdomain.com
+# dstack_subdomain: dstack
+# server_ip: 173.231.234.133
+
+# Cloudflare API (for gateway TLS automation - Phase 4)
+# cloudflare_api_token: "YOUR_API_TOKEN_HERE"
+# cloudflare_zone_id: "YOUR_ZONE_ID_HERE"
 
 # ============================================================================
 # Phase 2: dstack VMM Installation (Future)

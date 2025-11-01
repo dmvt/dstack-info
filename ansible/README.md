@@ -15,7 +15,8 @@ The Ansible automation in this repository serves two purposes:
 ansible/
 ├── README.md                    # This file
 ├── playbooks/
-│   └── verify-tdx.yml          # Verify TDX host is properly configured
+│   ├── verify-tdx.yml          # Verify TDX host is properly configured (Phase 1.1)
+│   └── verify-dns.yml          # Verify DNS configuration for dstack (Phase 1.2)
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/
@@ -79,7 +80,7 @@ Edit `group_vars/all.yml` with your configuration.
 
 ## Usage
 
-### Phase 1: Verify TDX Enablement
+### Phase 1.1: Verify TDX Enablement
 
 After manually enabling TDX following the tutorials, verify it's working:
 
@@ -103,6 +104,36 @@ ansible-playbook playbooks/verify-tdx.yml -i inventory/hosts.yml
 - Playbook will provide specific error messages
 - Error messages reference the relevant tutorial sections
 - Follow the referenced tutorials to fix the issue
+
+### Phase 1.2: Verify DNS Configuration
+
+After configuring DNS in Cloudflare, verify it's working:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/verify-dns.yml
+
+# Run verification (requires variables)
+ansible-playbook playbooks/verify-dns.yml \
+  -e "domain=yourdomain.com" \
+  -e "dstack_subdomain=dstack" \
+  -e "server_ip=173.231.234.133"
+
+# Or define variables in group_vars/all.yml and run:
+ansible-playbook playbooks/verify-dns.yml
+```
+
+**Expected output:**
+- ✓ Base subdomain resolves correctly
+- ✓ Wildcard DNS resolves correctly
+- ✓ Multiple DNS resolvers return consistent results
+- ✓ Exit code 0
+
+**If verification fails:**
+- Check DNS records in Cloudflare dashboard
+- Wait for DNS propagation (up to 48 hours)
+- Verify nameservers point to Cloudflare
+- See [DNS Configuration Tutorial](https://dstack.info/tutorial/dns-configuration)
 
 ## Testing
 
@@ -143,6 +174,28 @@ ansible-playbook playbooks/PLAYBOOK_NAME.yml -i inventory/hosts.yml
 **Exit codes:**
 - `0` - TDX fully enabled and verified
 - `1` - TDX not enabled or verification failed
+
+### verify-dns.yml
+
+**Purpose:** Verify DNS configuration for dstack gateway
+
+**What it checks:**
+- Base subdomain resolution (`dstack.yourdomain.com`)
+- Wildcard DNS resolution (`*.dstack.yourdomain.com`)
+- Multiple test subdomains (test, app, example)
+- Consistency across DNS resolvers (Cloudflare, Google)
+- CAA records (informational only)
+
+**Required variables:**
+- `domain` - Your domain name (e.g., `yourdomain.com`)
+- `dstack_subdomain` - Subdomain for dstack (e.g., `dstack`)
+- `server_ip` - IP address of dstack server (e.g., `173.231.234.133`)
+
+**Usage:** See [DNS Configuration Tutorial](https://dstack.info/tutorial/dns-configuration)
+
+**Exit codes:**
+- `0` - DNS fully configured and verified
+- `1` - DNS not configured or verification failed
 
 ## Troubleshooting
 

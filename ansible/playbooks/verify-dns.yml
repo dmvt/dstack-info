@@ -1,0 +1,154 @@
+---
+- name: Verify DNS Configuration for dstack
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    # These should be defined in group_vars/all.yml or passed via command line
+    # domain: "yourdomain.com"
+    # dstack_subdomain: "dstack"
+    # server_ip: "173.231.234.133"
+    test_subdomains:
+      - "test"
+      - "app"
+      - "example"
+
+  tasks:
+    - name: Check required variables are defined
+      assert:
+        that:
+          - domain is defined
+          - dstack_subdomain is defined
+          - server_ip is defined
+        fail_msg: |
+          Required variables not defined. Please define in group_vars/all.yml:
+          - domain: Your domain name (e.g., yourdomain.com)
+          - dstack_subdomain: Subdomain for dstack (e.g., dstack)
+          - server_ip: IP address of dstack server
+
+          Or pass via command line:
+          ansible-playbook verify-dns.yml -e "domain=yourdomain.com" -e "dstack_subdomain=dstack" -e "server_ip=173.231.234.133"
+        success_msg: "✓ All required variables defined"
+
+    - name: Test DNS resolution for base subdomain
+      shell: |
+        dig +short {{ dstack_subdomain }}.{{ domain }} A | head -1
+      register: base_dns_result
+      failed_when: false
+      changed_when: false
+
+    - name: Verify base subdomain resolves to correct IP
+      assert:
+        that:
+          - base_dns_result.stdout == server_ip
+        fail_msg: |
+          ✗ DNS resolution failed for {{ dstack_subdomain }}.{{ domain }}
+          Expected IP: {{ server_ip }}
+          Got: {{ base_dns_result.stdout | default('No response') }}
+
+          Troubleshooting:
+          1. Check A record exists in Cloudflare: {{ dstack_subdomain }}.{{ domain }} → {{ server_ip }}
+          2. Verify nameservers point to Cloudflare
+          3. Wait for DNS propagation (can take up to 48 hours)
+          4. Test directly against Cloudflare DNS: dig @1.1.1.1 {{ dstack_subdomain }}.{{ domain }}
+
+          See tutorial: https://dstack.info/tutorial/dns-configuration
+        success_msg: "✓ Base subdomain {{ dstack_subdomain }}.{{ domain }} resolves to {{ server_ip }}"
+
+    - name: Test wildcard DNS resolution
+      shell: |
+        dig +short {{ item }}.{{ dstack_subdomain }}.{{ domain }} A | head -1
+      loop: "{{ test_subdomains }}"
+      register: wildcard_dns_results
+      failed_when: false
+      changed_when: false
+
+    - name: Verify wildcard DNS resolves correctly
+      assert:
+        that:
+          - item.stdout == server_ip
+        fail_msg: |
+          ✗ Wildcard DNS resolution failed for {{ item.item }}.{{ dstack_subdomain }}.{{ domain }}
+          Expected IP: {{ server_ip }}
+          Got: {{ item.stdout | default('No response') }}
+
+          Troubleshooting:
+          1. Check wildcard A record exists: *.{{ dstack_subdomain }}.{{ domain }} → {{ server_ip }}
+          2. Verify proxy status is "DNS only" (gray cloud) in Cloudflare
+          3. Wait for DNS propagation
+          4. Test with: dig {{ item.item }}.{{ dstack_subdomain }}.{{ domain }}
+
+          See tutorial: https://dstack.info/tutorial/dns-configuration#step-2-configure-dns-records
+        success_msg: "✓ Wildcard subdomain {{ item.item }}.{{ dstack_subdomain }}.{{ domain }} resolves to {{ server_ip }}"
+      loop: "{{ wildcard_dns_results.results }}"
+
+    - name: Test DNS resolution from multiple resolvers
+      shell: |
+        dig @{{ item.resolver }} +short {{ dstack_subdomain }}.{{ domain }} A | head -1
+      loop:
+        - { name: "Cloudflare DNS", resolver: "1.1.1.1" }
+        - { name: "Google DNS", resolver: "8.8.8.8" }
+      register: resolver_results
+      failed_when: false
+      changed_when: false
+
+    - name: Verify consistent DNS resolution across resolvers
+      assert:
+        that:
+          - item.stdout == server_ip
+        fail_msg: |
+          ✗ Inconsistent DNS resolution from {{ item.item.name }}
+          Expected IP: {{ server_ip }}
+          Got: {{ item.stdout | default('No response') }}
+
+          This may indicate:
+          1. DNS propagation still in progress
+          2. Stale DNS cache at resolver
+          3. Incorrect DNS configuration
+
+          Wait a few minutes and try again. DNS propagation can take time.
+        success_msg: "✓ {{ item.item.name }} resolves {{ dstack_subdomain }}.{{ domain }} to {{ server_ip }}"
+      loop: "{{ resolver_results.results }}"
+
+    - name: Check CAA records (informational)
+      shell: |
+        dig +short {{ dstack_subdomain }}.{{ domain }} CAA
+      register: caa_result
+      failed_when: false
+      changed_when: false
+
+    - name: Report CAA record status
+      debug:
+        msg: |
+          {% if caa_result.stdout %}
+          ✓ CAA records configured:
+          {{ caa_result.stdout }}
+          {% else %}
+          ⚠ No CAA records found (optional but recommended)
+
+          CAA records restrict certificate issuance to Let's Encrypt only.
+          While optional, they improve security.
+
+          To add CAA records, see:
+          https://dstack.info/tutorial/dns-configuration#step-2-configure-dns-records
+          {% endif %}
+
+    - name: DNS verification summary
+      debug:
+        msg: |
+          ═══════════════════════════════════════════════════════════════
+          DNS Verification Complete ✅
+          ═══════════════════════════════════════════════════════════════
+
+          Domain Configuration:
+          • Base domain: {{ dstack_subdomain }}.{{ domain }} → {{ server_ip }}
+          • Wildcard: *.{{ dstack_subdomain }}.{{ domain }} → {{ server_ip }}
+          • Tested subdomains: {{ test_subdomains | join(', ') }}
+          • All resolvers consistent: ✓
+
+          Next Steps:
+          1. Save Cloudflare API token securely (if not already done)
+          2. Proceed to blockchain wallet setup (Phase 1.3)
+
+          See: https://dstack.info/tutorial/blockchain-setup
+          ═══════════════════════════════════════════════════════════════
