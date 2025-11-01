@@ -686,6 +686,113 @@ src/
 
 ---
 
+#### 0.4.5 Enhanced Tutorial Navigation
+
+**What we'll build:**
+- Collapsible sidebar sections (collapsed by default, expand when tutorial selected)
+- Table of contents under selected tutorial (H2 and H3 headers)
+- Smooth-scroll anchor links from TOC items
+- Smart default tutorial routing (redirects to next incomplete)
+- Tutorial completion page (shown when all tutorials complete)
+
+**Implementation breakdown:**
+
+##### 0.4.5.1 Markdown Heading Extraction Utility
+- Create `src/utils/markdown.ts` with `extractHeadings()` function
+- Parse markdown to extract H2 and H3 headers
+- Generate URL-friendly anchor IDs (lowercase, hyphenated)
+- Return structured array: `{ level: 2 | 3, text: string, id: string }[]`
+- Add unit tests in `src/__tests__/markdown.test.ts` (10+ tests)
+
+**Git Commits:** 1
+**Testing:** Unit tests for heading extraction, anchor ID generation, edge cases
+
+##### 0.4.5.2 Tutorial Route Heading Extraction
+- Modify `src/pages/tutorial/[...slug].astro` to extract headings
+- Import `extractHeadings()` utility
+- Parse `tutorial.body` to extract headings
+- Pass headings array to TutorialLayout as new prop
+- Update TypeScript interfaces
+
+**Git Commits:** 1
+**Testing:** Build succeeds, all 8 tutorial pages render correctly
+
+##### 0.4.5.3 Collapsible Sections and Table of Contents
+- Enhance `src/components/TutorialSidebar.svelte`
+- Add section collapse state (expand only when current tutorial in section)
+- Add chevron icon to section headers (rotates on expand/collapse)
+- Render TOC under current tutorial with H2/H3 headers
+- Style TOC with indentation (H3 more than H2)
+- Add smooth-scroll click handlers for TOC anchors
+- Update unit tests
+
+**Git Commits:** 1
+**Testing:** Section collapse/expand works, TOC displays and scrolls correctly
+
+##### 0.4.5.4 Tutorial Completion Page
+- Create `src/pages/tutorial/complete.astro`
+- Congratulations message with celebration styling
+- Progress summary stats (tutorials completed, time spent)
+- Links to next steps (homepage, GitHub, examples)
+- Reset progress button
+- Use ComponentLayout
+
+**Git Commits:** 1
+**Testing:** Visit /tutorial/complete, verify stats, test reset button
+
+##### 0.4.5.5 Smart Default Tutorial Routing
+- Create `src/pages/tutorial/index.astro`
+- Client-side logic to check progress in localStorage
+- Find first incomplete tutorial in sorted order
+- Redirect to incomplete tutorial OR /tutorial/complete if all done
+- Handle edge cases (no progress → first tutorial)
+- Show loading state during redirect
+- Update homepage tutorial link to `/tutorial`
+
+**Git Commits:** 1
+**Testing:** Test all routing scenarios (no progress, partial, complete, error)
+
+##### 0.4.5.6 Comprehensive E2E Tests
+- Create `e2e/tutorial-navigation-enhancements.spec.ts`
+- Collapsible sections tests (5 tests)
+- Table of contents tests (6 tests)
+- TOC smooth-scroll tests (4 tests)
+- Smart routing tests (5 tests)
+- Completion page tests (4 tests)
+- Integration tests (3 tests)
+
+**Git Commits:** 1
+**Testing:** All 62+ E2E tests passing (42 existing + 20+ new)
+
+**Total Git Commits:** 6
+**Total Testing Checkpoints:** 6 (one per commit)
+
+**Files Created:**
+- `src/utils/markdown.ts`
+- `src/__tests__/markdown.test.ts`
+- `src/pages/tutorial/complete.astro`
+- `src/pages/tutorial/index.astro`
+- `e2e/tutorial-navigation-enhancements.spec.ts`
+
+**Files Modified:**
+- `src/pages/tutorial/[...slug].astro`
+- `src/layouts/TutorialLayout.astro`
+- `src/components/TutorialSidebar.svelte`
+- `src/__tests__/TutorialSidebar.test.ts`
+- `src/pages/index.astro`
+
+**Testing Plan for Each Checkpoint:**
+- [ ] Unit tests passing (266 total: 251 + 15 new)
+- [ ] E2E tests passing (62 total: 42 + 20 new)
+- [ ] Build succeeds (14 pages)
+- [ ] Deploy to Cloudflare Pages
+- [ ] Manual testing of new features
+
+**Checkpoint:** After each commit, show feature working, await confirmation
+**Update:** Add Phase 0.4.5 completion to TUTORIAL_PROGRESS.md
+
+---
+
 #### 0.6 End-to-End Testing with Playwright
 
 **Overview:**
