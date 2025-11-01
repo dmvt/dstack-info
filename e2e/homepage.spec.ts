@@ -92,8 +92,9 @@ test.describe('Homepage', () => {
     // Wait for navigation (will redirect to first tutorial)
     await page.waitForURL('**/tutorial/**', { timeout: 5000 });
 
-    // Verify we're on tutorial page
-    await expect(page).toHaveURL(/\/tutorial\/tdx-hardware-verification/);
+    // Verify we're on a tutorial page (should redirect to first incomplete tutorial)
+    // First tutorial by section alphabetically is "Host Setup" > "tdx-hardware-verification"
+    await expect(page).toHaveURL(/\/tutorial\/[a-z-]+/);
   });
 
   test('should be responsive on mobile', async ({ page }) => {

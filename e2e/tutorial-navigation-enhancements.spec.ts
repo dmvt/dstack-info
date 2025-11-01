@@ -17,8 +17,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
       expect(count).toBeGreaterThan(0);
 
-      // Check that TDX Host Setup (current tutorial's section) is expanded
-      const tdxSection = page.locator('aside button:has-text("TDX Host Setup")');
+      // Check that Host Setup (current tutorial's section) is expanded
+      const tdxSection = page.locator('aside button:has-text("Host Setup")');
       const chevron = tdxSection.locator('i.fa-chevron-down');
       const chevronClass = await chevron.getAttribute('class');
 
@@ -29,11 +29,11 @@ test.describe('Tutorial Navigation Enhancements', () => {
     test('should expand section when clicking collapsed section header', async ({ page }) => {
       await page.goto('/tutorial/tdx-hardware-verification');
 
-      // Navigate to a different tutorial to collapse TDX Host Setup
+      // Navigate to a different tutorial to collapse Host Setup
       await page.goto('/tutorial/dns-configuration');
 
-      // Find and click TDX Host Setup section
-      const tdxSection = page.locator('aside button:has-text("TDX Host Setup")');
+      // Find and click Host Setup section
+      const tdxSection = page.locator('aside button:has-text("Host Setup")');
       const chevron = tdxSection.locator('i.fa-chevron-down');
 
       // Should be collapsed (rotated)
@@ -52,8 +52,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
     test('should collapse section when clicking expanded section header', async ({ page }) => {
       await page.goto('/tutorial/tdx-hardware-verification');
 
-      // TDX Host Setup should be expanded (current tutorial)
-      const tdxSection = page.locator('aside button:has-text("TDX Host Setup")');
+      // Host Setup should be expanded (current tutorial)
+      const tdxSection = page.locator('aside button:has-text("Host Setup")');
       const chevron = tdxSection.locator('i.fa-chevron-down');
 
       // Verify expanded
@@ -72,7 +72,7 @@ test.describe('Tutorial Navigation Enhancements', () => {
     test('should rotate chevron icon when toggling section', async ({ page }) => {
       await page.goto('/tutorial/tdx-hardware-verification');
 
-      const tdxSection = page.locator('aside button:has-text("TDX Host Setup")');
+      const tdxSection = page.locator('aside button:has-text("Host Setup")');
       const chevron = tdxSection.locator('i.fa-chevron-down');
 
       // Initially expanded (no rotation)
@@ -92,8 +92,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
       await page.goto('/tutorial/tdx-hardware-verification');
 
       // Expand another section
-      const advancedTopicsSection = page.locator('aside button:has-text("Advanced Topics")');
-      await advancedTopicsSection.click();
+      const prerequisitesSection = page.locator('aside button:has-text("Prerequisites")');
+      await prerequisitesSection.click();
       await page.waitForTimeout(200);
 
       // Both sections should now be visible
@@ -150,8 +150,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
       await page.goto('/tutorial/tdx-hardware-verification');
 
       // Expand another section to see other tutorials
-      const advancedSection = page.locator('aside button:has-text("Advanced Topics")');
-      await advancedSection.click();
+      const prerequisitesSection = page.locator('aside button:has-text("Prerequisites")');
+      await prerequisitesSection.click();
       await page.waitForTimeout(200);
 
       // Look for DNS Configuration tutorial link
@@ -293,10 +293,10 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
       await page.goto('/tutorial');
 
-      // Should redirect to second tutorial
-      await page.waitForURL('**/tutorial/tdx-bios-configuration', { timeout: 3000 });
+      // Should redirect to second tutorial (tdx-software-setup is step 2 in Host Setup)
+      await page.waitForURL('**/tutorial/tdx-software-setup', { timeout: 3000 });
 
-      expect(page.url()).toContain('/tutorial/tdx-bios-configuration');
+      expect(page.url()).toContain('/tutorial/tdx-software-setup');
     });
 
     test('should redirect to completion page when all tutorials complete', async ({ page }) => {
@@ -406,8 +406,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
       await expect(page.locator('text="Progress by Section"')).toBeVisible();
 
       // Should list sections
-      await expect(page.locator('text="TDX Host Setup"')).toBeVisible();
-      await expect(page.locator('text="Advanced Topics"')).toBeVisible();
+      await expect(page.locator('text="Host Setup"')).toBeVisible();
+      await expect(page.locator('text="Prerequisites"')).toBeVisible();
     });
 
     test('should clear progress when reset button clicked and confirmed', async ({ page }) => {
@@ -422,7 +422,7 @@ test.describe('Tutorial Navigation Enhancements', () => {
       await page.goto('/tutorial/complete');
 
       // Should show 1 of 8 complete
-      await expect(page.locator('text="12%"')).toBeVisible(); // 1/8 = 12.5% rounds to 12%
+      await expect(page.locator('text="13%"')).toBeVisible(); // 1/8 = 12.5% rounds to 13%
 
       // Click reset button
       page.on('dialog', dialog => dialog.accept());
@@ -438,7 +438,7 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
   test.describe('Integration Tests', () => {
     test('should navigate to completion page from last tutorial next button', async ({ page }) => {
-      // Go to last tutorial (dns-configuration is last in Advanced Topics)
+      // Go to last tutorial (dns-configuration is last in Prerequisites section)
       await page.goto('/tutorial/dns-configuration');
 
       // Wait for page to load

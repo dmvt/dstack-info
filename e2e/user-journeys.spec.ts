@@ -155,12 +155,13 @@ test.describe('User Journeys', () => {
         await page.waitForLoadState('networkidle');
       }
 
-      // Should be on last tutorial
-      await expect(page).toHaveURL(/\/tutorial\/tdx-troubleshooting-next-steps/);
+      // Should be on last tutorial (dns-configuration is last when sorted)
+      await expect(page).toHaveURL(/\/tutorial\/dns-configuration/);
 
-      // Last tutorial should not have a next button (or it should be disabled)
-      const nextBtnDisabled = page.locator('div.nav-next-disabled');
-      await expect(nextBtnDisabled).toBeVisible();
+      // Last tutorial should have next button that goes to completion page
+      const nextBtn = page.locator('a.nav-next');
+      await expect(nextBtn).toBeVisible();
+      await expect(nextBtn).toContainText('View Progress');
     });
 
     test('should navigate backwards through tutorials', async ({ page }) => {
