@@ -1,0 +1,74 @@
+---
+# Global Variables for dstack Ansible Automation
+#
+# Copy this file to all.yml and customize:
+#   cp all.example.yml all.yml
+#
+# These variables apply to all hosts in the inventory.
+
+# ============================================================================
+# Phase 1: TDX Verification
+# ============================================================================
+
+# No variables needed for TDX verification (Phase 1)
+# Verification playbook only checks system state
+
+# ============================================================================
+# Phase 2: dstack VMM Installation (Future)
+# ============================================================================
+
+# VMM configuration
+# vmm_api_port: 8090
+# vmm_storage_path: /var/lib/dstack
+# vmm_log_level: info
+
+# dstack repository
+# dstack_repo_url: https://github.com/Dstack-TEE/dstack.git
+# dstack_repo_version: master
+# dstack_repo_path: /opt/dstack
+
+# ============================================================================
+# Phase 3: KMS Deployment (Future)
+# ============================================================================
+
+# Blockchain configuration
+# blockchain_network: sepolia
+# blockchain_rpc_url: https://sepolia.infura.io/v3/YOUR_PROJECT_ID
+# blockchain_wallet_address: "0xYourWalletAddress"
+
+# KMS configuration
+# kms_api_port: 8091
+# kms_storage_path: /var/lib/dstack-kms
+
+# ============================================================================
+# Phase 4: Gateway Deployment (Future)
+# ============================================================================
+
+# Domain configuration
+# gateway_domain: dstack.yourdomain.com
+# gateway_wildcard_domain: "*.yourdomain.com"
+
+# TLS/SSL configuration
+# gateway_ssl_email: admin@yourdomain.com
+# gateway_certbot_challenge: http
+
+# Gateway configuration
+# gateway_api_port: 8443
+
+# ============================================================================
+# Common Settings
+# ============================================================================
+
+# System packages to install
+# common_packages:
+#   - build-essential
+#   - git
+#   - curl
+#   - wget
+
+# Rust toolchain
+# rust_version: stable
+# rust_profile: default
+
+# NOTE: Uncomment and customize variables as you progress through phases.
+# Keep this file version controlled but add all.yml to .gitignore for secrets.

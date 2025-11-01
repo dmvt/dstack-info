@@ -1,0 +1,22 @@
+# Ansible
+*.retry
+
+# Actual inventory files (keep only .example files in git)
+inventory/hosts.yml
+inventory/*.yml
+!inventory/*.example.yml
+
+# Actual variables files (keep only .example files in git)
+group_vars/all.yml
+group_vars/*.yml
+!group_vars/*.example.yml
+
+# Secrets and sensitive data
+*.pem
+*.key
+*.crt
+*.vault
+
+# Ansible Galaxy
+roles/*/
+!roles/.gitkeep

@@ -1,0 +1,204 @@
+---
+- name: Verify Intel TDX Host Setup
+  hosts: dstack_servers
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Check if running Ubuntu 24.04 LTS
+      assert:
+        that:
+          - ansible_distribution == "Ubuntu"
+          - ansible_distribution_version == "24.04"
+        fail_msg: |
+          This playbook requires Ubuntu 24.04 LTS (Noble).
+          Current: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          See tutorial: https://dstack.info/tutorial/tdx-hardware-verification
+        success_msg: "✓ Running Ubuntu 24.04 LTS"
+
+    - name: Check TDX CPU capability
+      shell: grep -q tdx /proc/cpuinfo
+      register: tdx_cpu_check
+      failed_when: false
+      changed_when: false
+
+    - name: Fail if TDX not supported by CPU
+      fail:
+        msg: |
+          ✗ TDX not supported by CPU.
+
+          Your processor does not have Intel TDX capabilities.
+          TDX requires Intel Xeon Scalable (4th or 5th Gen).
+
+          See tutorial: TDX Hardware Verification
+          https://dstack.info/tutorial/tdx-hardware-verification
+
+          Verify your CPU on Intel ARK: https://ark.intel.com
+      when: tdx_cpu_check.rc != 0
+
+    - name: Report CPU supports TDX
+      debug:
+        msg: "✓ CPU supports Intel TDX"
+      when: tdx_cpu_check.rc == 0
+
+    - name: Check if TDX-enabled kernel is installed
+      command: uname -r
+      register: kernel_version
+      changed_when: false
+
+    - name: Fail if not running TDX-enabled kernel
+      fail:
+        msg: |
+          ✗ Not running TDX-enabled Intel kernel.
+
+          Current kernel: {{ kernel_version.stdout }}
+          Expected: 6.8.0-*-intel or newer
+
+          See tutorial: TDX Kernel Installation
+          https://dstack.info/tutorial/tdx-kernel-installation
+      when: "'intel' not in kernel_version.stdout"
+
+    - name: Report TDX kernel is running
+      debug:
+        msg: "✓ Running TDX-enabled kernel: {{ kernel_version.stdout }}"
+      when: "'intel' in kernel_version.stdout"
+
+    - name: Check kvm_intel module has tdx parameter
+      stat:
+        path: /sys/module/kvm_intel/parameters/tdx
+      register: tdx_param_file
+
+    - name: Fail if kvm_intel tdx parameter not found
+      fail:
+        msg: |
+          ✗ kvm_intel module tdx parameter not found.
+
+          The kvm_intel kernel module may not be loaded or configured for TDX.
+
+          See tutorial: TDX Kernel Installation
+          https://dstack.info/tutorial/tdx-kernel-installation
+      when: not tdx_param_file.stat.exists
+
+    - name: Read kvm_intel tdx parameter value
+      command: cat /sys/module/kvm_intel/parameters/tdx
+      register: tdx_param_value
+      changed_when: false
+      when: tdx_param_file.stat.exists
+
+    - name: Check if TDX is enabled in kvm_intel
+      set_fact:
+        tdx_enabled: "{{ tdx_param_value.stdout.strip() == 'Y' }}"
+      when: tdx_param_file.stat.exists
+
+    - name: Fail if TDX not enabled
+      fail:
+        msg: |
+          ✗ TDX is NOT enabled (kvm_intel tdx parameter = N).
+
+          TDX hardware features must be enabled in BIOS.
+
+          See tutorial: TDX BIOS Configuration
+          https://dstack.info/tutorial/tdx-bios-configuration
+
+          Required BIOS settings:
+          - TME (Total Memory Encryption): Enabled
+          - TME Bypass: Disabled
+          - TDX: Enabled
+          - Software Guard Extensions (SGX): Enabled
+      when:
+        - tdx_param_file.stat.exists
+        - not tdx_enabled
+
+    - name: Report TDX is enabled in kvm_intel
+      debug:
+        msg: "✓ TDX enabled in kvm_intel module"
+      when:
+        - tdx_param_file.stat.exists
+        - tdx_enabled
+
+    - name: Check for TDX module initialization in dmesg
+      shell: dmesg | grep -i "tdx.*module.*initialized"
+      register: tdx_module_init
+      failed_when: false
+      changed_when: false
+
+    - name: Fail if TDX module not initialized
+      fail:
+        msg: |
+          ✗ TDX module (SEAM) not initialized.
+
+          TDX BIOS configuration may be incomplete.
+
+          See tutorial: TDX BIOS Configuration
+          https://dstack.info/tutorial/tdx-bios-configuration
+
+          Also check: TDX Troubleshooting & Next Steps
+          https://dstack.info/tutorial/tdx-troubleshooting-next-steps
+      when:
+        - tdx_enabled
+        - tdx_module_init.rc != 0
+
+    - name: Report TDX module initialized
+      debug:
+        msg: "✓ TDX module (SEAM) initialized"
+      when:
+        - tdx_enabled
+        - tdx_module_init.rc == 0
+
+    - name: Check TME (Total Memory Encryption) status
+      shell: dmesg | grep -i "x86/tme"
+      register: tme_status
+      failed_when: false
+      changed_when: false
+
+    - name: Check if TME is enabled
+      set_fact:
+        tme_enabled: "{{ 'enabled by BIOS' in tme_status.stdout }}"
+      when: tme_status.rc == 0
+
+    - name: Warn if TME not enabled
+      debug:
+        msg: |
+          ⚠ TME (Total Memory Encryption) may not be enabled in BIOS.
+
+          While TDX appears enabled, TME is recommended for full functionality.
+
+          See tutorial: TDX BIOS Configuration
+          https://dstack.info/tutorial/tdx-bios-configuration
+      when:
+        - tme_status.rc == 0
+        - not tme_enabled
+
+    - name: Report TME is enabled
+      debug:
+        msg: "✓ TME (Total Memory Encryption) enabled"
+      when:
+        - tme_status.rc == 0
+        - tme_enabled
+
+    - name: Final TDX verification summary
+      debug:
+        msg: |
+
+          ═══════════════════════════════════════════════════════════
+            ✓ Intel TDX is FULLY ENABLED and VERIFIED
+          ═══════════════════════════════════════════════════════════
+
+          Host: {{ ansible_hostname }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Kernel: {{ kernel_version.stdout }}
+          CPU: TDX-capable
+          TDX Module: Initialized
+          TME: {{ 'Enabled' if (tme_status.rc == 0 and tme_enabled) else 'Unknown' }}
+
+          Your system is ready for TDX-based confidential computing!
+
+          Next steps:
+          - Proceed to Phase 1.2: Domain & DNS Setup
+          - Or continue with Phase 2: dstack VMM Installation
+
+          See: https://dstack.info/
+          ═══════════════════════════════════════════════════════════
+      when:
+        - tdx_enabled
+        - tdx_module_init.rc == 0

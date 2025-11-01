@@ -1,0 +1,57 @@
+---
+# Ansible Inventory for dstack Deployment
+#
+# Copy this file to hosts.yml and customize with your server details:
+#   cp hosts.example.yml hosts.yml
+#
+# Then edit hosts.yml with your actual server IP and SSH user.
+
+all:
+  children:
+    # TDX-enabled servers for dstack deployment
+    dstack_servers:
+      hosts:
+        # Example host configuration
+        # Replace with your actual server details
+        tdx-host:
+          # Server IP address or hostname
+          ansible_host: 173.231.234.133
+
+          # SSH user (must have sudo privileges)
+          ansible_user: ubuntu
+
+          # Optional: SSH port (default: 22)
+          # ansible_port: 22
+
+          # Optional: SSH private key path
+          # ansible_ssh_private_key_file: ~/.ssh/id_rsa
+
+          # Optional: Python interpreter path
+          # ansible_python_interpreter: /usr/bin/python3
+
+      # Group variables for all dstack servers
+      vars:
+        # Become settings for privilege escalation
+        ansible_become: yes
+        ansible_become_method: sudo
+
+        # Connection settings
+        ansible_connection: ssh
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+# Example: Multiple servers
+# Uncomment and customize if you have multiple TDX servers
+#
+# dstack_servers:
+#   hosts:
+#     tdx-host-1:
+#       ansible_host: 192.168.1.100
+#       ansible_user: ubuntu
+#
+#     tdx-host-2:
+#       ansible_host: 192.168.1.101
+#       ansible_user: ubuntu
+#
+#     tdx-host-3:
+#       ansible_host: 192.168.1.102
+#       ansible_user: ubuntu
