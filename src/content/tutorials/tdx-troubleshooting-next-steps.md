@@ -84,8 +84,6 @@ dmesg | grep -i tdx
 
 If you see your TDX status checks and do NOT see `virt/tdx: module initialized` in dmesg, or you see TDX-related errors during boot, this indicates the SEAM (Secure Arbitration Mode) firmware module failed to load.
 
-**Important:** There is no `/sys/firmware/tdx*` directory to check. The absence of that path is normal and expected on all TDX systems. SEAM firmware is verified only through dmesg messages showing `virt/tdx: TDX module: ... module initialized`.
-
 **Symptoms:**
 - `dmesg | grep -i tdx` shows errors or no "module initialized" message
 - `cat /sys/module/kvm_intel/parameters/tdx` returns `N` after enabling TDX in BIOS
