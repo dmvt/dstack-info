@@ -1,0 +1,27 @@
+---
+import { getCollection } from 'astro:content';
+import TutorialLayout from '../../layouts/TutorialLayout.astro';
+import TutorialComplete from '../../components/TutorialComplete.svelte';
+
+// Get all tutorials
+const allTutorials = (await getCollection('tutorials')).sort((a, b) => {
+  // Sort by section first
+  if (a.data.section !== b.data.section) {
+    return a.data.section.localeCompare(b.data.section);
+  }
+  // Then by step number (null values last)
+  if (a.data.stepNumber === null) return 1;
+  if (b.data.stepNumber === null) return -1;
+  return a.data.stepNumber - b.data.stepNumber;
+});
+---
+
+<TutorialLayout
+  title="Tutorial Progress"
+  description="View your tutorial completion progress"
+  section="Progress"
+  allTutorials={allTutorials}
+  currentSlug="complete"
+>
+  <TutorialComplete client:load tutorials={allTutorials} />
+</TutorialLayout>
