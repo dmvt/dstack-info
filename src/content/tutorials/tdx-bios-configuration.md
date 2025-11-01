@@ -3,7 +3,7 @@ title: "TDX BIOS Configuration"
 description: "Configure BIOS settings to enable TDX and verify successful enablement"
 section: "Host Setup"
 stepNumber: 5
-totalSteps: 6
+totalSteps: 5
 prerequisites:
     - "Completed Part 4: TDX Status Verification"
     - "BIOS/IPMI access to your server"

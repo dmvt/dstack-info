@@ -2,8 +2,8 @@
 title: "TDX Troubleshooting & Next Steps"
 description: "Troubleshoot common TDX issues and learn what to do after TDX is enabled"
 section: "Host Setup"
-stepNumber: 6
-totalSteps: 6
+stepNumber: null
+totalSteps: null
 prerequisites:
   - "Completed Part 5: TDX BIOS Configuration"
   - "TDX hardware features enabled in BIOS"

@@ -3,7 +3,7 @@ title: "TDX Kernel Installation"
 description: "Verify TDX kernel installation and boot into the TDX-enabled kernel"
 section: "Host Setup"
 stepNumber: 3
-totalSteps: 6
+totalSteps: 5
 prerequisites:
     - "Completed Part 2: TDX Software Setup"
 tags:
