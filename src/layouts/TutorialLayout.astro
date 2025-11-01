@@ -2,15 +2,17 @@
 import BaseLayout from './BaseLayout.astro';
 import TutorialSidebar from '../components/TutorialSidebar.svelte';
 import TutorialSearch from '../components/TutorialSearch.svelte';
+import type { Heading } from '../utils/markdown';
 
 export interface Props {
 	title: string;
 	description?: string;
 	section?: string;
-	totalSteps?: number;
-	currentStep?: number;
+	totalSteps?: number | null;
+	currentStep?: number | null;
 	allTutorials?: any[];
 	currentSlug?: string;
+	headings?: Heading[];
 }
 
 const {
@@ -20,7 +22,8 @@ const {
 	totalSteps,
 	currentStep,
 	allTutorials = [],
-	currentSlug = ''
+	currentSlug = '',
+	headings = []
 } = Astro.props;
 ---
 
@@ -49,6 +52,7 @@ const {
 						client:load
 						tutorials={allTutorials}
 						currentSlug={currentSlug}
+						headings={headings}
 					/>
 				)}
 			</div>

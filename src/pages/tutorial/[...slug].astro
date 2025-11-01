@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import TutorialLayout from '../../layouts/TutorialLayout.astro';
 import NavigationButtons from '../../components/NavigationButtons.astro';
 import TutorialProgress from '../../components/TutorialProgress.svelte';
+import { extractHeadings } from '../../utils/markdown';
 
 export async function getStaticPaths() {
   const tutorials = await getCollection('tutorials');
@@ -49,6 +50,9 @@ export async function getStaticPaths() {
 const { tutorial, previousTutorial, nextTutorial, allTutorials } = Astro.props;
 const { Content } = await tutorial.render();
 const { title, description, section, stepNumber, totalSteps } = tutorial.data;
+
+// Extract headings from tutorial markdown content for table of contents
+const headings = extractHeadings(tutorial.body);
 ---
 
 <TutorialLayout
@@ -59,6 +63,7 @@ const { title, description, section, stepNumber, totalSteps } = tutorial.data;
   currentStep={stepNumber}
   allTutorials={allTutorials}
   currentSlug={tutorial.slug}
+  headings={headings}
 >
   <Content />
 
