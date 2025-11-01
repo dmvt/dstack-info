@@ -137,14 +137,15 @@ test.describe('User Journeys', () => {
 
       // Navigate through all tutorials using Next button
       // Full sorted order: Host Setup (5 steps + 2 appendices), then Prerequisites (1 step)
+      // Appendices are sorted alphabetically by title: "Appendix A..." comes before "Appendix B..."
       const tutorialUrls = [
         '/tutorial/tdx-hardware-verification',    // Host Setup #1
         '/tutorial/tdx-software-setup',           // Host Setup #2
         '/tutorial/tdx-kernel-installation',       // Host Setup #3
         '/tutorial/tdx-status-verification',       // Host Setup #4
         '/tutorial/tdx-bios-configuration',        // Host Setup #5
-        '/tutorial/ansible-tdx-automation',        // Host Setup appendix
-        '/tutorial/tdx-troubleshooting-next-steps', // Host Setup appendix
+        '/tutorial/tdx-troubleshooting-next-steps', // Host Setup appendix (Appendix A)
+        '/tutorial/ansible-tdx-automation',        // Host Setup appendix (Appendix B)
         '/tutorial/dns-configuration',             // Prerequisites #1 (last!)
       ];
 
@@ -168,18 +169,19 @@ test.describe('User Journeys', () => {
     });
 
     test('should navigate backwards through tutorials', async ({ page }) => {
-      // Start at last tutorial
-      await page.goto('/tutorial/tdx-troubleshooting-next-steps');
+      // Start at last appendix in Host Setup section (Appendix B comes after A alphabetically)
+      await page.goto('/tutorial/ansible-tdx-automation');
       await page.waitForLoadState('networkidle');
 
       // Navigate backwards using Previous button
       const tutorialUrls = [
-        '/tutorial/tdx-troubleshooting-next-steps',
-        '/tutorial/tdx-bios-configuration',
-        '/tutorial/tdx-status-verification',
-        '/tutorial/tdx-kernel-installation',
-        '/tutorial/tdx-software-setup',
-        '/tutorial/tdx-hardware-verification',
+        '/tutorial/ansible-tdx-automation',        // Appendix B
+        '/tutorial/tdx-troubleshooting-next-steps', // Appendix A
+        '/tutorial/tdx-bios-configuration',        // Step 5
+        '/tutorial/tdx-status-verification',       // Step 4
+        '/tutorial/tdx-kernel-installation',       // Step 3
+        '/tutorial/tdx-software-setup',            // Step 2
+        '/tutorial/tdx-hardware-verification',     // Step 1
       ];
 
       for (let i = 0; i < tutorialUrls.length - 1; i++) {

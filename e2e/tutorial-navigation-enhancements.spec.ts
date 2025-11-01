@@ -10,9 +10,13 @@ test.describe('Tutorial Navigation Enhancements', () => {
   test.describe('Collapsible Sections', () => {
     test('should have sections collapsed by default except current tutorial section', async ({ page }) => {
       await page.goto('/tutorial/tdx-hardware-verification');
+      await page.waitForLoadState('networkidle');
 
-      // Get all section headers
-      const sectionHeaders = page.locator('aside button:has(span)');
+      // Wait for Svelte component to mount
+      await page.waitForSelector('aside button.uppercase', { timeout: 5000 });
+
+      // Get all section headers (use .uppercase class to be more specific)
+      const sectionHeaders = page.locator('aside button.uppercase');
       const count = await sectionHeaders.count();
 
       expect(count).toBeGreaterThan(0);
@@ -116,6 +120,10 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
     test('should show H2 and H3 headings in TOC', async ({ page }) => {
       await page.goto('/tutorial/tdx-hardware-verification');
+      await page.waitForLoadState('networkidle');
+
+      // Wait for Svelte component to mount and TOC to render
+      await page.waitForSelector('aside div.border-l button', { timeout: 5000 });
 
       // Check for TOC buttons
       const tocButtons = page.locator('aside div.border-l button');
@@ -253,6 +261,10 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
     test('should make all TOC items clickable', async ({ page }) => {
       await page.goto('/tutorial/tdx-hardware-verification');
+      await page.waitForLoadState('networkidle');
+
+      // Wait for Svelte component to mount and TOC to render
+      await page.waitForSelector('aside div.border-l button', { timeout: 5000 });
 
       // Get all TOC buttons
       const tocButtons = page.locator('aside div.border-l button');
