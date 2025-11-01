@@ -108,9 +108,11 @@ CAA records restrict which Certificate Authorities can issue certificates for yo
 1. Click **"Add record"**
 2. Configure:
    - **Type**: CAA
-   - **Name**: `dstack` (or `@` for entire domain)
-   - **Tag**: `issue`
+   - **Name**: `@` (for root domain, or use `dstack` for subdomain only)
+   - **Flags**: `0`
+   - **Tag**: Select **"Only allow specific hostnames"** from dropdown
    - **CA domain name**: `letsencrypt.org`
+   - **TTL**: Auto
 3. Click **"Save"**
 
 Repeat for wildcard subdomain:
@@ -118,11 +120,13 @@ Repeat for wildcard subdomain:
 2. Configure:
    - **Type**: CAA
    - **Name**: `*.dstack`
-   - **Tag**: `issue`
+   - **Flags**: `0`
+   - **Tag**: Select **"Only allow specific hostnames"** from dropdown
    - **CA domain name**: `letsencrypt.org`
+   - **TTL**: Auto
 3. Click **"Save"**
 
-This ensures only Let's Encrypt can issue certificates, improving security.
+**Note:** The "Only allow specific hostnames" tag option corresponds to the `issue` tag in CAA record syntax. This ensures only Let's Encrypt can issue certificates for your domain, improving security.
 
 ## Step 3: Generate Cloudflare API Token
 

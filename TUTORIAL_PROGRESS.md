@@ -1324,6 +1324,114 @@ All 4 sub-phases completed successfully:
 
 ---
 
+## Phase 0.4.5: Enhanced Tutorial Navigation - COMPLETE ✅
+
+**Date:** 2025-11-01
+**Status:** Complete and deployed
+
+### What Was Accomplished
+
+**Enhanced Tutorial Features:**
+- ✅ Table of Contents component for in-page navigation
+- ✅ Scroll spy functionality highlighting current section
+- ✅ Active heading highlighting in sidebar
+- ✅ Smooth scrolling to sections within tutorials
+- ✅ Last tutorial redirects to completion page (not disabled button)
+- ✅ "View Progress" button label on final tutorial
+
+**Git Commits (7 total):**
+1. `682a1e4` - Add table of contents with scroll spy functionality
+2. `b4d30b2` - Fix scroll spy implementation and heading extraction
+3. `40f13c9` - Add tests for markdown extraction utility
+4. `09ead3b` - Fix scroll spy offset and add smooth scrolling
+5. `9d89c35` - Fix tutorial layout heading rendering and scroll spy functionality
+6. `8e03b58` - Add E2E tests for tutorial navigation enhancements
+7. `caaec63` - Add navigation from last tutorial to completion page
+8. `82cff1c` - Streamline SEAM verification documentation
+
+**Testing:**
+- ✅ All 287 unit tests passing
+- ✅ All 48 E2E tests passing (10 homepage + 20 interactions + 12 journeys + 6 navigation)
+- ✅ Build successful (12 pages generated)
+
+**Deployment:**
+- Final deployment: https://94bc4625.dstack-info.pages.dev
+
+### Technical Details
+
+**Phase 0.4.5 Sub-Phases:**
+
+1. **Phase 0.4.5.1:** ✅ Table of Contents component → COMPLETE
+2. **Phase 0.4.5.2:** ✅ Scroll spy functionality → COMPLETE
+3. **Phase 0.4.5.3:** ✅ Heading extraction utility → COMPLETE
+4. **Phase 0.4.5.4:** ✅ Scroll spy offset and smooth scrolling fixes → COMPLETE
+5. **Phase 0.4.5.5:** ✅ Heading rendering and scroll spy fixes → COMPLETE
+6. **Phase 0.4.5.6:** ✅ E2E tests for navigation enhancements → COMPLETE
+
+**Additional Enhancement:**
+- ✅ Last tutorial next button navigation (redirects to `/tutorial/complete` with "View Progress" label)
+
+**Files Created:**
+- src/components/TableOfContents.svelte - In-page navigation component
+- src/utils/markdown.ts - Heading extraction utility
+- src/__tests__/markdown.test.ts - Tests for markdown utility
+- e2e/tutorial-navigation-enhancements.spec.ts - 6 E2E tests
+
+**Files Modified:**
+- src/layouts/TutorialLayout.astro - Integrated TableOfContents component
+- src/pages/tutorial/[...slug].astro - Last tutorial navigation fix (line 80-81)
+
+### Key Features
+
+**Table of Contents:**
+- Displays all h2 and h3 headings from tutorial content
+- Active section highlighting based on scroll position
+- Smooth scrolling to sections on click
+- Sticky positioning for easy access while scrolling
+- Indented h3 headings for visual hierarchy
+
+**Last Tutorial Navigation:**
+- Next button on final tutorial redirects to `/tutorial/complete`
+- Button label changes to "View Progress" instead of next tutorial title
+- Allows users to review their progress after completing all tutorials
+
+---
+
+## DNS Tutorial Update - COMPLETE ✅
+
+**Date:** 2025-11-01
+**Status:** Complete and deployed
+
+### What Was Accomplished
+
+**DNS Tutorial CAA Records Section Update:**
+- ✅ Updated section 2.3 "Add CAA Records" to match current Cloudflare UI
+- ✅ Changed Tag field from text input to dropdown selection
+- ✅ Added "Flags" field with value "0"
+- ✅ Added "TTL" field with value "Auto"
+- ✅ Updated instructions for both root domain and wildcard subdomain
+- ✅ Added explanatory note about tag correspondence to `issue` tag
+
+**Git Commits (1 total):**
+1. `pending` - Update DNS tutorial CAA records section for current Cloudflare UI
+
+**Changes Made:**
+- Updated `src/content/tutorials/dns-configuration.md` section 2.3 (lines 104-129)
+- Changed Tag field from "issue" to dropdown selection "Only allow specific hostnames"
+- Added missing fields that now appear in Cloudflare's updated UI
+- Maintained accuracy with current Cloudflare DNS management interface
+
+**Reason for Update:**
+- Cloudflare updated their DNS management UI
+- Tag field is now a dropdown with descriptive options instead of text input
+- Previous instructions saying "Tag: issue" no longer matched the UI
+- Users couldn't follow the tutorial with outdated instructions
+
+**Deployment:**
+- ⏸️ Pending commit and deployment
+
+---
+
 **End of Progress Document**
 
 This document is updated after every checkpoint approval to preserve context during conversation compression.
