@@ -1,0 +1,90 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+// Get all tutorials sorted properly
+const allTutorials = (await getCollection('tutorials')).sort((a, b) => {
+  // Sort by section first
+  if (a.data.section !== b.data.section) {
+    return a.data.section.localeCompare(b.data.section);
+  }
+
+  // Handle appendices (null stepNumber)
+  const aIsAppendix = a.data.isAppendix || a.data.stepNumber === null;
+  const bIsAppendix = b.data.isAppendix || b.data.stepNumber === null;
+
+  if (aIsAppendix && !bIsAppendix) return 1;
+  if (!aIsAppendix && bIsAppendix) return -1;
+
+  // Both are numbered steps or both are appendices
+  if (a.data.stepNumber !== null && b.data.stepNumber !== null) {
+    return a.data.stepNumber - b.data.stepNumber;
+  }
+
+  // Both are appendices, sort alphabetically by title
+  return a.data.title.localeCompare(b.data.title);
+});
+
+// Serialize tutorial data for client-side use
+const tutorialData = allTutorials.map(t => ({
+  slug: t.slug,
+  title: t.data.title,
+  section: t.data.section
+}));
+---
+
+<BaseLayout
+  title="Tutorials | dstack"
+  description="Interactive tutorials for dstack installation and deployment"
+>
+  <div class="min-h-screen flex items-center justify-center bg-bg-default">
+    <div class="text-center">
+      <div class="mb-6">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyber-blue"></div>
+      </div>
+      <p class="text-text-secondary text-lg">Finding your next tutorial...</p>
+    </div>
+  </div>
+
+  <script define:vars={{ tutorialData }}>
+    // Function to check if tutorial is complete
+    function isTutorialComplete(slug) {
+      try {
+        const data = localStorage.getItem('dstack-tutorial-progress');
+        if (!data) return false;
+        const progress = JSON.parse(data);
+        return progress[slug]?.completed || false;
+      } catch (e) {
+        console.error('Error reading tutorial progress:', e);
+        return false;
+      }
+    }
+
+    // Find first incomplete tutorial
+    function findNextTutorial() {
+      for (const tutorial of tutorialData) {
+        if (!isTutorialComplete(tutorial.slug)) {
+          return `/tutorial/${tutorial.slug}`;
+        }
+      }
+      // All tutorials complete
+      return '/tutorial/complete';
+    }
+
+    // Redirect on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        const nextUrl = findNextTutorial();
+        window.location.href = nextUrl;
+      } catch (e) {
+        console.error('Error during redirect:', e);
+        // Fallback to first tutorial on error
+        if (tutorialData.length > 0) {
+          window.location.href = `/tutorial/${tutorialData[0].slug}`;
+        } else {
+          window.location.href = '/';
+        }
+      }
+    });
+  </script>
+</BaseLayout>
