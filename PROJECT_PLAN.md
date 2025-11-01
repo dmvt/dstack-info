@@ -84,10 +84,15 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 - All commits MUST be GPG signed
 - NO AI attribution in commits (no "Co-Authored-By: Claude")
 - Commit messages focus on what changed and why
-- Every commit deployed to Cloudflare Pages for review
+- Push commits to remote: `git push`
+- **CRITICAL:** Manually deploy EVERY commit to Cloudflare Pages
+  - Build: `npm run build`
+  - Deploy: `wrangler pages deploy dist --project-name=dstack-info`
+  - **NO automatic webhooks** - git push does NOT trigger deployment
+  - Must manually deploy after each commit
 
 #### 6. **Checkpoint-Driven Development**
-- After EVERY commit: Deploy to Cloudflare Pages
+- After EVERY commit: Build and manually deploy to Cloudflare Pages
 - Present complete testing plan for review
 - Wait for explicit approval before proceeding
 - Update TUTORIAL_PROGRESS.md after each confirmation to preserve context
