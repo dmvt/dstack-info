@@ -110,23 +110,33 @@
         success_msg: "✓ {{ item.item.name }} resolves {{ dstack_subdomain }}.{{ domain }} to {{ server_ip }}"
       loop: "{{ resolver_results.results }}"
 
-    - name: Check CAA records (informational)
+    - name: Check CAA records on subdomain
       shell: |
         dig +short {{ dstack_subdomain }}.{{ domain }} CAA
-      register: caa_result
+      register: caa_subdomain_result
+      failed_when: false
+      changed_when: false
+
+    - name: Check CAA records on parent domain
+      shell: |
+        dig +short {{ domain }} CAA
+      register: caa_parent_result
       failed_when: false
       changed_when: false
 
     - name: Report CAA record status
       debug:
         msg: |
-          {% if caa_result.stdout %}
-          ✓ CAA records configured:
-          {{ caa_result.stdout }}
+          {% if caa_subdomain_result.stdout %}
+          ✓ CAA records configured on {{ dstack_subdomain }}.{{ domain }}:
+          {{ caa_subdomain_result.stdout }}
+          {% elif caa_parent_result.stdout %}
+          ✓ CAA records configured on parent domain {{ domain }} (inherited by subdomains):
+          {{ caa_parent_result.stdout }}
           {% else %}
           ⚠ No CAA records found (optional but recommended)
 
-          CAA records restrict certificate issuance to Let's Encrypt only.
+          CAA records restrict certificate issuance to specific authorities.
           While optional, they improve security.
 
           To add CAA records, see:
