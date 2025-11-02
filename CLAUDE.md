@@ -6,6 +6,38 @@ This file contains the absolute requirements and core principles for working on 
 
 ---
 
+## Document Roles & Responsibilities
+
+### PROJECT_PLAN.md - The Master Plan (READ-ONLY unless user instructs)
+- **The source of truth** for what we're building and how
+- Contains all phases, methodology, and detailed implementation steps
+- **I do NOT modify this file unless you explicitly instruct me to**
+- I read this to verify work aligns with the plan (Principle #10)
+- Changes to this document require your explicit approval
+
+### TUTORIAL_PROGRESS.md - The Progress Tracker (WRITE after approvals)
+- **Records what has been accomplished** - commits, deployments, testing results
+- **I update this after EVERY approval checkpoint** (Principles #6, #8)
+- Documents lessons learned, key decisions, and blockers encountered
+- Updated frequently as we complete work
+- This is our "memory" that persists across context compressions
+
+### CLAUDE.md - Quick Reference (THIS FILE)
+- **Core principles summary** - lightweight reference for methodology
+- Read after every context compaction (Principle #1)
+- Current phase status updated with user approval
+- Links to complete details in PROJECT_PLAN.md
+
+### The Workflow
+1. **Check PROJECT_PLAN.md** - Verify current phase matches work (Principle #10)
+2. **Do the work** - Follow all 11 core principles
+3. **Commit, deploy, checkpoint** - After each logical chunk (Principles #5, #6)
+4. **Wait for approval** - Explicit user confirmation required (Principle #6)
+5. **Update TUTORIAL_PROGRESS.md** - Document what was accomplished (Principle #8)
+6. **Repeat** - Move to next chunk in PROJECT_PLAN.md
+
+---
+
 ## Absolute Requirements
 
 ### 1. **NO SHORTCUTS**
@@ -95,11 +127,23 @@ This file contains the absolute requirements and core principles for working on 
 
 ## Current Phase Status
 
-**Phase:** 0.4.5 - Enhanced Tutorial Navigation
-**Status:** Complete ✅
-**Last Updated:** 2025-11-01
+**Completed Phases:**
+- ✅ Phase 0: Website Modernization (Astro + TailwindCSS + Testing)
+- ✅ Phase 1.1: TDX Enablement (Manual tutorials + Ansible verification)
 
-All 70 E2E tests passing. Ready for next phase or approval checkpoint.
+**Current Phase:** Phase 1.2 - Domain & DNS Setup
+**Status:** 🔄 In Progress (awaiting user DNS configuration)
+**Last Updated:** 2025-11-02
+
+**What's Done:**
+- ✅ DNS configuration tutorial created
+- ✅ Ansible verification playbook created
+- ✅ Documentation complete
+
+**What's Next:**
+- User must configure DNS in Cloudflare (domain, records, API token)
+- Run Ansible verification playbook to confirm DNS setup
+- Get approval to proceed to Phase 1.3 (Blockchain Wallet Setup)
 
 ---
 
