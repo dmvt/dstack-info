@@ -1266,10 +1266,10 @@ All 4 sub-phases completed successfully:
 
 ---
 
-## Phase 1.2: Domain & DNS Setup - IN PROGRESS 🔄
+## Phase 1.2: Domain & DNS Setup - COMPLETE ✅
 
-**Date:** 2025-11-01
-**Status:** Documentation complete, awaiting user DNS configuration
+**Date:** 2025-11-02
+**Status:** Complete and verified
 
 ### What Was Accomplished
 
@@ -1287,40 +1287,72 @@ All 4 sub-phases completed successfully:
 - ✅ Verifies base subdomain resolution
 - ✅ Tests wildcard DNS across multiple test subdomains (test, app, example)
 - ✅ Checks consistency across DNS resolvers (Cloudflare 1.1.1.1, Google 8.8.8.8)
-- ✅ Reports CAA record status (informational)
+- ✅ Reports CAA record status (checks subdomain AND parent domain)
 - ✅ Provides helpful error messages with tutorial references
+- ✅ **Improved:** CAA detection now checks parent domain for inherited records
+
+**DNS Configuration Completed:**
+- ✅ Domain: `dstack.info`
+- ✅ Base subdomain: `hosted.dstack.info` → `173.231.234.133`
+- ✅ Wildcard DNS: `*.hosted.dstack.info` → `173.231.234.133`
+- ✅ CAA records: Configured on parent domain `dstack.info` (inherited by subdomains)
+  - Includes: letsencrypt.org, digicert.com, ssl.com, pki.goog, comodoca.com
+- ✅ DNS propagation: Verified across Cloudflare DNS (1.1.1.1) and Google DNS (8.8.8.8)
+- ✅ Test subdomains verified: test.hosted.dstack.info, app.hosted.dstack.info, example.hosted.dstack.info
 
 **Documentation Updates:**
 - ✅ Updated `ansible/README.md` with Phase 1.2 usage
 - ✅ Updated `ansible/group_vars/all.example.yml` with DNS variables
 - ✅ Added verify-dns.yml documentation to playbook section
+- ✅ Added explicit document roles section to CLAUDE.md
 
-**Git Commits (1 total):**
+**Git Commits (3 total):**
 1. `3f0c5f4` - Add DNS configuration tutorial and Ansible verification playbook
+2. `9a0e0c5` - Add explicit document roles section to CLAUDE.md
+3. `467a746` - Improve CAA record detection in DNS verification playbook
 
-**Deployment:**
-- ✅ Committed and pushed to GitHub
-- ✅ Built successfully (12 pages generated)
-- ✅ Deployed to Cloudflare Pages: https://c74358bb.dstack-info.pages.dev
+**Deployments:**
+- ✅ https://c74358bb.dstack-info.pages.dev (initial)
+- ✅ https://f81d67a3.dstack-info.pages.dev (document roles)
+- ✅ https://6555248b.dstack-info.pages.dev (CAA detection improvement)
 
 **Testing:**
 - ✅ Ansible playbook syntax check passed
-- ⏸️ Functional testing pending user DNS configuration
+- ✅ Functional testing complete - all 11 checks passed
+- ✅ DNS resolution verified from multiple locations
+- ✅ CAA records verified (parent domain inheritance working correctly)
+- ✅ Wildcard DNS confirmed working for all test subdomains
+
+**Final Verification Results:**
+```
+PLAY RECAP
+localhost: ok=11 changed=0 unreachable=0 failed=0 skipped=0 rescued=0 ignored=0
+
+✓ Base subdomain hosted.dstack.info resolves to 173.231.234.133
+✓ Wildcard subdomain test.hosted.dstack.info resolves to 173.231.234.133
+✓ Wildcard subdomain app.hosted.dstack.info resolves to 173.231.234.133
+✓ Wildcard subdomain example.hosted.dstack.info resolves to 173.231.234.133
+✓ Cloudflare DNS resolves hosted.dstack.info to 173.231.234.133
+✓ Google DNS resolves hosted.dstack.info to 173.231.234.133
+✓ CAA records configured on parent domain dstack.info (inherited by subdomains)
+```
+
+### Key Learnings
+
+1. **CAA Record Inheritance:** CAA records set on parent domain (`dstack.info`) automatically apply to all subdomains including `hosted.dstack.info`. No need to configure CAA records separately for each subdomain.
+
+2. **Ansible Playbook Improvement:** Initial playbook only checked subdomain for CAA records, causing false warnings. Updated to check both subdomain AND parent domain, properly detecting inherited CAA configuration.
+
+3. **Document Roles Clarification:** Added explicit section to CLAUDE.md clarifying that PROJECT_PLAN.md is read-only (master plan) and TUTORIAL_PROGRESS.md is write-after-approval (progress tracker).
 
 ### Next Steps
 
-**User must complete manually:**
-1. Add domain to Cloudflare
-2. Update nameservers at registrar
-3. Configure DNS records (A, wildcard, CAA)
-4. Generate Cloudflare API token
-5. Test DNS resolution
-6. Run Ansible verification playbook
-
-**After user completes DNS configuration:**
-- Run `ansible-playbook playbooks/verify-dns.yml -e "domain=..." -e "dstack_subdomain=..." -e "server_ip=..."`
-- Verify all checks pass
-- Proceed to Phase 1.3: Blockchain Wallet Setup
+**Proceed to Phase 1.3: Blockchain Wallet Setup**
+- Choose testnet (Sepolia or Holesky)
+- Create Ethereum wallet
+- Get testnet ETH from faucet
+- Create Ansible verification playbook
+- Document wallet setup tutorial
 
 ---
 
