@@ -142,23 +142,46 @@ Block Explorer: https://sepolia.etherscan.io
 
 ## Step 2: Get Testnet ETH
 
-You need testnet ETH to deploy the KMS smart contract. Here are several working faucets:
+You need testnet ETH to deploy the KMS smart contract. **Important:** Most faucets require either mainnet ETH or MetaMask, which won't work for a brand new wallet.
 
-### Alchemy Sepolia Faucet (Recommended)
+### PoW Faucet (Recommended - No Requirements)
 
-1. Visit: https://sepoliafaucet.com/
-2. Log in with Alchemy account (free signup)
-3. Enter your wallet address
-4. Complete captcha
-5. Receive 0.5 ETH (may take 1-2 minutes)
+**Best option for new wallets** - no mainnet ETH or account required:
 
-### Alternative Faucets
+1. Visit: https://sepolia-faucet.pk910.de/
+2. Enter your wallet address
+3. Click "Start Mining"
+4. Wait 10-30 minutes while mining runs in your browser
+5. Claim your testnet ETH (typically 0.05-0.1 ETH per session)
 
-If Alchemy faucet is unavailable:
+✅ **Why this faucet?**
+- No mainnet ETH balance required
+- No account signup needed
+- No MetaMask required
+- Works for brand new wallets
+- Just needs patience for mining
 
-- **QuickNode Faucet:** https://faucet.quicknode.com/ethereum/sepolia
-- **Infura Faucet:** https://www.infura.io/faucet/sepolia
-- **PoW Faucet (no login required):** https://sepolia-faucet.pk910.de/
+### Alternative Faucets (With Requirements)
+
+These faucets have restrictions that may prevent use with new wallets:
+
+**Alchemy Sepolia Faucet:**
+- URL: https://sepoliafaucet.com/ (redirects to alchemy.com)
+- ❌ **Requires:** 0.001 mainnet ETH balance
+- Amount: 0.1 Sepolia ETH
+- Cooldown: 3 days
+
+**MetaMask Faucet:**
+- URL: https://docs.metamask.io/developer-tools/faucet
+- ❌ **Requires:** MetaMask extension installed
+- Account needed
+
+**QuickNode Faucet:**
+- URL: https://faucet.quicknode.com/ethereum/sepolia
+- ❌ **Requires:** 0.001 mainnet ETH balance
+- Account needed
+
+⚠️ **For brand new wallets:** Use the PoW faucet (first option) as it's the only one that works without prerequisites
 
 ### Verify You Received ETH
 
@@ -167,7 +190,7 @@ If Alchemy faucet is unavailable:
 cast balance 0xYOUR_ADDRESS_HERE --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
 ```
 
-Expected: `500000000000000000` (0.5 ETH in wei)
+Expected: Non-zero value (e.g., `50000000000000000` = 0.05 ETH, `100000000000000000` = 0.1 ETH in wei)
 
 **MetaMask:**
 - Switch to Sepolia network
