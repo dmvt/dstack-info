@@ -135,6 +135,40 @@ ansible-playbook playbooks/verify-dns.yml
 - Verify nameservers point to Cloudflare
 - See [DNS Configuration Tutorial](https://dstack.info/tutorial/dns-configuration)
 
+### Phase 1.3: Verify Blockchain Configuration
+
+After setting up an Ethereum wallet and getting testnet ETH, verify configuration:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/verify-blockchain.yml
+
+# Run verification (requires variables)
+ansible-playbook playbooks/verify-blockchain.yml \
+  -e "wallet_address=0xYOUR_ADDRESS_HERE" \
+  -e "rpc_url=https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY"
+
+# Optional: set minimum balance requirement (default 0.1 ETH)
+ansible-playbook playbooks/verify-blockchain.yml \
+  -e "wallet_address=0x..." \
+  -e "rpc_url=https://..." \
+  -e "min_balance=0.5"
+```
+
+**Expected output:**
+- ✓ RPC endpoint accessible
+- ✓ Connected to Sepolia testnet (chain ID 11155111)
+- ✓ Wallet balance queried successfully
+- ✓ Balance meets minimum requirement (default 0.1 ETH)
+- ℹ Current gas price shown (informational)
+- ✓ Exit code 0
+
+**If verification fails:**
+- Check wallet address is correct (0x... format, 42 characters)
+- Verify RPC URL is accessible
+- Get testnet ETH from faucets if balance insufficient
+- See [Blockchain Setup Tutorial](https://dstack.info/tutorial/blockchain-setup)
+
 ## Testing
 
 All playbooks should be tested using:

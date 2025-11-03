@@ -1,0 +1,222 @@
+---
+- name: Verify Blockchain Configuration for dstack
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    # Required variables (pass via -e flag)
+    # wallet_address: "0x..."
+    # rpc_url: "https://eth-sepolia.g.alchemy.com/v2/..."
+
+    # Optional: minimum balance in ETH (default 0.1)
+    min_balance_eth: "{{ min_balance | default('0.1') }}"
+
+    # Sepolia chain ID
+    expected_chain_id: "11155111"
+
+    # Convert min balance to wei for comparison (1 ETH = 10^18 wei)
+    min_balance_wei: "{{ (min_balance_eth | float * 1000000000000000000) | int }}"
+
+  tasks:
+    - name: Check required variables are defined
+      assert:
+        that:
+          - wallet_address is defined
+          - wallet_address | length > 0
+          - rpc_url is defined
+          - rpc_url | length > 0
+        fail_msg: |
+          ✗ Missing required variables
+
+          Usage:
+          ansible-playbook playbooks/verify-blockchain.yml \
+            -e "wallet_address=0x..." \
+            -e "rpc_url=https://eth-sepolia.g.alchemy.com/v2/..."
+
+          Optional:
+            -e "min_balance=0.1"  (minimum ETH balance, default 0.1)
+        success_msg: "✓ All required variables defined"
+
+    - name: Check if cast (Foundry) is installed
+      shell: which cast
+      register: cast_check
+      failed_when: false
+      changed_when: false
+
+    - name: Fail if cast is not installed
+      fail:
+        msg: |
+          ✗ Foundry's 'cast' command not found
+
+          Install Foundry:
+          curl -L https://foundry.paradigm.xyz | bash
+          foundryup
+
+          Or see: https://book.getfoundry.sh/getting-started/installation
+      when: cast_check.rc != 0
+
+    - name: Test RPC endpoint connectivity
+      shell: |
+        cast block-number --rpc-url {{ rpc_url }}
+      register: rpc_test
+      failed_when: false
+      changed_when: false
+
+    - name: Verify RPC endpoint is accessible
+      assert:
+        that:
+          - rpc_test.rc == 0
+          - rpc_test.stdout | length > 0
+        fail_msg: |
+          ✗ RPC endpoint not accessible: {{ rpc_url }}
+
+          Error: {{ rpc_test.stderr | default('No response') }}
+
+          Troubleshooting:
+          1. Check RPC URL is correct
+          2. Verify internet connectivity
+          3. Try alternative RPC endpoints:
+             - https://eth-sepolia.g.alchemy.com/v2/demo
+             - https://rpc.sepolia.org
+             - https://ethereum-sepolia-rpc.publicnode.com
+          4. Create free Alchemy or Infura account for dedicated endpoint
+
+          See tutorial: https://dstack.info/tutorial/blockchain-setup#step-3-configure-rpc-endpoint
+        success_msg: "✓ RPC endpoint {{ rpc_url }} is accessible (block {{ rpc_test.stdout }})"
+
+    - name: Get network chain ID
+      shell: |
+        cast chain-id --rpc-url {{ rpc_url }}
+      register: chain_id_result
+      failed_when: false
+      changed_when: false
+
+    - name: Verify network is Sepolia testnet
+      assert:
+        that:
+          - chain_id_result.rc == 0
+          - chain_id_result.stdout | trim == expected_chain_id
+        fail_msg: |
+          ✗ Incorrect network detected
+          Expected: Sepolia (chain ID {{ expected_chain_id }})
+          Got: Chain ID {{ chain_id_result.stdout | default('unknown') }}
+
+          You may be connected to the wrong network:
+          - Chain ID 1: Ethereum Mainnet (DO NOT USE for testing!)
+          - Chain ID 11155111: Sepolia Testnet (correct)
+          - Chain ID 17000: Holesky Testnet (alternative testnet)
+
+          Update your RPC URL to point to Sepolia testnet.
+          See: https://dstack.info/tutorial/blockchain-setup#step-3-configure-rpc-endpoint
+        success_msg: "✓ Connected to Sepolia testnet (chain ID {{ chain_id_result.stdout }})"
+
+    - name: Get wallet balance
+      shell: |
+        cast balance {{ wallet_address }} --rpc-url {{ rpc_url }}
+      register: balance_result
+      failed_when: false
+      changed_when: false
+
+    - name: Verify wallet balance command succeeded
+      assert:
+        that:
+          - balance_result.rc == 0
+          - balance_result.stdout | length > 0
+        fail_msg: |
+          ✗ Failed to get wallet balance for {{ wallet_address }}
+
+          Error: {{ balance_result.stderr | default('No response') }}
+
+          Troubleshooting:
+          1. Verify wallet address is correct (starts with 0x, 42 characters total)
+          2. Check RPC endpoint is working
+          3. Ensure wallet exists on Sepolia network
+
+          Check on block explorer:
+          https://sepolia.etherscan.io/address/{{ wallet_address }}
+        success_msg: "✓ Successfully queried wallet balance"
+
+    - name: Convert balance from wei to ETH
+      set_fact:
+        balance_wei: "{{ balance_result.stdout | trim }}"
+        balance_eth: "{{ (balance_result.stdout | trim | int / 1000000000000000000) | float }}"
+
+    - name: Check if balance meets minimum requirement
+      set_fact:
+        balance_sufficient: "{{ (balance_wei | int) >= (min_balance_wei | int) }}"
+
+    - name: Report wallet balance status
+      debug:
+        msg: |
+          {% if balance_sufficient %}
+          ✓ Wallet has sufficient balance: {{ balance_eth }} ETH
+
+          Wallet: {{ wallet_address }}
+          Balance: {{ balance_eth }} ETH ({{ balance_wei }} wei)
+          Minimum required: {{ min_balance_eth }} ETH
+          Status: Ready for KMS deployment ✅
+          {% else %}
+          ⚠ Wallet balance below minimum requirement
+
+          Wallet: {{ wallet_address }}
+          Balance: {{ balance_eth }} ETH
+          Minimum required: {{ min_balance_eth }} ETH
+          Deficit: {{ (min_balance_eth | float - balance_eth | float) }} ETH
+
+          Get testnet ETH from faucets:
+          1. Alchemy: https://sepoliafaucet.com/
+          2. QuickNode: https://faucet.quicknode.com/ethereum/sepolia
+          3. PoW Faucet: https://sepolia-faucet.pk910.de/
+
+          See: https://dstack.info/tutorial/blockchain-setup#step-2-get-testnet-eth
+          {% endif %}
+
+    - name: Warn if balance is insufficient
+      debug:
+        msg: "⚠ WARNING: Wallet balance ({{ balance_eth }} ETH) is below minimum ({{ min_balance_eth }} ETH)"
+      when: not balance_sufficient
+
+    - name: Get current gas price
+      shell: |
+        cast gas-price --rpc-url {{ rpc_url }}
+      register: gas_price_result
+      failed_when: false
+      changed_when: false
+
+    - name: Report gas price (informational)
+      debug:
+        msg: |
+          ℹ Current Sepolia gas price: {{ (gas_price_result.stdout | trim | int / 1000000000) | float }} Gwei
+
+          This affects deployment costs. Typical KMS deployment costs:
+          - Gas limit: ~2,000,000 gas
+          - Estimated cost: ~{{ ((gas_price_result.stdout | trim | int * 2000000) / 1000000000000000000) | float }} ETH
+      when: gas_price_result.rc == 0
+
+    - name: Blockchain verification summary
+      debug:
+        msg: |
+          ═══════════════════════════════════════════════════════════════
+          Blockchain Verification {% if balance_sufficient %}Complete ✅{% else %}Incomplete ⚠{% endif %}
+          ═══════════════════════════════════════════════════════════════
+
+          Network: Sepolia Testnet (Chain ID {{ chain_id_result.stdout }})
+          RPC: {{ rpc_url }}
+          Block: {{ rpc_test.stdout }}
+
+          Wallet: {{ wallet_address }}
+          Balance: {{ balance_eth }} ETH
+          Status: {% if balance_sufficient %}Ready ✅{% else %}Needs more ETH ⚠{% endif %}
+
+          {% if balance_sufficient %}
+          Next Steps:
+          1. Proceed to KMS deployment (Phase 3)
+          2. See: https://dstack.info/tutorial/kms-deployment
+          {% else %}
+          Action Required:
+          1. Get more testnet ETH from faucets
+          2. Re-run this verification
+          3. See: https://dstack.info/tutorial/blockchain-setup#step-2-get-testnet-eth
+          {% endif %}
+          ═══════════════════════════════════════════════════════════════
