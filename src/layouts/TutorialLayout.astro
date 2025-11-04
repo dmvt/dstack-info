@@ -122,4 +122,40 @@ const {
 			</div>
 		</main>
 	</div>
+
+	<script>
+		// Client-side code for copy functionality
+		document.addEventListener('DOMContentLoaded', () => {
+			const copyButtons = document.querySelectorAll('.copy-button');
+
+			copyButtons.forEach((button) => {
+				button.addEventListener('click', async () => {
+					const code = button.getAttribute('data-code');
+					const icon = button.querySelector('i');
+
+					if (!code || !icon) return;
+
+					try {
+						await navigator.clipboard.writeText(code);
+
+						// Change icon to checkmark
+						icon.className = 'fa-solid fa-check';
+						button.classList.add('text-lime-green');
+
+						// Reset after 2 seconds
+						setTimeout(() => {
+							icon.className = 'fa-solid fa-copy';
+							button.classList.remove('text-lime-green');
+						}, 2000);
+					} catch (err) {
+						console.error('Failed to copy code:', err);
+						icon.className = 'fa-solid fa-xmark';
+						setTimeout(() => {
+							icon.className = 'fa-solid fa-copy';
+						}, 2000);
+					}
+				});
+			});
+		});
+	</script>
 </BaseLayout>

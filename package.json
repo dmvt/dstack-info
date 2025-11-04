@@ -20,10 +20,12 @@
     "@astrojs/svelte": "^7.2.1",
     "@tailwindcss/vite": "^4.1.16",
     "astro": "^5.15.3",
+    "hast-util-to-html": "^9.0.5",
     "rehype-external-links": "^3.0.0",
     "svelte": "^5.43.2",
     "tailwindcss": "^4.1.16",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "unist-util-visit": "^5.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",

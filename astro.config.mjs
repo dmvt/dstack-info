@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 
 import tailwindcss from '@tailwindcss/vite';
 import rehypeExternalLinks from 'rehype-external-links';
+import { rehypeCodeBlock } from './src/utils/rehype-code-block.js';
 
 import svelte from '@astrojs/svelte';
 
@@ -14,6 +15,7 @@ export default defineConfig({
 
   markdown: {
     rehypePlugins: [
+      rehypeCodeBlock,
       [
         rehypeExternalLinks,
         {
