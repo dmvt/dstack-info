@@ -62,14 +62,18 @@ Private key: 0xd76e8d3059484d5d9167c4e10cfeea2a4efa655875112e693e18fb4ab890b98a
 - **Address:** Your public wallet address (safe to share)
 - **Private Key:** SECRET - never share or commit to git
 
-### Step 1.3: Store Private Key Securely
+### Step 1.3: Store Wallet Credentials Securely
 
-Create a secure file to store your private key:
+Create secure files to store your wallet address and private key:
 
 ```bash
 # Create secure directory
 mkdir -p ~/.dstack/secrets
 chmod 700 ~/.dstack/secrets
+
+# Store wallet address (replace with your address)
+echo "0xYOUR_ADDRESS_HERE" > ~/.dstack/secrets/sepolia-address
+chmod 600 ~/.dstack/secrets/sepolia-address
 
 # Store private key (replace with your key)
 echo "0xYOUR_PRIVATE_KEY_HERE" > ~/.dstack/secrets/sepolia-private-key
@@ -85,7 +89,7 @@ echo "~/.dstack/secrets/" >> ~/.gitignore
 ### Step 1.4: Check Wallet Balance
 
 ```bash
-cast balance 0xYOUR_ADDRESS_HERE --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
+cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
 ```
 
 Expected output for new wallet: `0` (zero)
@@ -179,7 +183,7 @@ This page lists all available faucets and their requirements (mainnet ETH balanc
 
 **Command Line:**
 ```bash
-cast balance 0xYOUR_ADDRESS_HERE --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
+cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
 ```
 
 Expected: Non-zero value (e.g., `50000000000000000` = 0.05 ETH, `100000000000000000` = 0.1 ETH in wei)
@@ -189,8 +193,13 @@ Expected: Non-zero value (e.g., `50000000000000000` = 0.05 ETH, `100000000000000
 - Check balance shown in extension
 
 **Block Explorer:**
-- Visit: https://sepolia.etherscan.io/address/0xYOUR_ADDRESS_HERE
-- Check balance and transactions
+```bash
+# Open in browser
+open "https://sepolia.etherscan.io/address/$(cat ~/.dstack/secrets/sepolia-address)"
+
+# Or manually visit with your address
+https://sepolia.etherscan.io/address/YOUR_ADDRESS
+```
 
 ---
 
@@ -248,7 +257,7 @@ cast block-number --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
 cast gas-price --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
 
 # Get your balance
-cast balance 0xYOUR_ADDRESS_HERE --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
+cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
 ```
 
 All commands should return values without errors.
@@ -279,8 +288,8 @@ Create a configuration file for later use:
 # Create config file
 cat > ~/.dstack/blockchain-config.sh <<EOF
 # Sepolia Testnet Configuration
-export SEPOLIA_WALLET_ADDRESS="0xYOUR_ADDRESS_HERE"
-export SEPOLIA_PRIVATE_KEY_PATH="$HOME/.dstack/secrets/sepolia-private-key"
+export SEPOLIA_WALLET_ADDRESS="\$(cat \$HOME/.dstack/secrets/sepolia-address)"
+export SEPOLIA_PRIVATE_KEY="\$(cat \$HOME/.dstack/secrets/sepolia-private-key)"
 export SEPOLIA_RPC_URL="https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY"
 export SEPOLIA_CHAIN_ID="11155111"
 EOF
@@ -292,6 +301,7 @@ chmod 600 ~/.dstack/blockchain-config.sh
 ```bash
 source ~/.dstack/blockchain-config.sh
 echo "Wallet: $SEPOLIA_WALLET_ADDRESS"
+echo "Balance: $(cast balance $SEPOLIA_WALLET_ADDRESS --rpc-url $SEPOLIA_RPC_URL)"
 ```
 
 ---
@@ -316,7 +326,7 @@ If you're following the Ansible automation approach, run the verification playbo
 ```bash
 cd ansible
 ansible-playbook playbooks/verify-blockchain.yml \
-  -e "wallet_address=0xYOUR_ADDRESS_HERE" \
+  -e "wallet_address=$(cat ~/.dstack/secrets/sepolia-address)" \
   -e "rpc_url=https://eth-sepolia.g.alchemy.com/v2/demo"
 ```
 
@@ -335,7 +345,10 @@ This will verify:
 - Try different faucet from the list above
 - Check wallet address is correct
 - Wait 5-10 minutes (sometimes delayed)
-- Check block explorer: https://sepolia.etherscan.io/address/0xYOUR_ADDRESS
+- Check block explorer:
+  ```bash
+  open "https://sepolia.etherscan.io/address/$(cat ~/.dstack/secrets/sepolia-address)"
+  ```
 
 ### Problem: RPC endpoint timing out
 
