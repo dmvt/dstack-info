@@ -92,7 +92,7 @@ body {
 }
 
 .tutorial-content .code-block pre {
-  @apply bg-transparent m-0 p-4 pr-20 border-0;
+  @apply bg-transparent m-0 p-4 pr-24 border-0;
 }
 
 .tutorial-content .code-block code {
