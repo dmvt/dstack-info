@@ -142,11 +142,11 @@ Block Explorer: https://sepolia.etherscan.io
 
 ## Step 2: Get Testnet ETH
 
-You need testnet ETH to deploy the KMS smart contract. **Important:** Most faucets require either mainnet ETH or MetaMask, which won't work for a brand new wallet.
+You need testnet ETH to deploy the KMS smart contract.
 
-### PoW Faucet (Recommended - No Requirements)
+### PoW Faucet (Recommended)
 
-**Best option for new wallets** - no mainnet ETH or account required:
+**Best option for new wallets** - no requirements:
 
 1. Visit: https://sepolia-faucet.pk910.de/
 2. Enter your wallet address
@@ -161,27 +161,19 @@ You need testnet ETH to deploy the KMS smart contract. **Important:** Most fauce
 - Works for brand new wallets
 - Just needs patience for mining
 
-### Alternative Faucets (With Requirements)
+### MetaMask Faucet
 
-These faucets have restrictions that may prevent use with new wallets:
+If you're using MetaMask:
 
-**Alchemy Sepolia Faucet:**
-- URL: https://sepoliafaucet.com/ (redirects to alchemy.com)
-- ❌ **Requires:** 0.001 mainnet ETH balance
-- Amount: 0.1 Sepolia ETH
-- Cooldown: 3 days
-
-**MetaMask Faucet:**
 - URL: https://docs.metamask.io/developer-tools/faucet
 - ❌ **Requires:** MetaMask extension installed
-- Account needed
 
-**QuickNode Faucet:**
-- URL: https://faucet.quicknode.com/ethereum/sepolia
-- ❌ **Requires:** 0.001 mainnet ETH balance
-- Account needed
+### More Faucet Options
 
-⚠️ **For brand new wallets:** Use the PoW faucet (first option) as it's the only one that works without prerequisites
+For a comprehensive list of Sepolia faucets with their specific requirements, see:
+**https://faucetlink.to/sepolia**
+
+This page lists all available faucets and their requirements (mainnet ETH balance, account signup, etc.)
 
 ### Verify You Received ETH
 
