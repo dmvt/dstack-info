@@ -92,11 +92,11 @@ body {
 }
 
 .tutorial-content .code-block pre {
-  @apply bg-transparent;
+  @apply bg-transparent m-0 p-4 pr-14 border-0;
 }
 
 .tutorial-content .code-block code {
-  @apply text-lime-green font-mono text-sm leading-relaxed;
+  @apply text-lime-green font-mono text-sm leading-relaxed block;
 }
 
 .tutorial-content a {
