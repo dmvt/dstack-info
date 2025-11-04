@@ -5,12 +5,17 @@ section: "Prerequisites"
 stepNumber: 3
 totalSteps: 3
 lastUpdated: 2025-11-02
-tags: ["blockchain", "ethereum", "wallet", "testnet", "sepolia"]
-difficulty: "intermediate"
-estimatedTime: "15-20 minutes"
 prerequisites:
   - "Foundry (cast) installed OR MetaMask browser extension"
   - "Basic understanding of Ethereum and wallets"
+tags:
+  - blockchain
+  - ethereum
+  - wallet
+  - testnet
+  - sepolia
+difficulty: intermediate
+estimatedTime: 15-20 minutes
 ---
 
 # Blockchain Wallet Setup
