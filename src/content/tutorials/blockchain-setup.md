@@ -35,7 +35,7 @@ Sepolia is one of Ethereum's official testnets:
 
 ## Option 1: Command-Line Wallet (Recommended)
 
-If you have Foundry installed, you can create a wallet using the `cast` command.
+If you have [Foundry](https://book.getfoundry.sh/getting-started/installation) installed, you can create a wallet using the `cast` command.
 
 ### Step 1.1: Check if Foundry is Installed
 
