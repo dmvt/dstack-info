@@ -86,6 +86,19 @@ body {
   @apply bg-bg-deep px-2 py-1 rounded text-cyber-blue;
 }
 
+/* Code block wrapper styles (for rehype-generated code blocks) */
+.tutorial-content .code-block-wrapper {
+  @apply mb-6;
+}
+
+.tutorial-content .code-block pre {
+  @apply bg-transparent;
+}
+
+.tutorial-content .code-block code {
+  @apply text-lime-green font-mono text-sm leading-relaxed;
+}
+
 .tutorial-content a {
   @apply text-cyber-blue hover:underline inline-flex items-center gap-1;
 }
