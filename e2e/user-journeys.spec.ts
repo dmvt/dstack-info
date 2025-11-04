@@ -136,7 +136,7 @@ test.describe('User Journeys', () => {
       await page.waitForLoadState('networkidle');
 
       // Navigate through all tutorials using Next button
-      // Full sorted order: Host Setup (5 steps + 2 appendices), then Prerequisites (1 step)
+      // Full sorted order: Host Setup (5 steps + 2 appendices), then Prerequisites (3 steps)
       // Appendices are sorted alphabetically by title: "Appendix A..." comes before "Appendix B..."
       const tutorialUrls = [
         '/tutorial/tdx-hardware-verification',    // Host Setup #1
@@ -146,7 +146,8 @@ test.describe('User Journeys', () => {
         '/tutorial/tdx-bios-configuration',        // Host Setup #5
         '/tutorial/tdx-troubleshooting-next-steps', // Host Setup appendix (Appendix A)
         '/tutorial/ansible-tdx-automation',        // Host Setup appendix (Appendix B)
-        '/tutorial/dns-configuration',             // Prerequisites #1 (last!)
+        '/tutorial/dns-configuration',             // Prerequisites #1
+        '/tutorial/blockchain-setup',              // Prerequisites #3 (last!)
       ];
 
       for (let i = 0; i < tutorialUrls.length - 1; i++) {
@@ -160,7 +161,7 @@ test.describe('User Journeys', () => {
       }
 
       // Should be on last tutorial
-      await expect(page).toHaveURL(/\/tutorial\/dns-configuration/);
+      await expect(page).toHaveURL(/\/tutorial\/blockchain-setup/);
 
       // Last tutorial should have next button that goes to completion page
       const nextBtn = page.locator('a.nav-next');

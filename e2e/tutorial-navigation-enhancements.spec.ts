@@ -323,7 +323,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
           'tdx-status-verification': { completed: true, timestamp: new Date().toISOString() },
           'tdx-troubleshooting-next-steps': { completed: true, timestamp: new Date().toISOString() },
           'ansible-tdx-automation': { completed: true, timestamp: new Date().toISOString() },
-          'dns-configuration': { completed: true, timestamp: new Date().toISOString() }
+          'dns-configuration': { completed: true, timestamp: new Date().toISOString() },
+          'blockchain-setup': { completed: true, timestamp: new Date().toISOString() }
         }));
       });
 
@@ -380,7 +381,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
           'tdx-status-verification': { completed: true, timestamp: new Date().toISOString() },
           'tdx-troubleshooting-next-steps': { completed: true, timestamp: new Date().toISOString() },
           'ansible-tdx-automation': { completed: true, timestamp: new Date().toISOString() },
-          'dns-configuration': { completed: true, timestamp: new Date().toISOString() }
+          'dns-configuration': { completed: true, timestamp: new Date().toISOString() },
+          'blockchain-setup': { completed: true, timestamp: new Date().toISOString() }
         }));
       });
 
@@ -412,9 +414,9 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Wait for component to mount
       await page.waitForSelector('text="Overall Progress"', { timeout: 5000 });
 
-      // Should show progress (2 of 8 = 25%)
-      await expect(page.locator('text="25%"')).toBeVisible();
-      await expect(page.locator('text=/2 of 8 tutorial/i')).toBeVisible();
+      // Should show progress (2 of 9 = 22%)
+      await expect(page.locator('text="22%"')).toBeVisible();
+      await expect(page.locator('text=/2 of 9 tutorial/i')).toBeVisible();
     });
 
     test('should show section-level breakdown', async ({ page }) => {
@@ -439,8 +441,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
       await page.goto('/tutorial/complete');
 
-      // Should show 1 of 8 complete
-      await expect(page.locator('text="13%"')).toBeVisible(); // 1/8 = 12.5% rounds to 13%
+      // Should show 1 of 9 complete
+      await expect(page.locator('text="11%"')).toBeVisible(); // 1/9 = 11.1% rounds to 11%
 
       // Click reset button
       page.on('dialog', dialog => dialog.accept());
@@ -449,15 +451,15 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Wait for update
       await page.waitForTimeout(500);
 
-      // Should now show 0 of 8
+      // Should now show 0 of 9
       await expect(page.locator('text="0%"')).toBeVisible();
     });
   });
 
   test.describe('Integration Tests', () => {
     test('should navigate to completion page from last tutorial next button', async ({ page }) => {
-      // Go to last tutorial (dns-configuration is last in Prerequisites section)
-      await page.goto('/tutorial/dns-configuration');
+      // Go to last tutorial (blockchain-setup is last in Prerequisites section)
+      await page.goto('/tutorial/blockchain-setup');
 
       // Wait for page to load
       await page.waitForLoadState('networkidle');
