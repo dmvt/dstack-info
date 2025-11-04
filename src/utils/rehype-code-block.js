@@ -1,6 +1,19 @@
 import { visit } from 'unist-util-visit';
 
 /**
+ * Recursively extract all text content from a node
+ */
+function extractText(node) {
+  if (node.type === 'text') {
+    return node.value;
+  }
+  if (node.children) {
+    return node.children.map(extractText).join('');
+  }
+  return '';
+}
+
+/**
  * Rehype plugin to convert code blocks to use our CodeBlock component
  */
 export function rehypeCodeBlock() {
@@ -14,12 +27,22 @@ export function rehypeCodeBlock() {
         node.children[0].tagName === 'code'
       ) {
         const codeNode = node.children[0];
-        const codeContent = codeNode.children
-          .map((child) => {
-            if (child.type === 'text') return child.value;
-            return '';
-          })
-          .join('');
+
+        // Extract text content - handle both processed and unprocessed nodes
+        let codeContent = '';
+        if (codeNode.children && codeNode.children.length > 0) {
+          codeContent = extractText(codeNode);
+        }
+
+        // If still empty, this might be a processed node with value property
+        if (!codeContent && codeNode.value) {
+          codeContent = codeNode.value;
+        }
+
+        // Skip if we still don't have content
+        if (!codeContent || codeContent.trim() === '') {
+          return;
+        }
 
         // Extract language from class (e.g., "language-bash")
         let language = 'bash';

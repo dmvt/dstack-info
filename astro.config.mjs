@@ -3,7 +3,8 @@ import { defineConfig } from 'astro/config';
 
 import tailwindcss from '@tailwindcss/vite';
 import rehypeExternalLinks from 'rehype-external-links';
-import { rehypeCodeBlock } from './src/utils/rehype-code-block.js';
+import { remarkCodeBlock } from './src/utils/remark-code-block.js';
+import { rehypeWrapCode } from './src/utils/rehype-wrap-code.js';
 
 import svelte from '@astrojs/svelte';
 
@@ -14,8 +15,12 @@ export default defineConfig({
   },
 
   markdown: {
+    syntaxHighlight: false, // Disable Astro's built-in syntax highlighting
+    remarkPlugins: [
+      remarkCodeBlock
+    ],
     rehypePlugins: [
-      rehypeCodeBlock,
+      rehypeWrapCode,
       [
         rehypeExternalLinks,
         {
