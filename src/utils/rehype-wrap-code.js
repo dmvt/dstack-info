@@ -41,7 +41,7 @@ export function rehypeWrapCode() {
                   type: 'element',
                   tagName: 'button',
                   properties: {
-                    className: ['copy-button', 'absolute', 'top-3.5', 'right-4', 'bg-bg-deep', 'rounded', 'text-text-secondary', 'hover:text-lime-green', 'transition-colors', 'text-base', 'z-10', 'focus:outline-none'],
+                    className: ['copy-button', 'absolute', 'top-3.5', 'right-4', 'bg-bg-deep', 'rounded', 'text-text-secondary', 'hover:text-lime-green', 'transition-colors', 'text-base', 'z-10', 'focus:outline-none', 'p-2'],
                     'data-code': codeContent,
                     'aria-label': 'Copy code to clipboard'
                   },
