@@ -3,7 +3,7 @@ title: "DNS Configuration"
 description: "Configure Cloudflare DNS with wildcard domain support for dstack gateway deployment"
 section: "Prerequisites"
 stepNumber: 1
-totalSteps: 3
+totalSteps: 2
 lastUpdated: 2025-11-01
 prerequisites:
   - "Domain registered with registrar"
