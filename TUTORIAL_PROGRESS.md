@@ -1468,6 +1468,123 @@ localhost: ok=11 changed=0 unreachable=0 failed=0 skipped=0 rescued=0 ignored=0
 
 ---
 
+## Phase 1.3: Blockchain Wallet Setup - COMPLETE ✅
+
+**Date:** 2025-11-02
+**Status:** Complete and verified
+
+### What Was Accomplished
+
+**Blockchain Wallet Setup Tutorial Created:**
+- ✅ Comprehensive blockchain wallet setup tutorial (`blockchain-setup.md`, 330+ lines)
+- ✅ Two wallet creation options: Command-line (Foundry/cast) and MetaMask browser extension
+- ✅ Secure wallet credential storage instructions (~/.dstack/secrets/)
+- ✅ Multiple testnet ETH faucet options with detailed requirements
+- ✅ PoW faucet recommended for new wallets (no requirements)
+- ✅ RPC endpoint configuration (Alchemy, Infura, public endpoints)
+- ✅ Configuration file creation and testing instructions
+- ✅ Security best practices (DO/DON'T sections)
+- ✅ Comprehensive troubleshooting section
+- ✅ Verification checklist before proceeding
+- ✅ Navigation updated to reference actual tutorials (not phase numbers)
+
+**Ansible Blockchain Verification Playbook Created:**
+- ✅ `ansible/playbooks/verify-blockchain.yml` - Blockchain verification playbook
+- ✅ Verifies RPC endpoint connectivity
+- ✅ Checks network is Sepolia testnet (chain ID 11155111)
+- ✅ Validates wallet balance (warns if < 0.1 ETH)
+- ✅ Provides helpful error messages with tutorial references
+- ✅ Supports both Alchemy and public RPC endpoints
+
+**Blockchain Configuration Completed:**
+- ✅ Wallet created: `0x91Ba69FCD13D2876FD06907a2880BDBC93C336aF`
+- ✅ Network: Sepolia testnet (chain ID 11155111)
+- ✅ Balance: 0.271145 ETH (well above 0.1 ETH minimum for deployment)
+- ✅ RPC endpoint tested: https://eth-sepolia.g.alchemy.com/v2/demo
+- ✅ Wallet credentials stored securely in ~/.dstack/secrets/
+
+**Code Block Copy Functionality Fixed:**
+- ✅ Added rehype-code-meta plugin to extract code content
+- ✅ Created rehype-wrap-code plugin to wrap code blocks with copy button
+- ✅ Font Awesome copy icon with hover effects
+- ✅ Copy button positioned absolutely in top-right corner
+- ✅ Button includes padding (p-2) to prevent overlap with long code
+- ✅ Code blocks have horizontal scroll (overflow-x-auto) for long commands
+- ✅ Code text preserved with whitespace-pre
+- ✅ 9 comprehensive E2E tests for copy functionality
+- ✅ All copy button tests passing
+
+**Tutorial Consistency Improvements:**
+- ✅ Fixed Ansible command paths in blockchain-setup.md
+- ✅ Updated to match pattern from ansible-tdx-automation.md
+- ✅ All tutorials use consistent `cd ~/dstack-info/ansible` approach
+- ✅ Fixed step numbering in Prerequisites section (1 of 2, 2 of 2)
+- ✅ Removed emoji from headings to fix TOC anchor links
+- ✅ Moved emoji to content while keeping headings clean for proper anchor IDs
+- ✅ Removed internal phase number references from "Next Steps" sections
+- ✅ All Next Steps now reference actual tutorial slugs
+
+**Documentation Updates:**
+- ✅ Updated `ansible/README.md` with Phase 1.3 usage
+- ✅ Updated `ansible/group_vars/all.example.yml` with blockchain variables
+- ✅ Added verify-blockchain.yml documentation to playbook section
+
+**Git Commits (10 total):**
+1. `a52fabe` - Add blockchain wallet setup tutorial and Ansible verification
+2. `0b37383` - Add code block copy functionality with rehype plugins
+3. `888d956` - Fix code block copy button overlap and spacing
+4. `044ba38` - Fix Ansible command path in blockchain-setup tutorial
+5. `e5be6f7` - Fix Prerequisites step numbering (1 of 2, 2 of 2)
+6. `71c8a0a` - Fix TOC anchor links by removing emoji from headings
+7. `8d9c5e1` - Remove phase number references from Next Steps sections
+8. `bd6f1a0` - Update dns-configuration totalSteps to match blockchain tutorial
+9. `f2e8a1c` - Final testing and verification for Phase 1.3
+10. `449bde9` - Phase 1.3 checkpoint commit
+
+**Deployments:**
+- ✅ All commits deployed to Cloudflare Pages
+- ✅ Final deployment: https://449bde96.dstack-info.pages.dev
+
+**Testing:**
+- ✅ Ansible playbook syntax check passed
+- ✅ Functional testing complete - wallet funded and verified
+- ✅ All 287 unit tests passing
+- ✅ All 79 E2E tests passing (70 existing + 9 code block copy tests)
+- ✅ Build successful (13 pages generated)
+- ✅ Code block copy functionality tested in browser
+
+**Final Verification Results:**
+```bash
+PLAY RECAP
+localhost: ok=4 changed=0 unreachable=0 failed=0 skipped=0 rescued=0 ignored=0
+
+✓ RPC endpoint https://eth-sepolia.g.alchemy.com/v2/demo is reachable
+✓ Connected to Sepolia testnet (chain ID: 11155111)
+✓ Wallet 0x91Ba69FCD13D2876FD06907a2880BDBC93C336aF has balance: 0.271145 ETH
+```
+
+### Key Learnings
+
+1. **Code Block Copy Implementation:** Required both remark plugin (extract code) and rehype plugin (wrap with button). Used data-code attribute to pass content from extraction to wrapping phase.
+
+2. **Button Overlap Prevention:** Combination of button padding (p-2), code block right padding (pr-16), and horizontal scroll (overflow-x-auto) provides clean UX for long commands.
+
+3. **TOC Anchor Links:** Emoji in headings breaks anchor ID generation. Solution: Move emoji to content, keep headings clean for reliable anchors.
+
+4. **Tutorial Navigation:** Always reference actual tutorial slugs in Next Steps, never internal phase numbers from PROJECT_PLAN.md.
+
+5. **Ansible Command Consistency:** All tutorials should follow same pattern for directory navigation to avoid user confusion.
+
+### Prerequisites Complete ✅
+
+All Phase 1 prerequisites now complete:
+- ✅ Phase 1.2: DNS Configuration (hosted.dstack.info)
+- ✅ Phase 1.3: Blockchain Wallet Setup (0.271145 ETH on Sepolia)
+
+**Ready to proceed to Phase 2: Host Setup**
+
+---
+
 **End of Progress Document**
 
 This document is updated after every checkpoint approval to preserve context during conversation compression.
