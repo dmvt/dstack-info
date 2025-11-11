@@ -382,14 +382,18 @@ This will verify:
 
 ## Security Best Practices
 
-### ✅ DO:
+### DO:
+
+✅ **Follow these practices:**
 - Store private keys in encrypted files with restricted permissions (chmod 600)
 - Use environment variables for sensitive data
 - Keep separate wallets for testnet and mainnet
 - Back up your wallet securely (encrypted USB, password manager)
 - Use hardware wallet for mainnet production deployments
 
-### ❌ DON'T:
+### DON'T:
+
+❌ **Avoid these mistakes:**
 - Commit private keys to git repositories
 - Share private keys via email, chat, or screenshots
 - Use testnet wallet for mainnet (always use separate wallets)
