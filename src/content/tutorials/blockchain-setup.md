@@ -326,11 +326,10 @@ Before proceeding to KMS deployment, verify:
 
 ## Ansible Verification
 
-If you're following the Ansible automation approach, run the verification playbook:
+If you're following the Ansible automation approach, run the verification playbook from the project root:
 
 ```bash
-cd ansible
-ansible-playbook playbooks/verify-blockchain.yml \
+ansible-playbook ansible/playbooks/verify-blockchain.yml \
   -e "wallet_address=$(cat ~/.dstack/secrets/sepolia-address)" \
   -e "rpc_url=https://eth-sepolia.g.alchemy.com/v2/demo"
 ```
