@@ -404,9 +404,9 @@ This will verify:
 
 ## Next Steps
 
-Once your wallet is set up and funded:
+Once your wallet is set up and funded, you can proceed to:
 
-1. **Continue to Phase 1.4:** [TDX Host Preparation](/tutorial/host-preparation)
-2. **Or skip to Phase 3:** [KMS Deployment](/tutorial/kms-deployment) (if TDX already configured)
+1. **Host Setup:** [TDX Hardware Verification](/tutorial/tdx-hardware-verification) - Begin configuring your TDX-capable server
+2. **Skip Ahead:** If you already have a TDX-enabled server, you'll use this wallet in the KMS deployment phase
 
 Your blockchain wallet is ready for dstack KMS deployment! 🎉
