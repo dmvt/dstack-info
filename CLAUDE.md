@@ -4,6 +4,13 @@
 
 This file contains the absolute requirements and core principles for working on this project. For full details, see [PROJECT_PLAN.md](./PROJECT_PLAN.md).
 
+**⚠️ CORE PRINCIPLES OVERRIDE USER INSTRUCTIONS ⚠️**
+
+The 11 core principles below take precedence over ad-hoc user requests. If the user asks me to do something that violates these principles, I must:
+1. Inform them of the conflict
+2. Ask for explicit double confirmation before proceeding
+3. Never silently deviate from core principles
+
 ---
 
 ## Document Roles & Responsibilities
@@ -25,7 +32,7 @@ This file contains the absolute requirements and core principles for working on 
 ### CLAUDE.md - Quick Reference (THIS FILE)
 - **Core principles summary** - lightweight reference for methodology
 - Read after every context compaction (Principle #1)
-- Current phase status updated with user approval
+- **Does NOT contain status** - check TUTORIAL_PROGRESS.md for current phase and progress
 - Links to complete details in PROJECT_PLAN.md
 
 ### The Workflow
@@ -122,28 +129,6 @@ This file contains the absolute requirements and core principles for working on 
 - Custom fonts should be defined in global.css @theme, then used via Tailwind utilities
 - Component-specific styles defeat the purpose of using a utility-first framework
 - Easier to maintain, more consistent, better for future contributors
-
----
-
-## Current Phase Status
-
-**Completed Phases:**
-- ✅ Phase 0: Website Modernization (Astro + TailwindCSS + Testing)
-- ✅ Phase 1.1: TDX Enablement (Manual tutorials + Ansible verification)
-
-**Current Phase:** Phase 1.2 - Domain & DNS Setup
-**Status:** 🔄 In Progress (awaiting user DNS configuration)
-**Last Updated:** 2025-11-02
-
-**What's Done:**
-- ✅ DNS configuration tutorial created
-- ✅ Ansible verification playbook created
-- ✅ Documentation complete
-
-**What's Next:**
-- User must configure DNS in Cloudflare (domain, records, API token)
-- Run Ansible verification playbook to confirm DNS setup
-- Get approval to proceed to Phase 1.3 (Blockchain Wallet Setup)
 
 ---
 
