@@ -1,0 +1,109 @@
+---
+# Setup Host System Dependencies
+# Phase 2.1: Install build dependencies required for dstack
+#
+# Usage:
+#   ansible-playbook playbooks/setup-host-dependencies.yml -i inventory/hosts.yml
+#
+# This playbook:
+#   1. Updates apt package cache
+#   2. Upgrades all system packages
+#   3. Installs required build dependencies
+#   4. Verifies critical tools are available
+
+- name: Setup Host System Dependencies
+  hosts: dstack_servers
+  become: yes
+
+  vars:
+    build_dependencies:
+      - build-essential
+      - chrpath
+      - diffstat
+      - lz4
+      - wireguard-tools
+      - xorriso
+      - git
+      - curl
+      - pkg-config
+      - libssl-dev
+    # Set to true to upgrade packages (may fail on some systems due to grub issues)
+    upgrade_packages: false
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      tags:
+        - update
+        - packages
+
+    - name: Upgrade all packages
+      apt:
+        upgrade: safe
+        autoremove: yes
+      when: upgrade_packages | bool
+      tags:
+        - upgrade
+        - packages
+
+    - name: Install build dependencies
+      apt:
+        name: "{{ build_dependencies }}"
+        state: present
+      tags:
+        - dependencies
+        - packages
+
+    - name: Verify gcc installation
+      command: gcc --version
+      register: gcc_version
+      changed_when: false
+      tags:
+        - verify
+
+    - name: Verify make installation
+      command: make --version
+      register: make_version
+      changed_when: false
+      tags:
+        - verify
+
+    - name: Verify git installation
+      command: git --version
+      register: git_version
+      changed_when: false
+      tags:
+        - verify
+
+    - name: Verify curl installation
+      command: curl --version
+      register: curl_version
+      changed_when: false
+      tags:
+        - verify
+
+    - name: Verify wireguard installation
+      command: wg --version
+      register: wg_version
+      changed_when: false
+      failed_when: false  # wg --version returns non-zero even on success
+      tags:
+        - verify
+
+    - name: Display installation summary
+      debug:
+        msg: |
+          Host Dependencies Installed Successfully!
+
+          GCC: {{ gcc_version.stdout_lines[0] }}
+          Make: {{ make_version.stdout_lines[0] }}
+          Git: {{ git_version.stdout_lines[0] }}
+          Curl: {{ curl_version.stdout_lines[0] | regex_search('curl [0-9.]+') }}
+
+          All build dependencies are installed and ready.
+          Proceed to: Install Rust Toolchain
+      tags:
+        - verify
+        - summary

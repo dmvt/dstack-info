@@ -11,6 +11,7 @@
   let completionStatus: Record<string, boolean> = {};
   let collapsedSections: Record<string, boolean> = {};
   let initializedForSlug = '';
+  let activeHeadingId = '';
 
   // Group tutorials by section
   $: tutorialsBySection = tutorials.reduce((acc, tutorial) => {
@@ -87,10 +88,37 @@
     completionStatus = { ...completionStatus };
   }
 
+  function updateActiveHeading() {
+    if (headings.length === 0) return;
+
+    const offset = 100; // Offset from top of viewport
+    let currentActive = '';
+
+    for (const heading of headings) {
+      const element = document.getElementById(heading.id);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        if (rect.top <= offset) {
+          currentActive = heading.id;
+        }
+      }
+    }
+
+    // If no heading is past the offset, use the first one
+    if (!currentActive && headings.length > 0) {
+      currentActive = headings[0].id;
+    }
+
+    activeHeadingId = currentActive;
+  }
+
   onMount(() => {
     // Load initial completion status
     updateCompletionStatus();
     mounted = true;
+
+    // Initial active heading
+    updateActiveHeading();
 
     // Listen for localStorage changes
     const handleStorageChange = (e: StorageEvent) => {
@@ -107,9 +135,16 @@
     };
     window.addEventListener('tutorialProgressUpdate', handleCustomUpdate);
 
+    // Scroll spy for TOC
+    const handleScroll = () => {
+      updateActiveHeading();
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('tutorialProgressUpdate', handleCustomUpdate);
+      window.removeEventListener('scroll', handleScroll);
     };
   });
 </script>
@@ -156,7 +191,7 @@
                     {#each headings as heading}
                       <button
                         on:click={() => scrollToHeading(heading.id)}
-                        class="block w-full text-left text-xs py-1 transition-colors {heading.level === 3 ? 'pl-3' : ''} text-text-secondary hover:text-cyber-blue"
+                        class="block w-full text-left text-xs py-1 transition-colors {heading.level === 3 ? 'pl-3' : ''} {activeHeadingId === heading.id ? 'text-cyber-blue font-medium' : 'text-text-secondary hover:text-cyber-blue'}"
                       >
                         {heading.text}
                       </button>

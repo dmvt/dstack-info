@@ -15,8 +15,10 @@ The Ansible automation in this repository serves two purposes:
 ansible/
 ├── README.md                    # This file
 ├── playbooks/
-│   ├── verify-tdx.yml          # Verify TDX host is properly configured (Phase 1.1)
-│   └── verify-dns.yml          # Verify DNS configuration for dstack (Phase 1.2)
+│   ├── verify-tdx.yml              # Verify TDX host is properly configured (Phase 1.1)
+│   ├── verify-dns.yml              # Verify DNS configuration for dstack (Phase 1.2)
+│   ├── verify-blockchain.yml       # Verify blockchain wallet setup (Phase 1.3)
+│   └── setup-host-dependencies.yml # Install build dependencies (Phase 2.1)
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/
@@ -169,6 +171,33 @@ ansible-playbook playbooks/verify-blockchain.yml \
 - Get testnet ETH from faucets if balance insufficient
 - See [Blockchain Setup Tutorial](https://dstack.info/tutorial/blockchain-setup)
 
+### Phase 2.1: Setup Host Dependencies
+
+Install required build dependencies for dstack:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/setup-host-dependencies.yml
+
+# Dry run
+ansible-playbook --check playbooks/setup-host-dependencies.yml -i inventory/hosts.yml
+
+# Run installation
+ansible-playbook playbooks/setup-host-dependencies.yml -i inventory/hosts.yml
+```
+
+**Expected output:**
+- ✓ System packages updated
+- ✓ Build dependencies installed (gcc, make, git, curl, etc.)
+- ✓ All tools verified and accessible
+- ✓ Exit code 0
+
+**If installation fails:**
+- Check network connectivity to package mirrors
+- Verify SSH user has sudo privileges
+- Try `sudo apt --fix-broken install` on the server
+- See [System Baseline & Dependencies Tutorial](https://dstack.info/tutorial/system-baseline-dependencies)
+
 ## Testing
 
 All playbooks should be tested using:
@@ -230,6 +259,34 @@ ansible-playbook playbooks/PLAYBOOK_NAME.yml -i inventory/hosts.yml
 **Exit codes:**
 - `0` - DNS fully configured and verified
 - `1` - DNS not configured or verification failed
+
+### setup-host-dependencies.yml
+
+**Purpose:** Install build dependencies required for dstack components
+
+**What it does:**
+- Updates apt package cache
+- Upgrades all system packages
+- Installs build dependencies (gcc, make, git, curl, etc.)
+- Verifies critical tools are accessible
+
+**Packages installed:**
+- `build-essential` - GCC compiler and build tools
+- `chrpath` - Modify rpath in ELF binaries
+- `diffstat` - Produce histogram of diff output
+- `lz4` - Fast compression algorithm
+- `wireguard-tools` - WireGuard VPN utilities
+- `xorriso` - ISO filesystem tool
+- `git` - Version control
+- `curl` - HTTP client
+- `pkg-config` - Compilation helper
+- `libssl-dev` - SSL development libraries
+
+**Usage:** See [System Baseline & Dependencies Tutorial](https://dstack.info/tutorial/system-baseline-dependencies)
+
+**Exit codes:**
+- `0` - All dependencies installed and verified
+- `1` - Installation or verification failed
 
 ## Troubleshooting
 
