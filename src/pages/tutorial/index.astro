@@ -2,11 +2,20 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
+// Define section order (tutorials flow: TDX setup -> Prerequisites -> dstack installation)
+const sectionOrder = ['TDX Enablement', 'Prerequisites', 'dstack Installation'];
+
 // Get all tutorials sorted properly
 const allTutorials = (await getCollection('tutorials')).sort((a, b) => {
-  // Sort by section first
+  // Sort by section first using defined order
   if (a.data.section !== b.data.section) {
-    return a.data.section.localeCompare(b.data.section);
+    const aIndex = sectionOrder.indexOf(a.data.section);
+    const bIndex = sectionOrder.indexOf(b.data.section);
+    // Unknown sections go to the end
+    if (aIndex === -1 && bIndex === -1) return a.data.section.localeCompare(b.data.section);
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    return aIndex - bIndex;
   }
 
   // Handle appendices (null stepNumber)

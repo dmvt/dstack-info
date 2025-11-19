@@ -23,26 +23,40 @@
     return acc;
   }, {} as Record<string, any[]>);
 
+  // Define section order (tutorials flow: TDX setup -> Prerequisites -> dstack installation)
+  const sectionOrder = ['TDX Enablement', 'Prerequisites', 'dstack Installation'];
+
   // Sort tutorials within each section: numbered steps first, then appendices
-  $: sortedSections = Object.entries(tutorialsBySection).map(([section, tutList]) => ({
-    section,
-    tutorials: tutList.sort((a, b) => {
-      // Appendices come last
-      const aIsAppendix = a.data.isAppendix || a.data.stepNumber === null;
-      const bIsAppendix = b.data.isAppendix || b.data.stepNumber === null;
+  $: sortedSections = Object.entries(tutorialsBySection)
+    .map(([section, tutList]) => ({
+      section,
+      tutorials: tutList.sort((a, b) => {
+        // Appendices come last
+        const aIsAppendix = a.data.isAppendix || a.data.stepNumber === null;
+        const bIsAppendix = b.data.isAppendix || b.data.stepNumber === null;
 
-      if (aIsAppendix && !bIsAppendix) return 1;
-      if (!aIsAppendix && bIsAppendix) return -1;
+        if (aIsAppendix && !bIsAppendix) return 1;
+        if (!aIsAppendix && bIsAppendix) return -1;
 
-      // Both are numbered steps or both are appendices
-      if (a.data.stepNumber !== null && b.data.stepNumber !== null) {
-        return a.data.stepNumber - b.data.stepNumber;
-      }
+        // Both are numbered steps or both are appendices
+        if (a.data.stepNumber !== null && b.data.stepNumber !== null) {
+          return a.data.stepNumber - b.data.stepNumber;
+        }
 
-      // Both are appendices, sort alphabetically by title
-      return a.data.title.localeCompare(b.data.title);
-    })
-  }));
+        // Both are appendices, sort alphabetically by title
+        return a.data.title.localeCompare(b.data.title);
+      })
+    }))
+    .sort((a, b) => {
+      // Sort sections by defined order
+      const aIndex = sectionOrder.indexOf(a.section);
+      const bIndex = sectionOrder.indexOf(b.section);
+      // Unknown sections go to the end
+      if (aIndex === -1 && bIndex === -1) return a.section.localeCompare(b.section);
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+      return aIndex - bIndex;
+    });
 
   // Initialize collapsed state: expand section containing current tutorial
   // Only initialize when slug changes, don't override user's manual toggles

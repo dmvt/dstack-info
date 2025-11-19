@@ -414,9 +414,9 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Wait for component to mount
       await page.waitForSelector('text="Overall Progress"', { timeout: 5000 });
 
-      // Should show progress (2 of 9 = 22%)
-      await expect(page.locator('text="22%"')).toBeVisible();
-      await expect(page.locator('text=/2 of 9 tutorial/i')).toBeVisible();
+      // Should show progress (2 of 10 = 20%)
+      await expect(page.locator('text="20%"')).toBeVisible();
+      await expect(page.locator('text=/2 of 10 tutorial/i')).toBeVisible();
     });
 
     test('should show section-level breakdown', async ({ page }) => {
@@ -426,7 +426,7 @@ test.describe('Tutorial Navigation Enhancements', () => {
       await expect(page.locator('text="Progress by Section"')).toBeVisible();
 
       // Should list sections (use specific selector for section breakdown)
-      await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("Host Setup")')).toBeVisible();
+      await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("TDX Enablement")')).toBeVisible();
       await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("Prerequisites")')).toBeVisible();
     });
 
@@ -441,8 +441,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
       await page.goto('/tutorial/complete');
 
-      // Should show 1 of 9 complete
-      await expect(page.locator('text="11%"')).toBeVisible(); // 1/9 = 11.1% rounds to 11%
+      // Should show 1 of 10 complete
+      await expect(page.locator('text="10%"')).toBeVisible(); // 1/10 = 10%
 
       // Click reset button
       page.on('dialog', dialog => dialog.accept());
@@ -451,7 +451,7 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Wait for update
       await page.waitForTimeout(500);
 
-      // Should now show 0 of 9
+      // Should now show 0 of 10
       await expect(page.locator('text="0%"')).toBeVisible();
     });
   });
