@@ -1,7 +1,7 @@
 # dstack Tutorial Project - Progress Tracker
 
-**Last Updated:** 2025-10-31
-**Current Phase:** Phase 1 - Server Preparation & Hardware Verification
+**Last Updated:** 2025-11-18
+**Current Phase:** Phase 2 - dstack Installation
 
 ---
 
@@ -1582,6 +1582,42 @@ All Phase 1 prerequisites now complete:
 - ✅ Phase 1.3: Blockchain Wallet Setup (0.271145 ETH on Sepolia)
 
 **Ready to proceed to Phase 2: Host Setup**
+
+---
+
+### Phase 2.1: System Baseline & Dependencies ✅ COMPLETE
+**Completed:** 2025-11-18
+**Commits:** 621ce40, ab20baa
+
+**What was done:**
+- Created tutorial: `system-baseline-dependencies.md` (288 lines)
+- Created Ansible playbook: `setup-host-dependencies.yml`
+- Installed build dependencies on server (gcc, make, git, curl, wireguard-tools, xorriso, lz4, etc.)
+- Fixed OpenMetal grub-pc issue (held broken packages)
+- Added table styling to global CSS
+- Added scroll spy for TOC highlighting
+- Added section ordering (TDX Enablement → Prerequisites → dstack Installation)
+- Updated E2E test expectations for 10 tutorials
+
+**Tutorial Features:**
+- Manual installation steps with apt commands
+- Ansible automation with verification tasks
+- Troubleshooting section for common issues (grub errors, network issues)
+- Verification script to confirm all dependencies installed
+
+**Dependencies Installed:**
+- build-essential, chrpath, diffstat, lz4
+- wireguard-tools, xorriso, git, curl
+- pkg-config, libssl-dev
+
+**Testing:**
+- Ansible playbook tested on server: ✅ All dependencies verified
+- Unit tests: 287 passed
+- E2E tests: 71 passed, 8 failures (routing tests need investigation)
+
+**Deployment:** https://d87ce7f3.dstack-info.pages.dev
+
+**Next:** Phase 2.2 - Rust Toolchain Installation
 
 ---
 
