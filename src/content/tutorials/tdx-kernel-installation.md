@@ -33,7 +33,7 @@ The setup script will:
 Run the setup script:
 
 ```bash
-./setup-tdx-host.sh
+sudo ./setup-tdx-host.sh
 ```
 
 **Expected output:**
