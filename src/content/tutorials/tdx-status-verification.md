@@ -44,7 +44,7 @@ Now let's check if TDX is enabled in the system.
 ### Check dmesg for TDX Messages
 
 ```bash
-dmesg | grep -i tdx
+sudo dmesg | grep -i tdx
 ```
 
 **If the TDX Module (SEAM) is enabled (after BIOS config), you should see:**
@@ -84,7 +84,7 @@ cat /sys/module/kvm_intel/parameters/tdx
 TDX requires TME (Total Memory Encryption) to be enabled in BIOS:
 
 ```bash
-dmesg | grep -i tme
+sudo dmesg | grep -i tme
 ```
 
 **If TME is NOT enabled:**
