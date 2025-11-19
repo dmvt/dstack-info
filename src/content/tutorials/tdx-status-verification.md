@@ -105,4 +105,4 @@ Continue to **Part 5: TDX BIOS Configuration** to enable TDX hardware features i
 
 ## Optional: Automated Verification
 
-After completing the full TDX setup (including BIOS configuration), you can optionally set up Ansible automation for TDX verification. See **Part 7: Ansible Automation Setup** for complete instructions on automating TDX verification across multiple servers.
+After completing the full TDX setup (including BIOS configuration), you can optionally set up Ansible automation for TDX verification. See **Appendix B: Ansible Automation Setup** for complete instructions on automating TDX verification across multiple servers.

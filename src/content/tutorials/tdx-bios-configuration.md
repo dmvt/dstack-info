@@ -196,7 +196,7 @@ tdx_pw_mce
 
 ## Next Steps
 
-Continue to **Part 6: TDX Troubleshooting & Next Steps** for:
+Continue to **Appendix A: TDX Troubleshooting & Next Steps** for:
 
 -   Troubleshooting common TDX issues
 -   What to do after TDX is enabled

@@ -6,14 +6,14 @@ stepNumber: 2
 totalSteps: 2
 lastUpdated: 2025-11-02
 prerequisites:
-  - "Foundry (cast) installed OR MetaMask browser extension"
-  - "Basic understanding of Ethereum and wallets"
+    - "Foundry (cast) installed OR MetaMask browser extension"
+    - "Basic understanding of Ethereum and wallets"
 tags:
-  - blockchain
-  - ethereum
-  - wallet
-  - testnet
-  - sepolia
+    - blockchain
+    - ethereum
+    - wallet
+    - testnet
+    - sepolia
 difficulty: intermediate
 estimatedTime: 15-20 minutes
 ---
@@ -24,17 +24,18 @@ dstack's Key Management Service (KMS) is deployed as a smart contract on the Eth
 
 ## What You'll Need
 
-- **Ethereum wallet** with a private key
-- **Testnet ETH** (~0.1 ETH minimum for deployment)
-- **RPC endpoint** for interacting with Sepolia
+-   **Ethereum wallet** with a private key
+-   **Testnet ETH** (~0.1 ETH minimum for deployment)
+-   **RPC endpoint** for interacting with Sepolia
 
 ## Why Sepolia?
 
 Sepolia is one of Ethereum's official testnets:
-- Free testnet ETH from faucets
-- Similar to mainnet but without real value
-- Perfect for development and testing
-- Widely supported by tools and services
+
+-   Free testnet ETH from faucets
+-   Similar to mainnet but without real value
+-   Perfect for development and testing
+-   Widely supported by tools and services
 
 ---
 
@@ -57,6 +58,7 @@ cast wallet new
 ```
 
 **Example output:**
+
 ```
 Successfully created new keypair.
 Address:     0x91Ba69FCD13D2876FD06907a2880BDBC93C336aF
@@ -64,8 +66,9 @@ Private key: 0xd76e8d3059484d5d9167c4e10cfeea2a4efa655875112e693e18fb4ab890b98a
 ```
 
 ⚠️ **Save these immediately:**
-- **Address:** Your public wallet address (safe to share)
-- **Private Key:** SECRET - never share or commit to git
+
+-   **Address:** Your public wallet address (safe to share)
+-   **Private Key:** SECRET - never share or commit to git
 
 ### Step 1.3: Store Wallet Credentials Securely
 
@@ -164,18 +167,19 @@ You need testnet ETH to deploy the KMS smart contract.
 5. Claim your testnet ETH (typically 0.05-0.1 ETH per session)
 
 ✅ **Why this faucet?**
-- No mainnet ETH balance required
-- No account signup needed
-- No MetaMask required
-- Works for brand new wallets
-- Just needs patience for mining
+
+-   No mainnet ETH balance required
+-   No account signup needed
+-   No MetaMask required
+-   Works for brand new wallets
+-   Just needs patience for mining
 
 ### MetaMask Faucet
 
 If you're using MetaMask:
 
-- URL: https://docs.metamask.io/developer-tools/faucet
-- ❌ **Requires:** MetaMask extension installed
+-   URL: https://docs.metamask.io/developer-tools/faucet
+-   ❌ **Requires:** MetaMask extension installed
 
 ### More Faucet Options
 
@@ -187,6 +191,7 @@ This page lists all available faucets and their requirements (mainnet ETH balanc
 ### Verify You Received ETH
 
 **Command Line:**
+
 ```bash
 cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
 ```
@@ -194,10 +199,12 @@ cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepo
 Expected: Non-zero value (e.g., `50000000000000000` = 0.05 ETH, `100000000000000000` = 0.1 ETH in wei)
 
 **MetaMask:**
-- Switch to Sepolia network
-- Check balance shown in extension
+
+-   Switch to Sepolia network
+-   Check balance shown in extension
 
 **Block Explorer:**
+
 ```bash
 # Open in browser
 open "https://sepolia.etherscan.io/address/$(cat ~/.dstack/secrets/sepolia-address)"
@@ -217,16 +224,17 @@ For production use, you should get a dedicated RPC endpoint instead of using the
 1. Visit: https://www.alchemy.com/
 2. Sign up for free account
 3. Create new app:
-   - Name: "dstack-sepolia"
-   - Chain: Ethereum
-   - Network: Sepolia
+    - Name: "dstack-sepolia"
+    - Chain: Ethereum
+    - Network: Sepolia
 4. Copy your RPC URL (looks like: `https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY`)
 
 **Benefits:**
-- 300M compute units/month free
-- Enhanced APIs
-- Dashboard with analytics
-- Better reliability than public endpoints
+
+-   300M compute units/month free
+-   Enhanced APIs
+-   Dashboard with analytics
+-   Better reliability than public endpoints
 
 ### Option B: Infura
 
@@ -303,6 +311,7 @@ chmod 600 ~/.dstack/blockchain-config.sh
 ```
 
 **Load when needed:**
+
 ```bash
 source ~/.dstack/blockchain-config.sh
 echo "Wallet: $SEPOLIA_WALLET_ADDRESS"
@@ -315,12 +324,12 @@ echo "Balance: $(cast balance $SEPOLIA_WALLET_ADDRESS --rpc-url $SEPOLIA_RPC_URL
 
 Before proceeding to KMS deployment, verify:
 
-- [ ] ✅ Wallet created and address saved
-- [ ] ✅ Private key stored securely
-- [ ] ✅ Wallet has ≥0.1 testnet ETH
-- [ ] ✅ RPC endpoint tested and working
-- [ ] ✅ Can query balance via cast or MetaMask
-- [ ] ✅ Configuration file created
+-   ✅ Wallet created and address saved
+-   ✅ Private key stored securely
+-   ✅ Wallet has ≥0.1 testnet ETH
+-   ✅ RPC endpoint tested and working
+-   ✅ Can query balance via cast or MetaMask
+-   ✅ Configuration file created
 
 ---
 
@@ -336,9 +345,10 @@ ansible-playbook playbooks/verify-blockchain.yml \
 ```
 
 This will verify:
-- ✅ RPC endpoint connectivity
-- ✅ Wallet balance (warns if < 0.1 ETH)
-- ✅ Network is Sepolia (chain ID 11155111)
+
+-   ✅ RPC endpoint connectivity
+-   ✅ Wallet balance (warns if < 0.1 ETH)
+-   ✅ Network is Sepolia (chain ID 11155111)
 
 ---
 
@@ -347,36 +357,40 @@ This will verify:
 ### Problem: Faucet not sending ETH
 
 **Solutions:**
-- Try different faucet from the list above
-- Check wallet address is correct
-- Wait 5-10 minutes (sometimes delayed)
-- Check block explorer:
-  ```bash
-  open "https://sepolia.etherscan.io/address/$(cat ~/.dstack/secrets/sepolia-address)"
-  ```
+
+-   Try different faucet from the list above
+-   Check wallet address is correct
+-   Wait 5-10 minutes (sometimes delayed)
+-   Check block explorer:
+    ```bash
+    open "https://sepolia.etherscan.io/address/$(cat ~/.dstack/secrets/sepolia-address)"
+    ```
 
 ### Problem: RPC endpoint timing out
 
 **Solutions:**
-- Try different RPC URL from Step 3
-- Check internet connection
-- Verify RPC URL is correct (no typos)
-- Create dedicated Alchemy/Infura account
+
+-   Try different RPC URL from Step 3
+-   Check internet connection
+-   Verify RPC URL is correct (no typos)
+-   Create dedicated Alchemy/Infura account
 
 ### Problem: "Connection refused" error
 
 **Solutions:**
-- Ensure using `https://` not `http://`
-- Try alternative RPC endpoint
-- Check firewall not blocking outbound connections
+
+-   Ensure using `https://` not `http://`
+-   Try alternative RPC endpoint
+-   Check firewall not blocking outbound connections
 
 ### Problem: Can't see balance in cast
 
 **Solutions:**
-- Wait for testnet ETH to arrive (check block explorer)
-- Verify RPC URL is correct
-- Try different RPC endpoint
-- Ensure wallet address is correct
+
+-   Wait for testnet ETH to arrive (check block explorer)
+-   Verify RPC URL is correct
+-   Try different RPC endpoint
+-   Ensure wallet address is correct
 
 ---
 
@@ -385,20 +399,22 @@ This will verify:
 ### DO:
 
 ✅ **Follow these practices:**
-- Store private keys in encrypted files with restricted permissions (chmod 600)
-- Use environment variables for sensitive data
-- Keep separate wallets for testnet and mainnet
-- Back up your wallet securely (encrypted USB, password manager)
-- Use hardware wallet for mainnet production deployments
+
+-   Store private keys in encrypted files with restricted permissions (chmod 600)
+-   Use environment variables for sensitive data
+-   Keep separate wallets for testnet and mainnet
+-   Back up your wallet securely (encrypted USB, password manager)
+-   Use hardware wallet for mainnet production deployments
 
 ### DON'T:
 
 ❌ **Avoid these mistakes:**
-- Commit private keys to git repositories
-- Share private keys via email, chat, or screenshots
-- Use testnet wallet for mainnet (always use separate wallets)
-- Store private keys in plain text on cloud storage
-- Reuse private keys across projects
+
+-   Commit private keys to git repositories
+-   Share private keys via email, chat, or screenshots
+-   Use testnet wallet for mainnet (always use separate wallets)
+-   Store private keys in plain text on cloud storage
+-   Reuse private keys across projects
 
 ---
 
