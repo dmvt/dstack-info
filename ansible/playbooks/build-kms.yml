@@ -1,0 +1,309 @@
+---
+# Ansible playbook to build and configure dstack KMS
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml
+#
+# Configurable variables (pass with -e):
+#   kms_workers          - Number of worker threads (default: 8)
+#   kms_log_level        - Log level: debug, info, warn, error (default: info)
+#   kms_rpc_port         - KMS RPC port (default: 9100)
+#   auth_eth_port        - Auth-eth service port (default: 9200)
+#   pccs_url             - Intel PCCS URL for quote verification
+#   alchemy_api_key      - Alchemy API key for Sepolia RPC
+#   kms_contract_address - KMS contract address from deployment
+#
+# Examples:
+#   # Basic usage
+#   ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml
+#
+#   # With custom configuration
+#   ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml \
+#     -e "kms_workers=16" -e "kms_log_level=debug"
+#
+#   # With contract credentials
+#   ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml \
+#     -e "alchemy_api_key=YOUR_KEY" -e "kms_contract_address=0x..."
+#
+# This playbook:
+# - Builds KMS binary in release mode
+# - Installs KMS to system path
+# - Creates configuration directories
+# - Creates kms.toml configuration
+# - Builds auth-eth service
+# - Creates auth-eth environment file
+
+- name: Build and Configure dstack KMS
+  hosts: dstack_servers
+  become: false
+  vars:
+    dstack_repo_path: "{{ ansible_env.HOME }}/dstack"
+    cargo_bin: "{{ ansible_env.HOME }}/.cargo/bin"
+    kms_install_path: "/usr/local/bin/dstack-kms"
+    kms_config_dir: "/etc/kms"
+    kms_certs_dir: "/etc/kms/certs"
+    kms_run_dir: "/var/run/kms"
+    kms_log_dir: "/var/log/kms"
+
+    # Default configuration values
+    kms_workers: 8
+    kms_log_level: "info"
+    kms_rpc_port: 9100
+    auth_eth_port: 9200
+    pccs_url: "https://api.trustedservices.intel.com/tdx/certification/v4"
+
+  tasks:
+    - name: Check dstack repository exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}"
+      register: repo_check
+
+    - name: Fail if dstack repository not found
+      ansible.builtin.fail:
+        msg: |
+          dstack repository not found at {{ dstack_repo_path }}
+
+          Clone the repository first:
+            git clone https://github.com/Dstack-TEE/dstack.git ~/dstack
+      when: not repo_check.stat.exists
+
+    - name: Check Rust is installed
+      ansible.builtin.stat:
+        path: "{{ cargo_bin }}/cargo"
+      register: cargo_check
+
+    - name: Fail if Rust not installed
+      ansible.builtin.fail:
+        msg: |
+          Rust toolchain not found.
+
+          Install Rust first:
+            See: https://dstack.info/tutorial/rust-toolchain-installation
+      when: not cargo_check.stat.exists
+
+    - name: Build KMS in release mode
+      ansible.builtin.shell: |
+        source {{ cargo_bin }}/../env
+        cargo build --release -p kms
+      args:
+        chdir: "{{ dstack_repo_path }}"
+        executable: /bin/bash
+      register: kms_build
+      changed_when: "'Compiling' in kms_build.stderr or 'Finished' in kms_build.stderr"
+
+    - name: Check KMS binary exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}/target/release/kms"
+      register: kms_binary
+
+    - name: Fail if KMS binary not built
+      ansible.builtin.fail:
+        msg: |
+          KMS binary not found after build.
+
+          Try building manually:
+            cd {{ dstack_repo_path }}
+            cargo build --release -p kms
+      when: not kms_binary.stat.exists
+
+    - name: Install KMS binary to system path
+      ansible.builtin.copy:
+        src: "{{ dstack_repo_path }}/target/release/kms"
+        dest: "{{ kms_install_path }}"
+        mode: '0755'
+        remote_src: true
+      become: true
+
+    - name: Create KMS configuration directory
+      ansible.builtin.file:
+        path: "{{ kms_config_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      become: true
+
+    - name: Create KMS certificates directory
+      ansible.builtin.file:
+        path: "{{ kms_certs_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      become: true
+
+    - name: Create KMS runtime directory
+      ansible.builtin.file:
+        path: "{{ kms_run_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      become: true
+
+    - name: Create KMS log directory
+      ansible.builtin.file:
+        path: "{{ kms_log_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      become: true
+
+    - name: Create KMS configuration file
+      ansible.builtin.copy:
+        content: |
+          # dstack KMS Configuration
+          # Generated by Ansible
+
+          [default]
+          workers = {{ kms_workers }}
+          max_blocking = 64
+          ident = "DStack KMS"
+          temp_dir = "/tmp"
+          keep_alive = 10
+          log_level = "{{ kms_log_level }}"
+
+          # RPC Server Configuration
+          [rpc]
+          address = "0.0.0.0"
+          port = {{ kms_rpc_port }}
+
+          # TLS Certificate Configuration for RPC
+          [rpc.tls]
+          key = "{{ kms_certs_dir }}/rpc.key"
+          certs = "{{ kms_certs_dir }}/rpc.crt"
+
+          # Mutual TLS (mTLS) Configuration
+          [rpc.tls.mutual]
+          ca_certs = "{{ kms_certs_dir }}/tmp-ca.crt"
+          mandatory = false
+
+          # Core KMS Configuration
+          [core]
+          cert_dir = "{{ kms_certs_dir }}"
+          subject_postfix = ".dstack"
+          pccs_url = "{{ pccs_url }}"
+
+          # Authentication API Configuration
+          [core.auth_api]
+          type = "webhook"
+
+          [core.auth_api.webhook]
+          url = "http://127.0.0.1:{{ auth_eth_port }}"
+
+          # Onboarding Configuration
+          [core.onboard]
+          enabled = true
+          auto_bootstrap_domain = ""
+          quote_enabled = true
+          address = "0.0.0.0"
+          port = {{ kms_rpc_port }}
+        dest: "{{ kms_config_dir }}/kms.toml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+
+    - name: Check if npm is installed
+      ansible.builtin.command:
+        cmd: which npm
+      register: npm_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install npm if not present
+      ansible.builtin.apt:
+        name: npm
+        state: present
+        update_cache: yes
+      become: true
+      when: npm_check.rc != 0
+
+    - name: Install auth-eth dependencies
+      ansible.builtin.shell: |
+        npm install
+      args:
+        chdir: "{{ dstack_repo_path }}/kms/auth-eth"
+      register: npm_install
+      changed_when: "'added' in npm_install.stdout"
+
+    - name: Build auth-eth TypeScript
+      ansible.builtin.shell: |
+        npx tsc --project tsconfig.json
+      args:
+        chdir: "{{ dstack_repo_path }}/kms/auth-eth"
+      register: tsc_build
+      changed_when: true
+
+    - name: Check auth-eth build exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}/kms/auth-eth/dist/src/main.js"
+      register: auth_eth_build
+
+    - name: Fail if auth-eth not built
+      ansible.builtin.fail:
+        msg: |
+          auth-eth build failed. main.js not found.
+
+          Try building manually:
+            cd {{ dstack_repo_path }}/kms/auth-eth
+            npm install
+            npx tsc --project tsconfig.json
+      when: not auth_eth_build.stat.exists
+
+    - name: Create auth-eth environment file
+      ansible.builtin.copy:
+        content: |
+          # Auth-ETH Service Configuration
+          # Generated by Ansible
+
+          # Server settings
+          HOST=127.0.0.1
+          PORT={{ auth_eth_port }}
+
+          # Ethereum RPC endpoint
+          {% if alchemy_api_key is defined and alchemy_api_key %}
+          ETH_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/{{ alchemy_api_key }}
+          {% else %}
+          ETH_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
+          {% endif %}
+
+          # KMS Authorization Contract Address
+          {% if kms_contract_address is defined and kms_contract_address %}
+          KMS_CONTRACT_ADDR={{ kms_contract_address }}
+          {% else %}
+          KMS_CONTRACT_ADDR=YOUR_KMS_CONTRACT_ADDRESS
+          {% endif %}
+        dest: "{{ kms_config_dir }}/auth-eth.env"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0600'
+
+    - name: Display configuration summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "KMS Build and Configuration Complete!"
+          - "============================================"
+          - ""
+          - "Binary: {{ kms_install_path }}"
+          - "Config: {{ kms_config_dir }}/kms.toml"
+          - "Certs:  {{ kms_certs_dir }}/"
+          - ""
+          - "Configuration:"
+          - "  Workers: {{ kms_workers }}"
+          - "  Log Level: {{ kms_log_level }}"
+          - "  RPC Port: {{ kms_rpc_port }}"
+          - "  Auth-ETH Port: {{ auth_eth_port }}"
+          - ""
+          - "Auth-ETH:"
+          - "  Build: {{ dstack_repo_path }}/kms/auth-eth/dist/"
+          - "  Config: {{ kms_config_dir }}/auth-eth.env"
+          - ""
+          - "{% if alchemy_api_key is not defined or not alchemy_api_key %}"
+          - "NOTE: Edit {{ kms_config_dir }}/auth-eth.env to add:"
+          - "  - Alchemy API key"
+          - "  - KMS contract address"
+          - "{% endif %}"
+          - ""
+          - "Next steps:"
+          - "  - Bootstrap KMS to generate root keys"
+          - "  - See: https://dstack.info/tutorial/kms-bootstrap"

@@ -28,7 +28,8 @@ ansible/
 │   ├── setup-vmm-service.yml       # Setup VMM systemd service (Phase 2.5)
 │   ├── verify-vmm-service.yml      # Verify VMM service is running (Phase 2.5)
 │   ├── compile-kms-contracts.yml   # Compile KMS smart contracts (Phase 3.1)
-│   └── deploy-kms-contracts.yml    # Deploy contracts to Sepolia (Phase 3.2)
+│   ├── deploy-kms-contracts.yml    # Deploy contracts to Sepolia (Phase 3.2)
+│   └── build-kms.yml               # Build and configure KMS (Phase 3.3)
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/

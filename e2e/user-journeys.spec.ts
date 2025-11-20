@@ -136,7 +136,7 @@ test.describe('User Journeys', () => {
       await page.waitForLoadState('networkidle');
 
       // Navigate through all tutorials using Next button
-      // Full sorted order: Host Setup (5 steps + 2 appendices), Prerequisites (2 steps), dstack Installation (5 steps), KMS Deployment (2 steps)
+      // Full sorted order: Host Setup (5 steps + 2 appendices), Prerequisites (2 steps), dstack Installation (5 steps), KMS Deployment (3 steps)
       const tutorialUrls = [
         '/tutorial/tdx-hardware-verification',    // Host Setup #1
         '/tutorial/tdx-software-setup',           // Host Setup #2
@@ -153,7 +153,8 @@ test.describe('User Journeys', () => {
         '/tutorial/vmm-configuration',             // dstack Installation #4
         '/tutorial/vmm-service-setup',             // dstack Installation #5
         '/tutorial/smart-contract-compilation',    // KMS Deployment #1
-        '/tutorial/contract-deployment',           // KMS Deployment #2 (last!)
+        '/tutorial/contract-deployment',           // KMS Deployment #2
+        '/tutorial/kms-build-configuration',       // KMS Deployment #3 (last!)
       ];
 
       for (let i = 0; i < tutorialUrls.length - 1; i++) {
@@ -167,7 +168,7 @@ test.describe('User Journeys', () => {
       }
 
       // Should be on last tutorial
-      await expect(page).toHaveURL(/\/tutorial\/contract-deployment/);
+      await expect(page).toHaveURL(/\/tutorial\/kms-build-configuration/);
 
       // Last tutorial should have next button that goes to completion page
       const nextBtn = page.locator('a.nav-next');
