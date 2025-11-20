@@ -1,0 +1,117 @@
+---
+# Ansible playbook to compile KMS smart contracts
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/compile-kms-contracts.yml
+#
+# This playbook:
+# - Installs npm if not present
+# - Installs contract dependencies
+# - Compiles all Solidity contracts
+# - Verifies artifacts exist
+
+- name: Compile KMS Smart Contracts
+  hosts: dstack_servers
+  become: false
+  vars:
+    contract_dir: "{{ ansible_env.HOME }}/dstack/kms/auth-eth"
+
+  tasks:
+    - name: Check contract directory exists
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}"
+      register: contract_dir_check
+
+    - name: Fail if contract directory not found
+      ansible.builtin.fail:
+        msg: |
+          Contract directory not found at {{ contract_dir }}
+
+          Clone the dstack repository first:
+            git clone https://github.com/Dstack-TEE/dstack.git ~/dstack
+      when: not contract_dir_check.stat.exists
+
+    - name: Check if npm is installed
+      ansible.builtin.command:
+        cmd: which npm
+      register: npm_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install npm
+      ansible.builtin.apt:
+        name: npm
+        state: present
+        update_cache: yes
+      become: true
+      when: npm_check.rc != 0
+
+    - name: Install contract dependencies
+      ansible.builtin.shell: |
+        npm install
+      args:
+        chdir: "{{ contract_dir }}"
+      register: npm_install
+      changed_when: "'added' in npm_install.stdout or 'packages' in npm_install.stdout"
+
+    - name: Compile contracts
+      ansible.builtin.shell: |
+        npx hardhat compile
+      args:
+        chdir: "{{ contract_dir }}"
+      register: compile_result
+      changed_when: "'Compiled' in compile_result.stdout"
+
+    - name: Check DstackKms artifact exists
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}/artifacts/contracts/DstackKms.sol/DstackKms.json"
+      register: kms_artifact
+
+    - name: Fail if DstackKms not compiled
+      ansible.builtin.fail:
+        msg: |
+          DstackKms contract artifact not found.
+
+          Run compilation manually:
+            cd {{ contract_dir }}
+            npx hardhat compile
+      when: not kms_artifact.stat.exists
+
+    - name: Check DstackApp artifact exists
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}/artifacts/contracts/DstackApp.sol/DstackApp.json"
+      register: app_artifact
+
+    - name: Fail if DstackApp not compiled
+      ansible.builtin.fail:
+        msg: |
+          DstackApp contract artifact not found.
+
+          Run compilation manually:
+            cd {{ contract_dir }}
+            npx hardhat compile
+      when: not app_artifact.stat.exists
+
+    - name: Check TypeScript types exist
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}/typechain-types"
+      register: types_check
+
+    - name: Display compilation summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "KMS Contracts Compiled Successfully!"
+          - "============================================"
+          - ""
+          - "Contract directory: {{ contract_dir }}"
+          - "Artifacts: {{ contract_dir }}/artifacts/"
+          - "TypeScript types: {{ 'Generated' if types_check.stat.exists else 'Not found' }}"
+          - ""
+          - "Compiled contracts:"
+          - "  - DstackKms.sol"
+          - "  - DstackApp.sol"
+          - "  - IAppAuth.sol"
+          - "  - IAppAuthBasicManagement.sol"
+          - ""
+          - "Next steps:"
+          - "  - Deploy contracts to Sepolia testnet"
+          - "  - See: https://dstack.info/tutorial/contract-deployment"
