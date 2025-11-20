@@ -23,6 +23,11 @@ This tutorial guides you through cloning the dstack repository and building the 
   - Handles VM lifecycle (create, start, stop, delete)
   - Manages networking and storage for VMs
 
+- **dstack-supervisor** - The process supervisor that:
+  - Manages child processes within VMs
+  - Handles process lifecycle and monitoring
+  - Required by VMM to function properly
+
 ## Prerequisites
 
 Before starting, ensure you have:
@@ -117,11 +122,40 @@ You'll see output like:
     Finished `release` profile [optimized] target(s) in Xm XXs
 ```
 
-## Step 3: Verify the Build
+## Step 3: Build dstack-supervisor
 
-After compilation completes, verify the binary was created successfully.
+The VMM requires the supervisor component to manage processes. Build it from the workspace root.
 
-### Check binary exists
+### Navigate to repository root
+
+```bash
+cd ~/dstack
+```
+
+### Build supervisor in release mode
+
+```bash
+cargo build --release -p supervisor
+```
+
+This builds the supervisor package specifically. It typically takes 1-3 minutes since many dependencies are already compiled.
+
+### Verify supervisor binary
+
+```bash
+ls -lh ~/dstack/target/release/supervisor
+```
+
+Expected output (typically 10-15MB):
+```
+-rwxrwxr-x 1 ubuntu ubuntu 11M Nov 19 10:35 /home/ubuntu/dstack/target/release/supervisor
+```
+
+## Step 4: Verify the Build
+
+After compilation completes, verify both binaries were created successfully.
+
+### Check VMM binary exists
 
 ```bash
 ls -lh ~/dstack/target/release/dstack-vmm
@@ -132,9 +166,20 @@ Expected output shows the binary (typically 15-25MB):
 -rwxrwxr-x 1 ubuntu ubuntu 19M Nov 19 10:30 /home/ubuntu/dstack/target/release/dstack-vmm
 ```
 
-**Note:** The binary is in the workspace root `target/` directory, not `vmm/target/`, because dstack uses a Cargo workspace.
+### Check supervisor binary exists
 
-### Test the binary
+```bash
+ls -lh ~/dstack/target/release/supervisor
+```
+
+Expected output (typically 10-15MB):
+```
+-rwxrwxr-x 1 ubuntu ubuntu 11M Nov 19 10:35 /home/ubuntu/dstack/target/release/supervisor
+```
+
+**Note:** Both binaries are in the workspace root `target/` directory because dstack uses a Cargo workspace.
+
+### Test the VMM binary
 
 ```bash
 ~/dstack/target/release/dstack-vmm --help
@@ -148,15 +193,20 @@ This displays the VMM help message with available commands and options.
 ~/dstack/target/release/dstack-vmm --version
 ```
 
-## Step 4: Install to System Path (Optional)
+## Step 5: Install to System Path
 
-For convenience, install the VMM binary to a system-wide location.
+Install both binaries to a system-wide location. This is required for the VMM service to work.
 
-### Copy to /usr/local/bin
+### Copy binaries to /usr/local/bin
 
 ```bash
+# Install VMM
 sudo cp ~/dstack/target/release/dstack-vmm /usr/local/bin/dstack-vmm
 sudo chmod 755 /usr/local/bin/dstack-vmm
+
+# Install supervisor
+sudo cp ~/dstack/target/release/supervisor /usr/local/bin/dstack-supervisor
+sudo chmod 755 /usr/local/bin/dstack-supervisor
 ```
 
 ### Verify installation
@@ -164,9 +214,12 @@ sudo chmod 755 /usr/local/bin/dstack-vmm
 ```bash
 which dstack-vmm
 dstack-vmm --help
+
+which dstack-supervisor
+ls -la /usr/local/bin/dstack-supervisor
 ```
 
-Now you can run `dstack-vmm` from anywhere on the system.
+Now you can run both binaries from anywhere on the system.
 
 ## Ansible Automation
 
@@ -182,8 +235,9 @@ ansible-playbook -i inventory/hosts.yml playbooks/build-dstack-vmm.yml
 The playbook will:
 1. Clone the dstack repository (or update if exists)
 2. Build dstack-vmm in release mode
-3. Install the binary to /usr/local/bin
-4. Verify the installation
+3. Build dstack-supervisor in release mode
+4. Install both binaries to /usr/local/bin
+5. Verify the installation
 
 ### Verify with Ansible
 
@@ -307,10 +361,13 @@ The VMM may require TDX-specific libraries. If build fails with TDX errors:
 Before proceeding, verify you have:
 
 - [ ] Cloned dstack repository to ~/dstack
-- [ ] Built vmm binary in release mode
-- [ ] Binary exists at ~/dstack/target/release/dstack-vmm
-- [ ] Binary runs and shows help message
-- [ ] Optionally installed to /usr/local/bin/dstack-vmm
+- [ ] Built VMM binary in release mode
+- [ ] Built supervisor binary in release mode
+- [ ] VMM binary exists at ~/dstack/target/release/dstack-vmm
+- [ ] Supervisor binary exists at ~/dstack/target/release/supervisor
+- [ ] VMM binary runs and shows help message
+- [ ] Installed VMM to /usr/local/bin/dstack-vmm
+- [ ] Installed supervisor to /usr/local/bin/dstack-supervisor
 
 ### Quick verification script
 
@@ -318,7 +375,7 @@ Run this script to verify your build:
 
 ```bash
 #!/bin/bash
-echo "Checking dstack-vmm build..."
+echo "Checking dstack build..."
 
 # Check repository
 if [ -d "$HOME/dstack" ]; then
@@ -336,7 +393,7 @@ else
     exit 1
 fi
 
-# Check binary
+# Check VMM binary
 VMM_BIN="$HOME/dstack/target/release/dstack-vmm"
 if [ -f "$VMM_BIN" ]; then
     SIZE=$(ls -lh "$VMM_BIN" | awk '{print $5}')
@@ -346,7 +403,17 @@ else
     exit 1
 fi
 
-# Check if binary runs
+# Check supervisor binary
+SUPERVISOR_BIN="$HOME/dstack/target/release/supervisor"
+if [ -f "$SUPERVISOR_BIN" ]; then
+    SIZE=$(ls -lh "$SUPERVISOR_BIN" | awk '{print $5}')
+    echo "✓ Supervisor binary: $SIZE"
+else
+    echo "✗ Supervisor binary not found"
+    exit 1
+fi
+
+# Check if VMM binary runs
 if $VMM_BIN --help > /dev/null 2>&1; then
     echo "✓ VMM binary executes successfully"
 else
@@ -354,15 +421,23 @@ else
     exit 1
 fi
 
-# Check system installation (optional)
+# Check system installation
 if command -v dstack-vmm &> /dev/null; then
     echo "✓ dstack-vmm installed to system PATH"
 else
-    echo "ℹ dstack-vmm not in system PATH (optional)"
+    echo "✗ dstack-vmm not installed to system PATH"
+    exit 1
+fi
+
+if [ -f "/usr/local/bin/dstack-supervisor" ]; then
+    echo "✓ dstack-supervisor installed to system PATH"
+else
+    echo "✗ dstack-supervisor not installed to system PATH"
+    exit 1
 fi
 
 echo ""
-echo "dstack-vmm build verified successfully!"
+echo "dstack build verified successfully!"
 ```
 
 ## Build Performance Tips
