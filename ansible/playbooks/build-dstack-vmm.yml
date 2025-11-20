@@ -1,11 +1,12 @@
 ---
-# Ansible playbook to clone dstack and build VMM
+# Ansible playbook to clone dstack and build VMM + Supervisor
 # Usage: ansible-playbook -i inventory/hosts.yml playbooks/build-dstack-vmm.yml
 #
 # This playbook:
 # - Clones the dstack repository
 # - Builds dstack-vmm in release mode
-# - Installs the binary to /usr/local/bin
+# - Builds dstack-supervisor in release mode
+# - Installs both binaries to /usr/local/bin
 
 - name: Clone and Build dstack-vmm
   hosts: dstack_servers
@@ -16,6 +17,7 @@
     dstack_version: "v0.5.5"  # Use specific release tag for stability
     cargo_bin: "{{ ansible_env.HOME }}/.cargo/bin"
     vmm_install_path: "/usr/local/bin/dstack-vmm"
+    supervisor_install_path: "/usr/local/bin/dstack-supervisor"
 
   tasks:
     - name: Clone or update dstack repository
@@ -82,13 +84,53 @@
       changed_when: false
       failed_when: vmm_help.rc != 0
 
+    - name: Build supervisor in release mode
+      ansible.builtin.shell: |
+        source {{ cargo_bin }}/../env
+        cargo build --release -p supervisor
+      args:
+        chdir: "{{ dstack_repo_path }}"
+        executable: /bin/bash
+      register: supervisor_build_result
+      changed_when: "'Compiling' in supervisor_build_result.stderr or 'Compiling' in supervisor_build_result.stdout"
+
+    - name: Check supervisor binary exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}/target/release/supervisor"
+      register: supervisor_binary
+
+    - name: Fail if supervisor binary not found
+      ansible.builtin.fail:
+        msg: |
+          Supervisor binary not found after build.
+          Check build output for errors.
+      when: not supervisor_binary.stat.exists
+
+    - name: Get supervisor binary size
+      ansible.builtin.command:
+        cmd: "ls -lh {{ dstack_repo_path }}/target/release/supervisor"
+      register: supervisor_size
+      changed_when: false
+
+    - name: Install supervisor binary to system path
+      ansible.builtin.copy:
+        src: "{{ dstack_repo_path }}/target/release/supervisor"
+        dest: "{{ supervisor_install_path }}"
+        mode: '0755'
+        remote_src: true
+      become: true
+
     - name: Display build summary
       ansible.builtin.debug:
         msg:
-          - "dstack-vmm built successfully!"
+          - "dstack components built successfully!"
           - "Repository: {{ dstack_repo_path }}"
           - "Commit: {{ git_commit.stdout }}"
-          - "Binary: {{ vmm_size.stdout.split()[-1] }}"
-          - "Installed to: {{ vmm_install_path }}"
+          - ""
+          - "VMM binary: {{ vmm_size.stdout.split()[-1] }}"
+          - "VMM installed to: {{ vmm_install_path }}"
+          - ""
+          - "Supervisor binary: {{ supervisor_size.stdout.split()[-1] }}"
+          - "Supervisor installed to: {{ supervisor_install_path }}"
           - ""
           - "Run 'dstack-vmm --help' to see available commands"
