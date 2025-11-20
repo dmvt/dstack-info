@@ -2,6 +2,27 @@
 # Ansible playbook to setup VMM configuration
 # Usage: ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml
 #
+# Configurable variables (pass with -e):
+#   vmm_workers        - Number of worker threads (default: 8)
+#   vmm_log_level      - Log level: debug, info, warn, error (default: info)
+#   cvm_max_vcpu       - Max vCPUs per CVM (default: 16)
+#   cvm_max_memory_mb  - Max memory per CVM in MB (default: 65536)
+#   vmm_kms_url        - KMS service URL (default: http://127.0.0.1:8081)
+#   cvm_cid_start      - Starting CID for CVMs (default: 1000)
+#   cvm_cid_pool_size  - Number of CIDs in pool (default: 1000)
+#
+# Examples:
+#   # Basic setup with defaults
+#   ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml
+#
+#   # Custom resource limits
+#   ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+#     -e "cvm_max_vcpu=32" -e "cvm_max_memory_mb=131072"
+#
+#   # Enable debug logging
+#   ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+#     -e "vmm_log_level=debug"
+#
 # This playbook:
 # - Creates /etc/dstack directory
 # - Creates vmm.toml configuration file
@@ -12,19 +33,20 @@
   hosts: dstack_servers
   become: true
   vars:
+    # Directory paths (generally don't need to change)
     dstack_config_dir: "/etc/dstack"
     dstack_run_dir: "/var/run/dstack"
     dstack_log_dir: "/var/log/dstack"
     dstack_lib_dir: "/var/lib/dstack"
 
-    # VMM Configuration
+    # VMM Configuration defaults - override with -e flags
     vmm_workers: 8
     vmm_max_blocking: 64
     vmm_log_level: "info"
     vmm_address: "unix:/var/run/dstack/vmm.sock"
     vmm_kms_url: "http://127.0.0.1:8081"
 
-    # CVM Configuration
+    # CVM Configuration defaults - override with -e flags
     cvm_max_vcpu: 16
     cvm_max_memory_mb: 65536
     cvm_cid_start: 1000
