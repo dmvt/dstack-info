@@ -1773,7 +1773,71 @@ All Phase 1 prerequisites now complete:
 
 **Deployment:** https://dstack.info/tutorial/vmm-configuration
 
-**Next:** Phase 2.5 - VMM Service Setup
+---
+
+### Phase 2.5: VMM Service Setup ✅ COMPLETE
+**Completed:** 2025-11-20
+**Commits:** 4db78be, 797c437, 3fdf404
+
+**What was done:**
+- Created tutorial: `vmm-service-setup.md` (450+ lines)
+- Created Ansible playbook: `setup-vmm-service.yml`
+- Created verification playbook: `verify-vmm-service.yml`
+- Updated ansible/README.md with Phase 2.5 documentation
+- Updated E2E tests for 14 tutorials (was 13)
+- **IMPORTANT FIX:** Discovered VMM requires supervisor component
+- Updated build-dstack-vmm.yml to also build supervisor
+- Updated clone-build-dstack-vmm.md tutorial with supervisor steps
+
+**Tutorial Features:**
+- systemd service file creation and configuration
+- Service management commands reference
+- Log viewing and monitoring
+- Troubleshooting guide for common issues
+- Advanced configuration (resource limits, environment variables)
+- Verification checklist and script
+
+**Key Discovery - Supervisor Requirement:**
+- VMM cannot start without dstack-supervisor
+- Supervisor binary must be built: `cargo build --release -p supervisor`
+- Installed to: `/usr/local/bin/dstack-supervisor`
+- VMM auto-starts supervisor on service start
+
+**Server Testing (173.231.234.133):**
+- ✅ Service file created: /etc/systemd/system/dstack-vmm.service
+- ✅ Service enabled for boot
+- ✅ Service status: active (running)
+- ✅ VMM socket created: /var/run/dstack/vmm.sock
+- ✅ Supervisor socket created: /var/run/dstack/supervisor.sock
+- ✅ No errors in service logs
+
+**Testing:**
+- Ansible playbooks tested on server: ✅ All verifications passing
+- E2E tests updated for 14 tutorials
+- Build successful: 20 pages generated
+
+**Files Created:**
+- src/content/tutorials/vmm-service-setup.md
+- ansible/playbooks/setup-vmm-service.yml
+- ansible/playbooks/verify-vmm-service.yml
+
+**Files Modified:**
+- ansible/README.md (added Phase 2.5 documentation)
+- ansible/playbooks/build-dstack-vmm.yml (added supervisor build)
+- src/content/tutorials/clone-build-dstack-vmm.md (added supervisor steps)
+- e2e/user-journeys.spec.ts (added vmm-service-setup to navigation)
+- e2e/tutorial-navigation-enhancements.spec.ts (updated for 14 tutorials)
+
+**Deployment:** https://dstack.info/tutorial/vmm-service-setup
+
+**Phase 2 Complete!** All 5 dstack Installation tutorials done:
+1. System Baseline Dependencies
+2. Rust Toolchain Installation
+3. Clone & Build dstack-vmm (+ supervisor)
+4. VMM Configuration
+5. VMM Service Setup
+
+**Next:** Phase 3 - KMS Deployment
 
 ---
 
