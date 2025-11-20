@@ -22,7 +22,9 @@ ansible/
 │   ├── setup-rust-toolchain.yml    # Install Rust toolchain (Phase 2.2)
 │   ├── verify-rust-toolchain.yml   # Verify Rust toolchain installation (Phase 2.2)
 │   ├── build-dstack-vmm.yml        # Clone and build dstack-vmm (Phase 2.3)
-│   └── verify-dstack-vmm.yml       # Verify dstack-vmm installation (Phase 2.3)
+│   ├── verify-dstack-vmm.yml       # Verify dstack-vmm installation (Phase 2.3)
+│   ├── setup-vmm-config.yml        # Create VMM configuration (Phase 2.4)
+│   └── verify-vmm-config.yml       # Verify VMM configuration (Phase 2.4)
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/
@@ -306,6 +308,56 @@ ansible-playbook playbooks/verify-dstack-vmm.yml -i inventory/hosts.yml
 - Check disk space and permissions
 - See [Clone & Build dstack-vmm Tutorial](https://dstack.info/tutorial/clone-build-dstack-vmm)
 
+### Phase 2.4: Setup VMM Configuration
+
+Create VMM configuration file and directories:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/setup-vmm-config.yml
+
+# Dry run
+ansible-playbook --check playbooks/setup-vmm-config.yml -i inventory/hosts.yml
+
+# Run setup
+ansible-playbook playbooks/setup-vmm-config.yml -i inventory/hosts.yml
+```
+
+**Expected output:**
+- ✓ /etc/dstack directory created
+- ✓ vmm.toml configuration file created
+- ✓ Runtime directories created (/var/run/dstack, /var/log/dstack, /var/lib/dstack)
+- ✓ Exit code 0
+
+**If setup fails:**
+- Check sudo/root privileges
+- Verify disk space available
+- See [VMM Configuration Tutorial](https://dstack.info/tutorial/vmm-configuration)
+
+### Phase 2.4: Verify VMM Configuration
+
+After setup, verify the configuration:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/verify-vmm-config.yml
+
+# Run verification
+ansible-playbook playbooks/verify-vmm-config.yml -i inventory/hosts.yml
+```
+
+**Expected output:**
+- ✓ VMM binary exists
+- ✓ Configuration file exists and is readable
+- ✓ TOML syntax is valid
+- ✓ All directories exist
+- ✓ Exit code 0
+
+**If verification fails:**
+- Run setup playbook first
+- Check file permissions
+- See [VMM Configuration Tutorial](https://dstack.info/tutorial/vmm-configuration)
+
 ## Testing
 
 All playbooks should be tested using:
@@ -474,6 +526,44 @@ ansible-playbook playbooks/PLAYBOOK_NAME.yml -i inventory/hosts.yml
 
 **Exit codes:**
 - `0` - VMM installation verified
+- `1` - Verification failed
+
+### setup-vmm-config.yml
+
+**Purpose:** Create VMM configuration file and directories
+
+**What it does:**
+- Creates /etc/dstack directory
+- Creates vmm.toml configuration file
+- Creates runtime directories
+- Sets appropriate permissions
+
+**Variables:**
+- `vmm_workers` - Number of worker threads (default: 8)
+- `vmm_log_level` - Logging level (default: info)
+- `cvm_max_vcpu` - Maximum vCPUs for VMs (default: 16)
+- `cvm_max_memory_mb` - Maximum memory in MB (default: 65536)
+
+**Usage:** See [VMM Configuration Tutorial](https://dstack.info/tutorial/vmm-configuration)
+
+**Exit codes:**
+- `0` - Configuration created successfully
+- `1` - Setup failed
+
+### verify-vmm-config.yml
+
+**Purpose:** Verify VMM configuration is correct
+
+**What it checks:**
+- VMM binary exists
+- Configuration file exists and is readable
+- TOML syntax is valid
+- All directories exist
+
+**Usage:** See [VMM Configuration Tutorial](https://dstack.info/tutorial/vmm-configuration)
+
+**Exit codes:**
+- `0` - Configuration verified
 - `1` - Verification failed
 
 ## Troubleshooting

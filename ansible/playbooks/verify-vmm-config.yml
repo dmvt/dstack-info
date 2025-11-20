@@ -1,0 +1,156 @@
+---
+# Ansible playbook to verify VMM configuration
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/verify-vmm-config.yml
+#
+# This playbook verifies:
+# - Configuration file exists and is readable
+# - All runtime directories exist
+# - VMM binary is available
+# - Configuration values are valid
+
+- name: Verify VMM Configuration
+  hosts: dstack_servers
+  become: true
+  vars:
+    dstack_config_dir: "/etc/dstack"
+    dstack_run_dir: "/var/run/dstack"
+    dstack_log_dir: "/var/log/dstack"
+    dstack_lib_dir: "/var/lib/dstack"
+    vmm_config_file: "/etc/dstack/vmm.toml"
+    vmm_binary: "/usr/local/bin/dstack-vmm"
+
+  tasks:
+    - name: Check VMM binary exists
+      ansible.builtin.stat:
+        path: "{{ vmm_binary }}"
+      register: vmm_binary_check
+
+    - name: Fail if VMM binary not found
+      ansible.builtin.fail:
+        msg: |
+          VMM binary not found at {{ vmm_binary }}
+
+          Run the build playbook first:
+            ansible-playbook -i inventory/hosts.yml playbooks/build-dstack-vmm.yml
+
+          Or follow the manual tutorial:
+            https://dstack.info/tutorial/clone-build-dstack-vmm
+      when: not vmm_binary_check.stat.exists
+
+    - name: Check configuration directory exists
+      ansible.builtin.stat:
+        path: "{{ dstack_config_dir }}"
+      register: config_dir_check
+
+    - name: Fail if config directory not found
+      ansible.builtin.fail:
+        msg: |
+          Configuration directory not found at {{ dstack_config_dir }}
+
+          Run the setup playbook first:
+            ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml
+
+          Or follow the manual tutorial:
+            https://dstack.info/tutorial/vmm-configuration
+      when: not config_dir_check.stat.exists
+
+    - name: Check configuration file exists
+      ansible.builtin.stat:
+        path: "{{ vmm_config_file }}"
+      register: config_file_check
+
+    - name: Fail if config file not found
+      ansible.builtin.fail:
+        msg: |
+          VMM configuration file not found at {{ vmm_config_file }}
+
+          Run the setup playbook first:
+            ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml
+      when: not config_file_check.stat.exists
+
+    - name: Check runtime directories exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: runtime_dirs_check
+      loop:
+        - "{{ dstack_run_dir }}"
+        - "{{ dstack_log_dir }}"
+        - "{{ dstack_lib_dir }}"
+
+    - name: Report missing directories
+      ansible.builtin.fail:
+        msg: |
+          Runtime directory not found: {{ item.item }}
+
+          Run the setup playbook to create directories:
+            ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml
+      loop: "{{ runtime_dirs_check.results }}"
+      when: not item.stat.exists
+
+    - name: Read configuration file
+      ansible.builtin.slurp:
+        src: "{{ vmm_config_file }}"
+      register: config_content
+
+    - name: Parse configuration (check TOML syntax)
+      ansible.builtin.shell: |
+        python3 -c "import tomllib; tomllib.load(open('{{ vmm_config_file }}', 'rb'))"
+      register: toml_check
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if TOML syntax is invalid
+      ansible.builtin.fail:
+        msg: |
+          VMM configuration has invalid TOML syntax.
+
+          Error: {{ toml_check.stderr }}
+
+          Edit the configuration file and fix the syntax:
+            sudo nano {{ vmm_config_file }}
+      when: toml_check.rc != 0
+
+    - name: Get configuration file info
+      ansible.builtin.command:
+        cmd: "ls -lh {{ vmm_config_file }}"
+      register: config_info
+      changed_when: false
+
+    - name: Extract key configuration values
+      ansible.builtin.shell: |
+        python3 << 'PYEOF'
+        import tomllib
+        with open('{{ vmm_config_file }}', 'rb') as f:
+            data = tomllib.load(f)
+        print(f"workers={data.get('workers', 'N/A')}")
+        print(f"log_level={data.get('log_level', 'N/A')}")
+        print(f"max_vcpu={data.get('cvm', {}).get('max_allocable_vcpu', 'N/A')}")
+        print(f"max_mem={data.get('cvm', {}).get('max_allocable_memory_in_mb', 'N/A')}")
+        PYEOF
+      register: config_values
+      changed_when: false
+
+    - name: Display verification summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "VMM Configuration Verified!"
+          - "============================================"
+          - ""
+          - "Configuration file: {{ vmm_config_file }}"
+          - "File info: {{ config_info.stdout.split()[-1] }}"
+          - ""
+          - "Key settings:"
+          - "{{ config_values.stdout_lines | join('\n') }}"
+          - ""
+          - "Directories verified:"
+          - "  - {{ dstack_config_dir }}"
+          - "  - {{ dstack_run_dir }}"
+          - "  - {{ dstack_log_dir }}"
+          - "  - {{ dstack_lib_dir }}"
+          - ""
+          - "✓ All checks passed!"
+          - ""
+          - "Next steps:"
+          - "  - Create systemd service for VMM"
+          - "  - See: https://dstack.info/tutorial/vmm-service-setup"

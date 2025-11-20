@@ -1,6 +1,6 @@
 # dstack Tutorial Project - Progress Tracker
 
-**Last Updated:** 2025-11-18
+**Last Updated:** 2025-11-19
 **Current Phase:** Phase 2 - dstack Installation
 
 ---
@@ -1666,7 +1666,59 @@ All Phase 1 prerequisites now complete:
 
 **Deployment:** https://dstack.info/tutorial/rust-toolchain-installation
 
-**Next:** Phase 2.3 - Clone & Build dstack-vmm
+---
+
+### Phase 2.3: Clone & Build dstack-vmm ✅ COMPLETE
+**Completed:** 2025-11-19
+**Commits:** 516ca38, 1101b8e, 54767d0, 092d1a0
+
+**What was done:**
+- Created tutorial: `clone-build-dstack-vmm.md` (382 lines)
+- Created Ansible playbook: `build-dstack-vmm.yml`
+- Created verification playbook: `verify-dstack-vmm.yml`
+- Also added `verify-rust-toolchain.yml` for Phase 2.2 consistency
+- Updated ansible/README.md with Phase 2.3 documentation
+- Updated E2E tests for 12 tutorials (was 11)
+
+**Tutorial Features:**
+- Clone dstack repository and checkout specific tag (v0.5.5)
+- Build VMM in release mode with cargo
+- Install binary to /usr/local/bin
+- Comprehensive troubleshooting (OOM, linker errors, network timeouts)
+- Build performance tips (sccache, parallel jobs)
+- Verification checklist and script
+
+**Key Decisions:**
+- Use specific release tag (v0.5.5) instead of master branch for stability
+- Binary is at ~/dstack/target/release/dstack-vmm (Cargo workspace, not crate)
+- Added dedicated verification playbooks matching Phase 1 pattern
+
+**Server Testing (173.231.234.133):**
+- ✅ dstack repository cloned (v0.5.5, commit 7bf1843)
+- ✅ VMM built in release mode (37.73s build time)
+- ✅ Binary size: 18-19MB
+- ✅ Installed to /usr/local/bin/dstack-vmm
+- ✅ VMM version: v0.5.5 (git:7bf1843a8ddf877fbaeb)
+
+**Testing:**
+- Ansible playbooks tested on server: ✅ All verifications passing
+- E2E tests: 79 passed (all passing)
+
+**Files Created:**
+- src/content/tutorials/clone-build-dstack-vmm.md
+- ansible/playbooks/build-dstack-vmm.yml
+- ansible/playbooks/verify-dstack-vmm.yml
+- ansible/playbooks/verify-rust-toolchain.yml
+
+**Files Modified:**
+- ansible/README.md (added Phase 2.3 and 2.2 verification documentation)
+- e2e/user-journeys.spec.ts (added clone-build-dstack-vmm to navigation)
+- e2e/tutorial-navigation-enhancements.spec.ts (updated for 12 tutorials)
+- src/content/tutorials/rust-toolchain-installation.md (updated Ansible verification section)
+
+**Deployment:** https://dstack.info/tutorial/clone-build-dstack-vmm
+
+**Next:** Phase 2.4 - VMM Configuration
 
 ---
 
