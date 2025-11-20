@@ -324,7 +324,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
           'tdx-troubleshooting-next-steps': { completed: true, timestamp: new Date().toISOString() },
           'ansible-tdx-automation': { completed: true, timestamp: new Date().toISOString() },
           'dns-configuration': { completed: true, timestamp: new Date().toISOString() },
-          'blockchain-setup': { completed: true, timestamp: new Date().toISOString() }
+          'blockchain-setup': { completed: true, timestamp: new Date().toISOString() },
+          'system-baseline-dependencies': { completed: true, timestamp: new Date().toISOString() }
         }));
       });
 
@@ -382,7 +383,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
           'tdx-troubleshooting-next-steps': { completed: true, timestamp: new Date().toISOString() },
           'ansible-tdx-automation': { completed: true, timestamp: new Date().toISOString() },
           'dns-configuration': { completed: true, timestamp: new Date().toISOString() },
-          'blockchain-setup': { completed: true, timestamp: new Date().toISOString() }
+          'blockchain-setup': { completed: true, timestamp: new Date().toISOString() },
+          'system-baseline-dependencies': { completed: true, timestamp: new Date().toISOString() }
         }));
       });
 
@@ -425,9 +427,10 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Should have section breakdown
       await expect(page.locator('text="Progress by Section"')).toBeVisible();
 
-      // Should list sections (use specific selector for section breakdown)
-      await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("TDX Enablement")')).toBeVisible();
+      // Should list all three sections (use specific selector for section breakdown)
+      await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("Host Setup")')).toBeVisible();
       await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("Prerequisites")')).toBeVisible();
+      await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("dstack Installation")')).toBeVisible();
     });
 
     test('should clear progress when reset button clicked and confirmed', async ({ page }) => {
@@ -458,8 +461,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
   test.describe('Integration Tests', () => {
     test('should navigate to completion page from last tutorial next button', async ({ page }) => {
-      // Go to last tutorial (blockchain-setup is last in Prerequisites section)
-      await page.goto('/tutorial/blockchain-setup');
+      // Go to last tutorial (system-baseline-dependencies is last in dstack Installation section)
+      await page.goto('/tutorial/system-baseline-dependencies');
 
       // Wait for page to load
       await page.waitForLoadState('networkidle');

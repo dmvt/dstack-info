@@ -8,11 +8,20 @@ import { extractHeadings } from '../../utils/markdown';
 export async function getStaticPaths() {
   const tutorials = await getCollection('tutorials');
 
+  // Define section order (tutorials flow: Host Setup -> Prerequisites -> dstack installation)
+  const sectionOrder = ['Host Setup', 'Prerequisites', 'dstack Installation'];
+
   // Sort tutorials by section, then numbered steps, then appendices
   const sortedTutorials = tutorials.sort((a, b) => {
-    // First sort by section
+    // First sort by section using defined order
     if (a.data.section !== b.data.section) {
-      return a.data.section.localeCompare(b.data.section);
+      const aIndex = sectionOrder.indexOf(a.data.section);
+      const bIndex = sectionOrder.indexOf(b.data.section);
+      // Unknown sections go to the end
+      if (aIndex === -1 && bIndex === -1) return a.data.section.localeCompare(b.data.section);
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+      return aIndex - bIndex;
     }
 
     // Within same section, appendices come last

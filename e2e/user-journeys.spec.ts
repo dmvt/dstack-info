@@ -136,18 +136,18 @@ test.describe('User Journeys', () => {
       await page.waitForLoadState('networkidle');
 
       // Navigate through all tutorials using Next button
-      // Full sorted order: Host Setup (5 steps + 2 appendices), then Prerequisites (3 steps)
-      // Appendices are sorted alphabetically by title: "Appendix A..." comes before "Appendix B..."
+      // Full sorted order: TDX Enablement (5 steps + 2 appendices), Prerequisites (2 steps), dstack Installation (1 step)
       const tutorialUrls = [
-        '/tutorial/tdx-hardware-verification',    // Host Setup #1
-        '/tutorial/tdx-software-setup',           // Host Setup #2
-        '/tutorial/tdx-kernel-installation',       // Host Setup #3
-        '/tutorial/tdx-status-verification',       // Host Setup #4
-        '/tutorial/tdx-bios-configuration',        // Host Setup #5
-        '/tutorial/tdx-troubleshooting-next-steps', // Host Setup appendix (Appendix A)
-        '/tutorial/ansible-tdx-automation',        // Host Setup appendix (Appendix B)
+        '/tutorial/tdx-hardware-verification',    // TDX Enablement #1
+        '/tutorial/tdx-software-setup',           // TDX Enablement #2
+        '/tutorial/tdx-kernel-installation',       // TDX Enablement #3
+        '/tutorial/tdx-status-verification',       // TDX Enablement #4
+        '/tutorial/tdx-bios-configuration',        // TDX Enablement #5
+        '/tutorial/tdx-troubleshooting-next-steps', // TDX Enablement appendix
+        '/tutorial/ansible-tdx-automation',        // TDX Enablement appendix
         '/tutorial/dns-configuration',             // Prerequisites #1
-        '/tutorial/blockchain-setup',              // Prerequisites #3 (last!)
+        '/tutorial/blockchain-setup',              // Prerequisites #3
+        '/tutorial/system-baseline-dependencies',  // dstack Installation #1 (last!)
       ];
 
       for (let i = 0; i < tutorialUrls.length - 1; i++) {
@@ -161,7 +161,7 @@ test.describe('User Journeys', () => {
       }
 
       // Should be on last tutorial
-      await expect(page).toHaveURL(/\/tutorial\/blockchain-setup/);
+      await expect(page).toHaveURL(/\/tutorial\/system-baseline-dependencies/);
 
       // Last tutorial should have next button that goes to completion page
       const nextBtn = page.locator('a.nav-next');
@@ -170,19 +170,19 @@ test.describe('User Journeys', () => {
     });
 
     test('should navigate backwards through tutorials', async ({ page }) => {
-      // Start at last appendix in Host Setup section (Appendix B comes after A alphabetically)
+      // Start at last appendix in TDX Enablement section
       await page.goto('/tutorial/ansible-tdx-automation');
       await page.waitForLoadState('networkidle');
 
-      // Navigate backwards using Previous button
+      // Navigate backwards using Previous button through TDX Enablement section
       const tutorialUrls = [
-        '/tutorial/ansible-tdx-automation',        // Appendix B
-        '/tutorial/tdx-troubleshooting-next-steps', // Appendix A
-        '/tutorial/tdx-bios-configuration',        // Step 5
-        '/tutorial/tdx-status-verification',       // Step 4
-        '/tutorial/tdx-kernel-installation',       // Step 3
-        '/tutorial/tdx-software-setup',            // Step 2
-        '/tutorial/tdx-hardware-verification',     // Step 1
+        '/tutorial/ansible-tdx-automation',        // TDX Enablement appendix
+        '/tutorial/tdx-troubleshooting-next-steps', // TDX Enablement appendix
+        '/tutorial/tdx-bios-configuration',        // TDX Enablement #5
+        '/tutorial/tdx-status-verification',       // TDX Enablement #4
+        '/tutorial/tdx-kernel-installation',       // TDX Enablement #3
+        '/tutorial/tdx-software-setup',            // TDX Enablement #2
+        '/tutorial/tdx-hardware-verification',     // TDX Enablement #1
       ];
 
       for (let i = 0; i < tutorialUrls.length - 1; i++) {

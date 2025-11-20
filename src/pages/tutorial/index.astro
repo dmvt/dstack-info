@@ -2,8 +2,8 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-// Define section order (tutorials flow: TDX setup -> Prerequisites -> dstack installation)
-const sectionOrder = ['TDX Enablement', 'Prerequisites', 'dstack Installation'];
+// Define section order (tutorials flow: Host Setup -> Prerequisites -> dstack installation)
+const sectionOrder = ['Host Setup', 'Prerequisites', 'dstack Installation'];
 
 // Get all tutorials sorted properly
 const allTutorials = (await getCollection('tutorials')).sort((a, b) => {

@@ -23,8 +23,8 @@
     return acc;
   }, {} as Record<string, any[]>);
 
-  // Define section order (tutorials flow: TDX setup -> Prerequisites -> dstack installation)
-  const sectionOrder = ['TDX Enablement', 'Prerequisites', 'dstack Installation'];
+  // Define section order (tutorials flow: Host Setup -> Prerequisites -> dstack installation)
+  const sectionOrder = ['Host Setup', 'Prerequisites', 'dstack Installation'];
 
   // Sort tutorials within each section: numbered steps first, then appendices
   $: sortedSections = Object.entries(tutorialsBySection)
