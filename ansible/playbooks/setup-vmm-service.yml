@@ -1,0 +1,151 @@
+---
+# Ansible playbook to setup VMM systemd service
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-service.yml
+#
+# This playbook:
+# - Creates systemd service file for dstack-vmm
+# - Reloads systemd daemon
+# - Enables service for boot
+# - Starts the service
+# - Verifies it's running
+
+- name: Setup VMM Systemd Service
+  hosts: dstack_servers
+  become: true
+  vars:
+    vmm_binary: "/usr/local/bin/dstack-vmm"
+    vmm_config: "/etc/dstack/vmm.toml"
+    vmm_service_file: "/etc/systemd/system/dstack-vmm.service"
+    dstack_run_dir: "/var/run/dstack"
+    dstack_log_dir: "/var/log/dstack"
+    dstack_lib_dir: "/var/lib/dstack"
+
+  tasks:
+    - name: Check VMM binary exists
+      ansible.builtin.stat:
+        path: "{{ vmm_binary }}"
+      register: vmm_binary_check
+
+    - name: Fail if VMM binary not found
+      ansible.builtin.fail:
+        msg: |
+          VMM binary not found at {{ vmm_binary }}
+
+          Run the build playbook first:
+            ansible-playbook -i inventory/hosts.yml playbooks/build-dstack-vmm.yml
+
+          Or follow the manual tutorial:
+            https://dstack.info/tutorial/clone-build-dstack-vmm
+      when: not vmm_binary_check.stat.exists
+
+    - name: Check VMM configuration exists
+      ansible.builtin.stat:
+        path: "{{ vmm_config }}"
+      register: vmm_config_check
+
+    - name: Fail if VMM configuration not found
+      ansible.builtin.fail:
+        msg: |
+          VMM configuration not found at {{ vmm_config }}
+
+          Run the configuration playbook first:
+            ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml
+
+          Or follow the manual tutorial:
+            https://dstack.info/tutorial/vmm-configuration
+      when: not vmm_config_check.stat.exists
+
+    - name: Create systemd service file
+      ansible.builtin.copy:
+        dest: "{{ vmm_service_file }}"
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=dstack Virtual Machine Monitor
+          Documentation=https://dstack.info
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=root
+          ExecStart={{ vmm_binary }} --config {{ vmm_config }} serve
+          Restart=always
+          RestartSec=5
+          StandardOutput=journal
+          StandardError=journal
+
+          # Security hardening
+          NoNewPrivileges=false
+          ProtectSystem=strict
+          ReadWritePaths={{ dstack_run_dir }} {{ dstack_log_dir }} {{ dstack_lib_dir }} /tmp
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: Reload systemd
+
+    - name: Flush handlers to reload systemd
+      ansible.builtin.meta: flush_handlers
+
+    - name: Enable VMM service
+      ansible.builtin.systemd:
+        name: dstack-vmm
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Start VMM service
+      ansible.builtin.systemd:
+        name: dstack-vmm
+        state: started
+
+    - name: Wait for service to stabilize
+      ansible.builtin.pause:
+        seconds: 3
+
+    - name: Check service status
+      ansible.builtin.systemd:
+        name: dstack-vmm
+      register: vmm_service_status
+
+    - name: Fail if service not running
+      ansible.builtin.fail:
+        msg: |
+          VMM service failed to start.
+
+          Check logs:
+            sudo journalctl -u dstack-vmm -n 50
+
+          Common issues:
+            - Configuration syntax error
+            - Port already in use
+            - Missing dependencies
+      when: vmm_service_status.status.ActiveState != "active"
+
+    - name: Check socket file exists
+      ansible.builtin.stat:
+        path: "{{ dstack_run_dir }}/vmm.sock"
+      register: socket_check
+
+    - name: Display setup summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "VMM Service Setup Complete!"
+          - "============================================"
+          - ""
+          - "Service file: {{ vmm_service_file }}"
+          - "Service status: {{ vmm_service_status.status.ActiveState }}"
+          - "Socket file: {{ 'Created' if socket_check.stat.exists else 'Not found (check logs)' }}"
+          - ""
+          - "Useful commands:"
+          - "  - Status: sudo systemctl status dstack-vmm"
+          - "  - Logs: sudo journalctl -u dstack-vmm -f"
+          - "  - Restart: sudo systemctl restart dstack-vmm"
+          - ""
+          - "Next steps:"
+          - "  - Run verify-vmm-service.yml to verify setup"
+          - "  - Deploy KMS service"
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes

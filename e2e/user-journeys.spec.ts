@@ -136,7 +136,7 @@ test.describe('User Journeys', () => {
       await page.waitForLoadState('networkidle');
 
       // Navigate through all tutorials using Next button
-      // Full sorted order: Host Setup (5 steps + 2 appendices), Prerequisites (2 steps), dstack Installation (2 steps)
+      // Full sorted order: Host Setup (5 steps + 2 appendices), Prerequisites (2 steps), dstack Installation (5 steps)
       const tutorialUrls = [
         '/tutorial/tdx-hardware-verification',    // Host Setup #1
         '/tutorial/tdx-software-setup',           // Host Setup #2
@@ -146,11 +146,12 @@ test.describe('User Journeys', () => {
         '/tutorial/tdx-troubleshooting-next-steps', // Host Setup appendix
         '/tutorial/ansible-tdx-automation',        // Host Setup appendix
         '/tutorial/dns-configuration',             // Prerequisites #1
-        '/tutorial/blockchain-setup',              // Prerequisites #3
+        '/tutorial/blockchain-setup',              // Prerequisites #2
         '/tutorial/system-baseline-dependencies',  // dstack Installation #1
         '/tutorial/rust-toolchain-installation',   // dstack Installation #2
         '/tutorial/clone-build-dstack-vmm',        // dstack Installation #3
-        '/tutorial/vmm-configuration',             // dstack Installation #4 (last!)
+        '/tutorial/vmm-configuration',             // dstack Installation #4
+        '/tutorial/vmm-service-setup',             // dstack Installation #5 (last!)
       ];
 
       for (let i = 0; i < tutorialUrls.length - 1; i++) {
@@ -164,7 +165,7 @@ test.describe('User Journeys', () => {
       }
 
       // Should be on last tutorial
-      await expect(page).toHaveURL(/\/tutorial\/vmm-configuration/);
+      await expect(page).toHaveURL(/\/tutorial\/vmm-service-setup/);
 
       // Last tutorial should have next button that goes to completion page
       const nextBtn = page.locator('a.nav-next');

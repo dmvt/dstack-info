@@ -1718,7 +1718,62 @@ All Phase 1 prerequisites now complete:
 
 **Deployment:** https://dstack.info/tutorial/clone-build-dstack-vmm
 
-**Next:** Phase 2.4 - VMM Configuration
+---
+
+### Phase 2.4: VMM Configuration ✅ COMPLETE
+**Completed:** 2025-11-19
+**Commits:** 5231119, 6207df1, a63ecb8
+
+**What was done:**
+- Created tutorial: `vmm-configuration.md` (440+ lines)
+- Created Ansible playbook: `setup-vmm-config.yml`
+- Created verification playbook: `verify-vmm-config.yml`
+- Updated ansible/README.md with Phase 2.4 documentation
+- Updated E2E tests for 13 tutorials (was 12)
+- Added configurable command-line variables to playbook
+
+**Tutorial Features:**
+- Comprehensive vmm.toml configuration reference
+- All configuration sections documented (server, CVM, networking, GPU, gateway, auth, supervisor)
+- Production-ready default values
+- Customization examples (development, production, custom domain)
+- Ansible automation with configurable variables via `-e` flags
+- Troubleshooting section for common issues
+- Verification checklist and script
+
+**Configurable Ansible Variables:**
+- `vmm_workers` - Worker threads (default: 8)
+- `vmm_log_level` - Log level (default: info)
+- `cvm_max_vcpu` - Max vCPUs per CVM (default: 16)
+- `cvm_max_memory_mb` - Max memory per CVM (default: 65536)
+- `vmm_kms_url` - KMS URL (default: http://127.0.0.1:8081)
+- `cvm_cid_start` - Starting CID (default: 1000)
+- `cvm_cid_pool_size` - CID pool size (default: 1000)
+
+**Server Testing (173.231.234.133):**
+- ✅ Configuration file created: /etc/dstack/vmm.toml
+- ✅ Runtime directories created: /var/run/dstack, /var/log/dstack, /var/lib/dstack
+- ✅ TOML syntax validated
+- ✅ Configuration values verified: workers=8, log_level=info, max_vcpu=16, max_mem=65536
+
+**Testing:**
+- Ansible playbooks tested on server: ✅ All verifications passing
+- E2E tests: 79 passed (all passing)
+- Build successful: 19 pages generated
+
+**Files Created:**
+- src/content/tutorials/vmm-configuration.md
+- ansible/playbooks/setup-vmm-config.yml
+- ansible/playbooks/verify-vmm-config.yml
+
+**Files Modified:**
+- ansible/README.md (added Phase 2.4 documentation)
+- e2e/user-journeys.spec.ts (added vmm-configuration to navigation)
+- e2e/tutorial-navigation-enhancements.spec.ts (updated for 13 tutorials)
+
+**Deployment:** https://dstack.info/tutorial/vmm-configuration
+
+**Next:** Phase 2.5 - VMM Service Setup
 
 ---
 

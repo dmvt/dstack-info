@@ -24,7 +24,9 @@ ansible/
 │   ├── build-dstack-vmm.yml        # Clone and build dstack-vmm (Phase 2.3)
 │   ├── verify-dstack-vmm.yml       # Verify dstack-vmm installation (Phase 2.3)
 │   ├── setup-vmm-config.yml        # Create VMM configuration (Phase 2.4)
-│   └── verify-vmm-config.yml       # Verify VMM configuration (Phase 2.4)
+│   ├── verify-vmm-config.yml       # Verify VMM configuration (Phase 2.4)
+│   ├── setup-vmm-service.yml       # Setup VMM systemd service (Phase 2.5)
+│   └── verify-vmm-service.yml      # Verify VMM service is running (Phase 2.5)
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/
@@ -357,6 +359,60 @@ ansible-playbook playbooks/verify-vmm-config.yml -i inventory/hosts.yml
 - Run setup playbook first
 - Check file permissions
 - See [VMM Configuration Tutorial](https://dstack.info/tutorial/vmm-configuration)
+
+### Phase 2.5: Setup VMM Service
+
+Configure VMM to run as a systemd service:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/setup-vmm-service.yml
+
+# Dry run
+ansible-playbook --check playbooks/setup-vmm-service.yml -i inventory/hosts.yml
+
+# Run setup
+ansible-playbook playbooks/setup-vmm-service.yml -i inventory/hosts.yml
+```
+
+**Expected output:**
+- ✓ Systemd service file created
+- ✓ Service enabled for boot
+- ✓ Service started
+- ✓ Socket file created
+- ✓ Exit code 0
+
+**If setup fails:**
+- Check VMM binary and configuration exist first
+- Verify systemd is running
+- Check logs: `journalctl -u dstack-vmm -n 50`
+- See [VMM Service Setup Tutorial](https://dstack.info/tutorial/vmm-service-setup)
+
+### Phase 2.5: Verify VMM Service
+
+After setup, verify the service is running:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/verify-vmm-service.yml
+
+# Run verification
+ansible-playbook playbooks/verify-vmm-service.yml -i inventory/hosts.yml
+```
+
+**Expected output:**
+- ✓ Service file exists
+- ✓ Service is enabled
+- ✓ Service is running
+- ✓ Socket file exists
+- ✓ No recent errors in logs
+- ✓ Exit code 0
+
+**If verification fails:**
+- Run setup playbook first
+- Check service logs for errors
+- Verify configuration is valid
+- See [VMM Service Setup Tutorial](https://dstack.info/tutorial/vmm-service-setup)
 
 ## Testing
 
