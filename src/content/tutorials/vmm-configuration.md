@@ -245,6 +245,36 @@ The playbook will:
 3. Create runtime directories
 4. Set appropriate permissions
 
+### Customizing with command-line variables
+
+The playbook accepts configurable variables via `-e` flags:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `vmm_workers` | Number of worker threads | 8 |
+| `vmm_log_level` | Log level (debug, info, warn, error) | info |
+| `cvm_max_vcpu` | Maximum vCPUs per CVM | 16 |
+| `cvm_max_memory_mb` | Maximum memory per CVM in MB | 65536 |
+| `vmm_kms_url` | KMS service URL | http://127.0.0.1:8081 |
+| `cvm_cid_start` | Starting CID for CVMs | 1000 |
+| `cvm_cid_pool_size` | Number of CIDs in pool | 1000 |
+
+**Examples:**
+
+```bash
+# Custom resource limits for a high-capacity server
+ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+  -e "cvm_max_vcpu=32" -e "cvm_max_memory_mb=131072"
+
+# Enable debug logging for troubleshooting
+ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+  -e "vmm_log_level=debug"
+
+# Development configuration with minimal resources
+ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+  -e "vmm_workers=4" -e "cvm_max_vcpu=4" -e "cvm_max_memory_mb=8192"
+```
+
 ### Verify with Ansible
 
 After running the setup playbook, verify the configuration:
