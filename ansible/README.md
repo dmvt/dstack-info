@@ -18,7 +18,8 @@ ansible/
 │   ├── verify-tdx.yml              # Verify TDX host is properly configured (Phase 1.1)
 │   ├── verify-dns.yml              # Verify DNS configuration for dstack (Phase 1.2)
 │   ├── verify-blockchain.yml       # Verify blockchain wallet setup (Phase 1.3)
-│   └── setup-host-dependencies.yml # Install build dependencies (Phase 2.1)
+│   ├── setup-host-dependencies.yml # Install build dependencies (Phase 2.1)
+│   └── setup-rust-toolchain.yml    # Install Rust toolchain (Phase 2.2)
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/
@@ -198,6 +199,34 @@ ansible-playbook playbooks/setup-host-dependencies.yml -i inventory/hosts.yml
 - Try `sudo apt --fix-broken install` on the server
 - See [System Baseline & Dependencies Tutorial](https://dstack.info/tutorial/system-baseline-dependencies)
 
+### Phase 2.2: Setup Rust Toolchain
+
+Install Rust programming language toolchain for building dstack components:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/setup-rust-toolchain.yml
+
+# Dry run
+ansible-playbook --check playbooks/setup-rust-toolchain.yml -i inventory/hosts.yml
+
+# Run installation
+ansible-playbook playbooks/setup-rust-toolchain.yml -i inventory/hosts.yml
+```
+
+**Expected output:**
+- ✓ rustup installed
+- ✓ Rust stable toolchain installed
+- ✓ clippy and rustfmt components installed
+- ✓ Test compilation successful
+- ✓ Exit code 0
+
+**If installation fails:**
+- Check network connectivity to Rust servers
+- Verify curl is installed
+- Check disk space for Rust installation (~1GB)
+- See [Rust Toolchain Installation Tutorial](https://dstack.info/tutorial/rust-toolchain-installation)
+
 ## Testing
 
 All playbooks should be tested using:
@@ -286,6 +315,29 @@ ansible-playbook playbooks/PLAYBOOK_NAME.yml -i inventory/hosts.yml
 
 **Exit codes:**
 - `0` - All dependencies installed and verified
+- `1` - Installation or verification failed
+
+### setup-rust-toolchain.yml
+
+**Purpose:** Install Rust programming language toolchain for building dstack components
+
+**What it does:**
+- Installs rustup (Rust toolchain installer)
+- Installs stable Rust toolchain
+- Adds clippy and rustfmt components
+- Verifies installation with test compilation
+
+**Components installed:**
+- `rustup` - Toolchain version manager
+- `rustc` - Rust compiler
+- `cargo` - Package manager and build tool
+- `clippy` - Linter for catching common mistakes
+- `rustfmt` - Code formatter
+
+**Usage:** See [Rust Toolchain Installation Tutorial](https://dstack.info/tutorial/rust-toolchain-installation)
+
+**Exit codes:**
+- `0` - Rust toolchain installed and verified
 - `1` - Installation or verification failed
 
 ## Troubleshooting

@@ -1,0 +1,107 @@
+---
+# Ansible playbook to install Rust toolchain
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/setup-rust-toolchain.yml
+#
+# This playbook installs:
+# - rustup (Rust toolchain installer)
+# - rustc (Rust compiler)
+# - cargo (Rust package manager)
+# - clippy (Rust linter)
+# - rustfmt (Rust code formatter)
+
+- name: Install Rust Toolchain
+  hosts: dstack_servers
+  become: false  # Rust should be installed as user, not root
+  vars:
+    rust_version: "stable"
+    cargo_bin: "{{ ansible_env.HOME }}/.cargo/bin"
+
+  tasks:
+    - name: Check if rustup is already installed
+      ansible.builtin.stat:
+        path: "{{ cargo_bin }}/rustup"
+      register: rustup_installed
+
+    - name: Download and install rustup
+      ansible.builtin.shell: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      args:
+        creates: "{{ cargo_bin }}/rustup"
+      when: not rustup_installed.stat.exists
+
+    - name: Ensure Rust stable toolchain is installed
+      ansible.builtin.shell: |
+        {{ cargo_bin }}/rustup install {{ rust_version }}
+        {{ cargo_bin }}/rustup default {{ rust_version }}
+      args:
+        executable: /bin/bash
+      register: rustup_install
+      changed_when: "'installed' in rustup_install.stdout or 'updated' in rustup_install.stdout"
+
+    - name: Install clippy component
+      ansible.builtin.shell: |
+        {{ cargo_bin }}/rustup component add clippy
+      args:
+        executable: /bin/bash
+      register: clippy_install
+      changed_when: "'installing' in clippy_install.stdout"
+      failed_when: clippy_install.rc != 0 and 'is up to date' not in clippy_install.stderr
+
+    - name: Install rustfmt component
+      ansible.builtin.shell: |
+        {{ cargo_bin }}/rustup component add rustfmt
+      args:
+        executable: /bin/bash
+      register: rustfmt_install
+      changed_when: "'installing' in rustfmt_install.stdout"
+      failed_when: rustfmt_install.rc != 0 and 'is up to date' not in rustfmt_install.stderr
+
+    - name: Verify rustc installation
+      ansible.builtin.shell: "{{ cargo_bin }}/rustc --version"
+      register: rustc_version
+      changed_when: false
+
+    - name: Verify cargo installation
+      ansible.builtin.shell: "{{ cargo_bin }}/cargo --version"
+      register: cargo_version
+      changed_when: false
+
+    - name: Verify rustup installation
+      ansible.builtin.shell: "{{ cargo_bin }}/rustup --version"
+      register: rustup_version
+      changed_when: false
+
+    - name: Display Rust installation summary
+      ansible.builtin.debug:
+        msg:
+          - "Rust toolchain installed successfully!"
+          - "rustc: {{ rustc_version.stdout }}"
+          - "cargo: {{ cargo_version.stdout }}"
+          - "rustup: {{ rustup_version.stdout | regex_replace('\\n.*', '') }}"
+          - ""
+          - "Components installed:"
+          - "  - clippy (Rust linter)"
+          - "  - rustfmt (Rust formatter)"
+          - ""
+          - "To use Rust, run: source ~/.cargo/env"
+
+    - name: Test Rust compilation
+      ansible.builtin.shell: |
+        cd /tmp
+        {{ cargo_bin }}/cargo new --bin rust-ansible-test 2>/dev/null || true
+        cd rust-ansible-test
+        {{ cargo_bin }}/cargo build --release 2>&1
+        ./target/release/rust-ansible-test
+      args:
+        executable: /bin/bash
+      register: rust_test
+      changed_when: false
+
+    - name: Display test result
+      ansible.builtin.debug:
+        msg: "Rust compilation test: {{ rust_test.stdout_lines[-1] }}"
+
+    - name: Clean up test project
+      ansible.builtin.file:
+        path: /tmp/rust-ansible-test
+        state: absent
