@@ -178,13 +178,19 @@ The playbook will:
 
 ### Verify with Ansible
 
-After running the playbook, SSH to the server and verify:
+After running the setup playbook, verify the installation:
 
 ```bash
-ssh ubuntu@your-server-ip
-rustc --version
-cargo --version
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/verify-rust-toolchain.yml
 ```
+
+The verification playbook checks:
+- rustup is installed and working
+- Rust compiler (rustc) is available
+- Cargo package manager is available
+- clippy and rustfmt components are installed
+- Test compilation succeeds
 
 ## Troubleshooting
 

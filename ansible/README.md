@@ -20,6 +20,7 @@ ansible/
 │   ├── verify-blockchain.yml       # Verify blockchain wallet setup (Phase 1.3)
 │   ├── setup-host-dependencies.yml # Install build dependencies (Phase 2.1)
 │   ├── setup-rust-toolchain.yml    # Install Rust toolchain (Phase 2.2)
+│   ├── verify-rust-toolchain.yml   # Verify Rust toolchain installation (Phase 2.2)
 │   ├── build-dstack-vmm.yml        # Clone and build dstack-vmm (Phase 2.3)
 │   └── verify-dstack-vmm.yml       # Verify dstack-vmm installation (Phase 2.3)
 ├── inventory/
@@ -229,6 +230,31 @@ ansible-playbook playbooks/setup-rust-toolchain.yml -i inventory/hosts.yml
 - Check disk space for Rust installation (~1GB)
 - See [Rust Toolchain Installation Tutorial](https://dstack.info/tutorial/rust-toolchain-installation)
 
+### Phase 2.2: Verify Rust Toolchain
+
+After installing, verify the Rust toolchain:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/verify-rust-toolchain.yml
+
+# Run verification
+ansible-playbook playbooks/verify-rust-toolchain.yml -i inventory/hosts.yml
+```
+
+**Expected output:**
+- ✓ rustup installed and working
+- ✓ rustc compiler available
+- ✓ cargo package manager available
+- ✓ clippy and rustfmt components installed
+- ✓ Test compilation succeeds
+- ✓ Exit code 0
+
+**If verification fails:**
+- Run the setup playbook first
+- Check PATH includes ~/.cargo/bin
+- See [Rust Toolchain Installation Tutorial](https://dstack.info/tutorial/rust-toolchain-installation)
+
 ### Phase 2.3: Build dstack-vmm
 
 Clone the dstack repository and build the VMM component:
@@ -392,6 +418,23 @@ ansible-playbook playbooks/PLAYBOOK_NAME.yml -i inventory/hosts.yml
 **Exit codes:**
 - `0` - Rust toolchain installed and verified
 - `1` - Installation or verification failed
+
+### verify-rust-toolchain.yml
+
+**Purpose:** Verify Rust toolchain is properly installed
+
+**What it checks:**
+- rustup is installed
+- Rust compiler (rustc) is available
+- Cargo package manager is available
+- clippy and rustfmt components are installed
+- Test compilation succeeds
+
+**Usage:** See [Rust Toolchain Installation Tutorial](https://dstack.info/tutorial/rust-toolchain-installation)
+
+**Exit codes:**
+- `0` - Rust toolchain verified
+- `1` - Verification failed
 
 ### build-dstack-vmm.yml
 

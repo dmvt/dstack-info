@@ -1,0 +1,156 @@
+---
+# Ansible playbook to verify Rust toolchain installation
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/verify-rust-toolchain.yml
+#
+# This playbook verifies:
+# - rustup is installed
+# - Rust compiler (rustc) is available
+# - Cargo package manager is available
+# - Required components are installed
+
+- name: Verify Rust Toolchain Installation
+  hosts: dstack_servers
+  become: false
+  vars:
+    cargo_bin: "{{ ansible_env.HOME }}/.cargo/bin"
+
+  tasks:
+    - name: Check rustup exists
+      ansible.builtin.stat:
+        path: "{{ cargo_bin }}/rustup"
+      register: rustup_check
+
+    - name: Fail if rustup not found
+      ansible.builtin.fail:
+        msg: |
+          rustup not found at {{ cargo_bin }}/rustup
+
+          Run the setup playbook first:
+            ansible-playbook -i inventory/hosts.yml playbooks/setup-rust-toolchain.yml
+
+          Or follow the manual tutorial:
+            https://dstack.info/tutorial/rust-toolchain-installation
+      when: not rustup_check.stat.exists
+
+    - name: Get rustup version
+      ansible.builtin.shell: |
+        source {{ cargo_bin }}/../env
+        rustup --version
+      args:
+        executable: /bin/bash
+      register: rustup_version
+      changed_when: false
+
+    - name: Check rustc exists
+      ansible.builtin.stat:
+        path: "{{ cargo_bin }}/rustc"
+      register: rustc_check
+
+    - name: Fail if rustc not found
+      ansible.builtin.fail:
+        msg: |
+          Rust compiler (rustc) not found at {{ cargo_bin }}/rustc
+
+          Install the stable toolchain:
+            rustup install stable
+            rustup default stable
+      when: not rustc_check.stat.exists
+
+    - name: Get rustc version
+      ansible.builtin.shell: |
+        source {{ cargo_bin }}/../env
+        rustc --version
+      args:
+        executable: /bin/bash
+      register: rustc_version
+      changed_when: false
+
+    - name: Check cargo exists
+      ansible.builtin.stat:
+        path: "{{ cargo_bin }}/cargo"
+      register: cargo_check
+
+    - name: Fail if cargo not found
+      ansible.builtin.fail:
+        msg: |
+          Cargo package manager not found at {{ cargo_bin }}/cargo
+
+          Install the stable toolchain:
+            rustup install stable
+            rustup default stable
+      when: not cargo_check.stat.exists
+
+    - name: Get cargo version
+      ansible.builtin.shell: |
+        source {{ cargo_bin }}/../env
+        cargo --version
+      args:
+        executable: /bin/bash
+      register: cargo_version
+      changed_when: false
+
+    - name: Check clippy is installed
+      ansible.builtin.shell: |
+        source {{ cargo_bin }}/../env
+        rustup component list --installed | grep clippy
+      args:
+        executable: /bin/bash
+      register: clippy_check
+      changed_when: false
+      failed_when: false
+
+    - name: Check rustfmt is installed
+      ansible.builtin.shell: |
+        source {{ cargo_bin }}/../env
+        rustup component list --installed | grep rustfmt
+      args:
+        executable: /bin/bash
+      register: rustfmt_check
+      changed_when: false
+      failed_when: false
+
+    - name: Get default toolchain
+      ansible.builtin.shell: |
+        source {{ cargo_bin }}/../env
+        rustup default
+      args:
+        executable: /bin/bash
+      register: default_toolchain
+      changed_when: false
+
+    - name: Test compilation
+      ansible.builtin.shell: |
+        source {{ cargo_bin }}/../env
+        echo 'fn main() { println!("Rust works!"); }' | rustc - -o /tmp/rust_test && /tmp/rust_test
+      args:
+        executable: /bin/bash
+      register: test_compile
+      changed_when: false
+
+    - name: Clean up test binary
+      ansible.builtin.file:
+        path: /tmp/rust_test
+        state: absent
+
+    - name: Display verification summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "Rust Toolchain Installation Verified!"
+          - "============================================"
+          - ""
+          - "rustup: {{ rustup_version.stdout }}"
+          - "rustc: {{ rustc_version.stdout }}"
+          - "cargo: {{ cargo_version.stdout }}"
+          - ""
+          - "Default toolchain: {{ default_toolchain.stdout }}"
+          - "clippy: {{ 'installed' if clippy_check.rc == 0 else 'NOT installed' }}"
+          - "rustfmt: {{ 'installed' if rustfmt_check.rc == 0 else 'NOT installed' }}"
+          - ""
+          - "Test compilation: {{ test_compile.stdout }}"
+          - ""
+          - "✓ All checks passed!"
+          - ""
+          - "Next steps:"
+          - "  - Clone and build dstack-vmm"
+          - "  - See: https://dstack.info/tutorial/clone-build-dstack-vmm"
