@@ -13,7 +13,7 @@
   vars:
     dstack_repo_url: "https://github.com/Dstack-TEE/dstack.git"
     dstack_repo_path: "{{ ansible_env.HOME }}/dstack"
-    dstack_branch: "master"
+    dstack_version: "v0.5.5"  # Use specific release tag for stability
     cargo_bin: "{{ ansible_env.HOME }}/.cargo/bin"
     vmm_install_path: "/usr/local/bin/dstack-vmm"
 
@@ -22,7 +22,7 @@
       ansible.builtin.git:
         repo: "{{ dstack_repo_url }}"
         dest: "{{ dstack_repo_path }}"
-        version: "{{ dstack_branch }}"
+        version: "{{ dstack_version }}"
         update: true
       register: git_result
 

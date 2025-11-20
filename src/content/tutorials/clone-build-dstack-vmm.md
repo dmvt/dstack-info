@@ -41,9 +41,24 @@ The dstack source code is hosted on GitHub. Clone it to your home directory.
 ```bash
 cd ~
 git clone https://github.com/Dstack-TEE/dstack.git
+cd dstack
 ```
 
-This will create a `~/dstack` directory with the complete source code.
+### Check out a specific release
+
+For stability, use a specific release tag rather than the development branch:
+
+```bash
+# List available releases
+git tag -l 'v*' --sort=-version:refname | head -10
+
+# Check out the latest stable release
+git checkout v0.5.5
+```
+
+**Note:** Check the [dstack releases page](https://github.com/Dstack-TEE/dstack/releases) for the latest version.
+
+This will create a `~/dstack` directory with the complete source code at the specified version.
 
 ### Verify the clone
 
