@@ -326,7 +326,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
           'dns-configuration': { completed: true, timestamp: new Date().toISOString() },
           'blockchain-setup': { completed: true, timestamp: new Date().toISOString() },
           'system-baseline-dependencies': { completed: true, timestamp: new Date().toISOString() },
-          'rust-toolchain-installation': { completed: true, timestamp: new Date().toISOString() }
+          'rust-toolchain-installation': { completed: true, timestamp: new Date().toISOString() },
+          'clone-build-dstack-vmm': { completed: true, timestamp: new Date().toISOString() }
         }));
       });
 
@@ -386,7 +387,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
           'dns-configuration': { completed: true, timestamp: new Date().toISOString() },
           'blockchain-setup': { completed: true, timestamp: new Date().toISOString() },
           'system-baseline-dependencies': { completed: true, timestamp: new Date().toISOString() },
-          'rust-toolchain-installation': { completed: true, timestamp: new Date().toISOString() }
+          'rust-toolchain-installation': { completed: true, timestamp: new Date().toISOString() },
+          'clone-build-dstack-vmm': { completed: true, timestamp: new Date().toISOString() }
         }));
       });
 
@@ -418,9 +420,9 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Wait for component to mount
       await page.waitForSelector('text="Overall Progress"', { timeout: 5000 });
 
-      // Should show progress (2 of 11 = 18%)
-      await expect(page.locator('text="18%"')).toBeVisible();
-      await expect(page.locator('text=/2 of 11 tutorial/i')).toBeVisible();
+      // Should show progress (2 of 12 = 17%)
+      await expect(page.locator('text="17%"')).toBeVisible();
+      await expect(page.locator('text=/2 of 12 tutorial/i')).toBeVisible();
     });
 
     test('should show section-level breakdown', async ({ page }) => {
@@ -446,8 +448,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
       await page.goto('/tutorial/complete');
 
-      // Should show 1 of 11 complete
-      await expect(page.locator('text="9%"')).toBeVisible(); // 1/11 = 9%
+      // Should show 1 of 12 complete
+      await expect(page.locator('text="8%"')).toBeVisible(); // 1/12 = 8%
 
       // Click reset button
       page.on('dialog', dialog => dialog.accept());
@@ -463,8 +465,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
   test.describe('Integration Tests', () => {
     test('should navigate to completion page from last tutorial next button', async ({ page }) => {
-      // Go to last tutorial (rust-toolchain-installation is last in dstack Installation section)
-      await page.goto('/tutorial/rust-toolchain-installation');
+      // Go to last tutorial (clone-build-dstack-vmm is last in dstack Installation section)
+      await page.goto('/tutorial/clone-build-dstack-vmm');
 
       // Wait for page to load
       await page.waitForLoadState('networkidle');

@@ -1617,7 +1617,56 @@ All Phase 1 prerequisites now complete:
 
 **Deployment:** https://d87ce7f3.dstack-info.pages.dev
 
-**Next:** Phase 2.2 - Rust Toolchain Installation
+---
+
+### Phase 2.2: Rust Toolchain Installation ✅ COMPLETE
+**Completed:** 2025-11-19
+**Commits:** dc50f5f
+
+**What was done:**
+- Created tutorial: `rust-toolchain-installation.md` (323 lines)
+- Created Ansible playbook: `setup-rust-toolchain.yml`
+- Updated ansible/README.md with Phase 2.2 documentation
+- Updated E2E tests for 11 tutorials (was 10)
+
+**Tutorial Features:**
+- 4-step installation guide (rustup, verify, components, test)
+- Manual installation with curl and rustup
+- Ansible automation with test compilation
+- Comprehensive troubleshooting section
+- Verification checklist and script
+
+**Components Installed:**
+- rustup (toolchain installer)
+- rustc (compiler)
+- cargo (package manager)
+- clippy (linter)
+- rustfmt (formatter)
+
+**Server Testing (173.231.234.133):**
+- ✅ rustc 1.91.1 installed
+- ✅ cargo 1.91.1 installed
+- ✅ clippy component installed
+- ✅ rustfmt component installed
+- ✅ Test compilation successful
+
+**Testing:**
+- Ansible playbook tested on server: ✅ All components verified
+- Unit tests: 287 passed
+- E2E tests: 79 passed (all passing)
+
+**Files Created:**
+- src/content/tutorials/rust-toolchain-installation.md
+- ansible/playbooks/setup-rust-toolchain.yml
+
+**Files Modified:**
+- ansible/README.md (added Phase 2.2 documentation)
+- e2e/user-journeys.spec.ts (added rust-toolchain-installation to navigation)
+- e2e/tutorial-navigation-enhancements.spec.ts (updated for 11 tutorials)
+
+**Deployment:** https://dstack.info/tutorial/rust-toolchain-installation
+
+**Next:** Phase 2.3 - Clone & Build dstack-vmm
 
 ---
 

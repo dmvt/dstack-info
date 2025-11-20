@@ -148,7 +148,8 @@ test.describe('User Journeys', () => {
         '/tutorial/dns-configuration',             // Prerequisites #1
         '/tutorial/blockchain-setup',              // Prerequisites #3
         '/tutorial/system-baseline-dependencies',  // dstack Installation #1
-        '/tutorial/rust-toolchain-installation',   // dstack Installation #2 (last!)
+        '/tutorial/rust-toolchain-installation',   // dstack Installation #2
+        '/tutorial/clone-build-dstack-vmm',        // dstack Installation #3 (last!)
       ];
 
       for (let i = 0; i < tutorialUrls.length - 1; i++) {
@@ -162,7 +163,7 @@ test.describe('User Journeys', () => {
       }
 
       // Should be on last tutorial
-      await expect(page).toHaveURL(/\/tutorial\/rust-toolchain-installation/);
+      await expect(page).toHaveURL(/\/tutorial\/clone-build-dstack-vmm/);
 
       // Last tutorial should have next button that goes to completion page
       const nextBtn = page.locator('a.nav-next');

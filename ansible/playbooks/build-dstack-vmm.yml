@@ -1,0 +1,94 @@
+---
+# Ansible playbook to clone dstack and build VMM
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/build-dstack-vmm.yml
+#
+# This playbook:
+# - Clones the dstack repository
+# - Builds dstack-vmm in release mode
+# - Installs the binary to /usr/local/bin
+
+- name: Clone and Build dstack-vmm
+  hosts: dstack_servers
+  become: false  # Clone and build as user, not root (Rust is installed for user)
+  vars:
+    dstack_repo_url: "https://github.com/Dstack-TEE/dstack.git"
+    dstack_repo_path: "{{ ansible_env.HOME }}/dstack"
+    dstack_branch: "master"
+    cargo_bin: "{{ ansible_env.HOME }}/.cargo/bin"
+    vmm_install_path: "/usr/local/bin/dstack-vmm"
+
+  tasks:
+    - name: Clone or update dstack repository
+      ansible.builtin.git:
+        repo: "{{ dstack_repo_url }}"
+        dest: "{{ dstack_repo_path }}"
+        version: "{{ dstack_branch }}"
+        update: true
+      register: git_result
+
+    - name: Get current git commit
+      ansible.builtin.command:
+        cmd: git rev-parse --short HEAD
+        chdir: "{{ dstack_repo_path }}"
+      register: git_commit
+      changed_when: false
+
+    - name: Display repository status
+      ansible.builtin.debug:
+        msg: "dstack repository at commit: {{ git_commit.stdout }}"
+
+    - name: Build dstack-vmm in release mode
+      ansible.builtin.shell: |
+        source {{ cargo_bin }}/../env
+        cargo build --release
+      args:
+        chdir: "{{ dstack_repo_path }}/vmm"
+        executable: /bin/bash
+      register: build_result
+      changed_when: "'Compiling' in build_result.stderr or 'Compiling' in build_result.stdout"
+
+    - name: Check VMM binary exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}/target/release/dstack-vmm"
+      register: vmm_binary
+
+    - name: Fail if VMM binary not found
+      ansible.builtin.fail:
+        msg: |
+          VMM binary not found after build.
+          Check build output for errors.
+          See tutorial: Clone & Build dstack-vmm
+          https://dstack.info/tutorial/clone-build-dstack-vmm
+      when: not vmm_binary.stat.exists
+
+    - name: Get VMM binary size
+      ansible.builtin.command:
+        cmd: "ls -lh {{ dstack_repo_path }}/target/release/dstack-vmm"
+      register: vmm_size
+      changed_when: false
+
+    - name: Install VMM binary to system path
+      ansible.builtin.copy:
+        src: "{{ dstack_repo_path }}/target/release/dstack-vmm"
+        dest: "{{ vmm_install_path }}"
+        mode: '0755'
+        remote_src: true
+      become: true
+
+    - name: Verify VMM installation
+      ansible.builtin.command:
+        cmd: "{{ vmm_install_path }} --help"
+      register: vmm_help
+      changed_when: false
+      failed_when: vmm_help.rc != 0
+
+    - name: Display build summary
+      ansible.builtin.debug:
+        msg:
+          - "dstack-vmm built successfully!"
+          - "Repository: {{ dstack_repo_path }}"
+          - "Commit: {{ git_commit.stdout }}"
+          - "Binary: {{ vmm_size.stdout.split()[-1] }}"
+          - "Installed to: {{ vmm_install_path }}"
+          - ""
+          - "Run 'dstack-vmm --help' to see available commands"

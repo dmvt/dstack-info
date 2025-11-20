@@ -19,7 +19,8 @@ ansible/
 │   ├── verify-dns.yml              # Verify DNS configuration for dstack (Phase 1.2)
 │   ├── verify-blockchain.yml       # Verify blockchain wallet setup (Phase 1.3)
 │   ├── setup-host-dependencies.yml # Install build dependencies (Phase 2.1)
-│   └── setup-rust-toolchain.yml    # Install Rust toolchain (Phase 2.2)
+│   ├── setup-rust-toolchain.yml    # Install Rust toolchain (Phase 2.2)
+│   └── build-dstack-vmm.yml        # Clone and build dstack-vmm (Phase 2.3)
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/
@@ -227,6 +228,33 @@ ansible-playbook playbooks/setup-rust-toolchain.yml -i inventory/hosts.yml
 - Check disk space for Rust installation (~1GB)
 - See [Rust Toolchain Installation Tutorial](https://dstack.info/tutorial/rust-toolchain-installation)
 
+### Phase 2.3: Build dstack-vmm
+
+Clone the dstack repository and build the VMM component:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/build-dstack-vmm.yml
+
+# Dry run
+ansible-playbook --check playbooks/build-dstack-vmm.yml -i inventory/hosts.yml
+
+# Run build
+ansible-playbook playbooks/build-dstack-vmm.yml -i inventory/hosts.yml
+```
+
+**Expected output:**
+- ✓ dstack repository cloned/updated
+- ✓ VMM built in release mode
+- ✓ Binary installed to /usr/local/bin/dstack-vmm
+- ✓ Exit code 0
+
+**If build fails:**
+- Check Rust toolchain is installed correctly
+- Verify sufficient disk space (2GB+)
+- Check memory (may need to reduce parallel jobs with `-j 2`)
+- See [Clone & Build dstack-vmm Tutorial](https://dstack.info/tutorial/clone-build-dstack-vmm)
+
 ## Testing
 
 All playbooks should be tested using:
@@ -339,6 +367,30 @@ ansible-playbook playbooks/PLAYBOOK_NAME.yml -i inventory/hosts.yml
 **Exit codes:**
 - `0` - Rust toolchain installed and verified
 - `1` - Installation or verification failed
+
+### build-dstack-vmm.yml
+
+**Purpose:** Clone dstack repository and build the VMM component
+
+**What it does:**
+- Clones dstack repository from GitHub (or updates if exists)
+- Builds dstack-vmm in release mode
+- Installs binary to /usr/local/bin/dstack-vmm
+- Verifies installation
+
+**Build output:**
+- `dstack-vmm` - Virtual Machine Monitor binary (20-50MB)
+
+**Variables:**
+- `dstack_repo_url` - Repository URL (default: https://github.com/Dstack-TEE/dstack.git)
+- `dstack_branch` - Branch to build (default: master)
+- `vmm_install_path` - Installation path (default: /usr/local/bin/dstack-vmm)
+
+**Usage:** See [Clone & Build dstack-vmm Tutorial](https://dstack.info/tutorial/clone-build-dstack-vmm)
+
+**Exit codes:**
+- `0` - VMM built and installed successfully
+- `1` - Build or installation failed
 
 ## Troubleshooting
 
