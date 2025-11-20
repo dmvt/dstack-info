@@ -1,0 +1,214 @@
+---
+# Ansible playbook to deploy KMS smart contracts to Sepolia testnet
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-contracts.yml
+#
+# Required variables (via vault or -e flags):
+#   wallet_private_key  - Ethereum wallet private key (without 0x prefix)
+#   alchemy_api_key     - Alchemy API key for Sepolia RPC
+#
+# Optional variables:
+#   etherscan_api_key   - Etherscan API key for contract verification
+#   deploy_app_impl     - Deploy DstackApp implementation (default: true)
+#
+# Examples:
+#   # Using Ansible Vault (recommended for production)
+#   ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-contracts.yml \
+#     --ask-vault-pass
+#
+#   # Using command-line variables (for testing only)
+#   ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-contracts.yml \
+#     -e "wallet_private_key=your_key" -e "alchemy_api_key=your_api_key"
+#
+# This playbook:
+# - Verifies contracts are compiled
+# - Checks wallet balance
+# - Deploys DstackKms and DstackApp contracts
+# - Saves deployed addresses
+# - Verifies deployment
+
+- name: Deploy KMS Smart Contracts to Sepolia
+  hosts: dstack_servers
+  become: false
+  vars:
+    contract_dir: "{{ ansible_env.HOME }}/dstack/kms/auth-eth"
+    deploy_app_impl: true
+    # wallet_private_key and alchemy_api_key must be provided
+
+  tasks:
+    - name: Check required variables are set
+      ansible.builtin.fail:
+        msg: |
+          Required variable '{{ item }}' is not set.
+
+          Use Ansible Vault or -e flag to provide wallet credentials:
+            ansible-playbook playbooks/deploy-kms-contracts.yml \
+              -e "wallet_private_key=..." -e "alchemy_api_key=..."
+      when: vars[item] is not defined or vars[item] | length == 0
+      loop:
+        - wallet_private_key
+        - alchemy_api_key
+
+    - name: Check contract directory exists
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}"
+      register: contract_dir_check
+
+    - name: Fail if contract directory not found
+      ansible.builtin.fail:
+        msg: |
+          Contract directory not found at {{ contract_dir }}
+
+          Complete compilation first:
+            See: https://dstack.info/tutorial/smart-contract-compilation
+      when: not contract_dir_check.stat.exists
+
+    - name: Check DstackKms artifact exists
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}/artifacts/contracts/DstackKms.sol/DstackKms.json"
+      register: kms_artifact
+
+    - name: Fail if contracts not compiled
+      ansible.builtin.fail:
+        msg: |
+          Contracts not compiled. DstackKms artifact not found.
+
+          Run compilation first:
+            cd {{ contract_dir }}
+            npx hardhat compile
+      when: not kms_artifact.stat.exists
+
+    - name: Check wallet balance
+      ansible.builtin.shell: |
+        cd {{ contract_dir }}
+        export PRIVATE_KEY="{{ wallet_private_key }}"
+        export ALCHEMY_API_KEY="{{ alchemy_api_key }}"
+
+        # Get balance using a simple script
+        npx hardhat run --network sepolia - << 'EOF'
+        async function main() {
+          const [signer] = await hre.ethers.getSigners();
+          const address = await signer.getAddress();
+          const balance = await hre.ethers.provider.getBalance(address);
+          const ethBalance = hre.ethers.formatEther(balance);
+          console.log(JSON.stringify({
+            address: address,
+            balance: ethBalance,
+            sufficient: parseFloat(ethBalance) >= 0.05
+          }));
+        }
+        main().catch(console.error);
+        EOF
+      register: balance_check
+      changed_when: false
+      no_log: true  # Hide private key in logs
+
+    - name: Parse balance result
+      ansible.builtin.set_fact:
+        wallet_info: "{{ balance_check.stdout | from_json }}"
+
+    - name: Display wallet info
+      ansible.builtin.debug:
+        msg:
+          - "Wallet address: {{ wallet_info.address }}"
+          - "Balance: {{ wallet_info.balance }} ETH"
+
+    - name: Warn if balance may be insufficient
+      ansible.builtin.debug:
+        msg: |
+          WARNING: Wallet balance ({{ wallet_info.balance }} ETH) may be insufficient.
+          Deployment typically costs ~0.08 ETH on Sepolia.
+
+          Get testnet ETH from:
+          - https://sepoliafaucet.com/
+          - https://sepolia-faucet.pk910.de/
+      when: not wallet_info.sufficient
+
+    - name: Deploy contracts
+      ansible.builtin.shell: |
+        cd {{ contract_dir }}
+        export PRIVATE_KEY="{{ wallet_private_key }}"
+        export ALCHEMY_API_KEY="{{ alchemy_api_key }}"
+        {% if etherscan_api_key is defined %}
+        export ETHERSCAN_API_KEY="{{ etherscan_api_key }}"
+        {% endif %}
+
+        # Run deployment with automatic confirmation
+        echo "y" | npx hardhat kms:deploy {% if deploy_app_impl %}--with-app-impl {% endif %}--network sepolia
+      register: deploy_result
+      no_log: true  # Hide private key in logs
+
+    - name: Parse deployment output for addresses
+      ansible.builtin.set_fact:
+        kms_contract_address: "{{ deploy_result.stdout | regex_search('DstackKms Proxy deployed to: (0x[a-fA-F0-9]{40})', '\\1') | first }}"
+        app_impl_address: "{{ deploy_result.stdout | regex_search('DstackApp implementation deployed to: (0x[a-fA-F0-9]{40})', '\\1') | first | default('') }}"
+      when: "'deployed to' in deploy_result.stdout"
+
+    - name: Fail if deployment failed
+      ansible.builtin.fail:
+        msg: |
+          Contract deployment failed.
+
+          Error output:
+          {{ deploy_result.stderr | default('No error output') }}
+
+          Stdout:
+          {{ deploy_result.stdout | default('No output') }}
+      when: kms_contract_address is not defined
+
+    - name: Save contract addresses to file
+      ansible.builtin.copy:
+        content: |
+          # KMS Contract Deployment - {{ ansible_date_time.iso8601 }}
+          # Network: Sepolia Testnet
+
+          KMS_CONTRACT_ADDRESS={{ kms_contract_address }}
+          {% if app_impl_address %}
+          APP_IMPLEMENTATION_ADDRESS={{ app_impl_address }}
+          {% endif %}
+
+          # View on Etherscan:
+          # https://sepolia.etherscan.io/address/{{ kms_contract_address }}
+        dest: "{{ contract_dir }}/.deployed-addresses"
+        mode: '0600'
+
+    - name: Verify contract exists on chain
+      ansible.builtin.shell: |
+        curl -s -X POST https://eth-sepolia.g.alchemy.com/v2/{{ alchemy_api_key }} \
+          -H "Content-Type: application/json" \
+          -d '{"jsonrpc":"2.0","method":"eth_getCode","params":["{{ kms_contract_address }}","latest"],"id":1}' | \
+          jq -r '.result'
+      register: contract_code
+      changed_when: false
+      no_log: true
+
+    - name: Fail if contract not found on chain
+      ansible.builtin.fail:
+        msg: |
+          Contract not found at {{ kms_contract_address }}
+
+          The deployment may have failed or the transaction may still be pending.
+          Check Etherscan: https://sepolia.etherscan.io/address/{{ kms_contract_address }}
+      when: contract_code.stdout == "0x" or contract_code.stdout == ""
+
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "KMS Contracts Deployed Successfully!"
+          - "============================================"
+          - ""
+          - "Network: Sepolia Testnet"
+          - "Deployer: {{ wallet_info.address }}"
+          - ""
+          - "Contract Addresses:"
+          - "  DstackKms Proxy: {{ kms_contract_address }}"
+          - "{% if app_impl_address %}  DstackApp Impl:   {{ app_impl_address }}{% endif %}"
+          - ""
+          - "Addresses saved to: {{ contract_dir }}/.deployed-addresses"
+          - ""
+          - "View on Etherscan:"
+          - "  https://sepolia.etherscan.io/address/{{ kms_contract_address }}"
+          - ""
+          - "Next steps:"
+          - "  - Build and configure KMS service"
+          - "  - See: https://dstack.info/tutorial/kms-build-configuration"

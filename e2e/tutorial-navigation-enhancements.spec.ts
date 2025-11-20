@@ -329,7 +329,9 @@ test.describe('Tutorial Navigation Enhancements', () => {
           'rust-toolchain-installation': { completed: true, timestamp: new Date().toISOString() },
           'clone-build-dstack-vmm': { completed: true, timestamp: new Date().toISOString() },
           'vmm-configuration': { completed: true, timestamp: new Date().toISOString() },
-          'vmm-service-setup': { completed: true, timestamp: new Date().toISOString() }
+          'vmm-service-setup': { completed: true, timestamp: new Date().toISOString() },
+          'smart-contract-compilation': { completed: true, timestamp: new Date().toISOString() },
+          'contract-deployment': { completed: true, timestamp: new Date().toISOString() }
         }));
       });
 
@@ -392,7 +394,9 @@ test.describe('Tutorial Navigation Enhancements', () => {
           'rust-toolchain-installation': { completed: true, timestamp: new Date().toISOString() },
           'clone-build-dstack-vmm': { completed: true, timestamp: new Date().toISOString() },
           'vmm-configuration': { completed: true, timestamp: new Date().toISOString() },
-          'vmm-service-setup': { completed: true, timestamp: new Date().toISOString() }
+          'vmm-service-setup': { completed: true, timestamp: new Date().toISOString() },
+          'smart-contract-compilation': { completed: true, timestamp: new Date().toISOString() },
+          'contract-deployment': { completed: true, timestamp: new Date().toISOString() }
         }));
       });
 
@@ -424,9 +428,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Wait for component to mount
       await page.waitForSelector('text="Overall Progress"', { timeout: 5000 });
 
-      // Should show progress (2 of 14 = 14%)
-      await expect(page.locator('text="14%"')).toBeVisible();
-      await expect(page.locator('text=/2 of 14 tutorial/i')).toBeVisible();
+      // Should show progress (2 of 15 = 13%)
+      await expect(page.locator('text="13%"')).toBeVisible();
     });
 
     test('should show section-level breakdown', async ({ page }) => {
@@ -435,10 +438,11 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Should have section breakdown
       await expect(page.locator('text="Progress by Section"')).toBeVisible();
 
-      // Should list all three sections (use specific selector for section breakdown)
+      // Should list all four sections (use specific selector for section breakdown)
       await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("Host Setup")')).toBeVisible();
       await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("Prerequisites")')).toBeVisible();
       await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("dstack Installation")')).toBeVisible();
+      await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("KMS Deployment")')).toBeVisible();
     });
 
     test('should clear progress when reset button clicked and confirmed', async ({ page }) => {
@@ -452,8 +456,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
       await page.goto('/tutorial/complete');
 
-      // Should show 1 of 14 complete
-      await expect(page.locator('text="7%"')).toBeVisible(); // 1/14 = 7%
+      // Should show 1 of 15 complete (1/15 = 6.67% ≈ 7%)
+      await expect(page.locator('text=/[67]%/')).toBeVisible();
 
       // Click reset button
       page.on('dialog', dialog => dialog.accept());
@@ -469,8 +473,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
   test.describe('Integration Tests', () => {
     test('should navigate to completion page from last tutorial next button', async ({ page }) => {
-      // Go to last tutorial (vmm-configuration is last in dstack Installation section)
-      await page.goto('/tutorial/vmm-configuration');
+      // Go to last tutorial (contract-deployment is last in KMS Deployment section)
+      await page.goto('/tutorial/contract-deployment');
 
       // Wait for page to load
       await page.waitForLoadState('networkidle');

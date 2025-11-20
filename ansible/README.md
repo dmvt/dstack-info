@@ -26,7 +26,9 @@ ansible/
 │   ├── setup-vmm-config.yml        # Create VMM configuration (Phase 2.4)
 │   ├── verify-vmm-config.yml       # Verify VMM configuration (Phase 2.4)
 │   ├── setup-vmm-service.yml       # Setup VMM systemd service (Phase 2.5)
-│   └── verify-vmm-service.yml      # Verify VMM service is running (Phase 2.5)
+│   ├── verify-vmm-service.yml      # Verify VMM service is running (Phase 2.5)
+│   ├── compile-kms-contracts.yml   # Compile KMS smart contracts (Phase 3.1)
+│   └── deploy-kms-contracts.yml    # Deploy contracts to Sepolia (Phase 3.2)
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/
@@ -414,6 +416,77 @@ ansible-playbook playbooks/verify-vmm-service.yml -i inventory/hosts.yml
 - Verify configuration is valid
 - See [VMM Service Setup Tutorial](https://dstack.info/tutorial/vmm-service-setup)
 
+### Phase 3.1: Compile KMS Smart Contracts
+
+Compile the KMS smart contracts using Hardhat:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/compile-kms-contracts.yml
+
+# Dry run
+ansible-playbook --check playbooks/compile-kms-contracts.yml -i inventory/hosts.yml
+
+# Run compilation
+ansible-playbook playbooks/compile-kms-contracts.yml -i inventory/hosts.yml
+```
+
+**Expected output:**
+- ✓ npm installed
+- ✓ Contract dependencies installed
+- ✓ Contracts compiled
+- ✓ DstackKms and DstackApp artifacts created
+- ✓ TypeScript types generated
+- ✓ Exit code 0
+
+**If compilation fails:**
+- Check npm is installed and network is accessible
+- Verify dstack repository is cloned
+- Try `npx hardhat compile --force` for clean rebuild
+- See [Smart Contract Compilation Tutorial](https://dstack.info/tutorial/smart-contract-compilation)
+
+### Phase 3.2: Deploy KMS Contracts
+
+Deploy contracts to Sepolia testnet:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/deploy-kms-contracts.yml
+
+# Run deployment (requires credentials)
+ansible-playbook playbooks/deploy-kms-contracts.yml -i inventory/hosts.yml \
+  -e "wallet_private_key=YOUR_KEY" \
+  -e "alchemy_api_key=YOUR_API_KEY"
+
+# Using Ansible Vault (recommended)
+ansible-playbook playbooks/deploy-kms-contracts.yml -i inventory/hosts.yml \
+  --ask-vault-pass
+```
+
+**Expected output:**
+- ✓ Contracts compiled
+- ✓ Wallet balance checked
+- ✓ DstackApp implementation deployed
+- ✓ DstackKms proxy deployed
+- ✓ Addresses saved to file
+- ✓ Deployment verified on chain
+- ✓ Exit code 0
+
+**Required variables:**
+- `wallet_private_key` - Ethereum wallet private key (without 0x prefix)
+- `alchemy_api_key` - Alchemy API key for Sepolia RPC
+
+**Optional variables:**
+- `etherscan_api_key` - Etherscan API key for verification
+- `deploy_app_impl` - Deploy DstackApp implementation (default: true)
+
+**If deployment fails:**
+- Check wallet has sufficient Sepolia ETH (0.1+ ETH)
+- Verify Alchemy API key is valid
+- Check network connectivity
+- Get testnet ETH from faucets
+- See [Contract Deployment Tutorial](https://dstack.info/tutorial/contract-deployment)
+
 ## Testing
 
 All playbooks should be tested using:
@@ -621,6 +694,57 @@ ansible-playbook playbooks/PLAYBOOK_NAME.yml -i inventory/hosts.yml
 **Exit codes:**
 - `0` - Configuration verified
 - `1` - Verification failed
+
+### compile-kms-contracts.yml
+
+**Purpose:** Compile KMS smart contracts using Hardhat
+
+**What it does:**
+- Checks contract directory exists
+- Installs npm if not present
+- Installs contract dependencies
+- Compiles all Solidity contracts
+- Verifies artifacts exist
+
+**Build output:**
+- `artifacts/contracts/DstackKms.sol/DstackKms.json` - KMS contract ABI and bytecode
+- `artifacts/contracts/DstackApp.sol/DstackApp.json` - App contract ABI and bytecode
+- `typechain-types/` - TypeScript bindings
+
+**Usage:** See [Smart Contract Compilation Tutorial](https://dstack.info/tutorial/smart-contract-compilation)
+
+**Exit codes:**
+- `0` - Contracts compiled successfully
+- `1` - Compilation failed
+
+### deploy-kms-contracts.yml
+
+**Purpose:** Deploy KMS smart contracts to Sepolia testnet
+
+**What it does:**
+- Verifies contracts are compiled
+- Checks wallet balance
+- Deploys DstackApp implementation
+- Deploys DstackKms proxy
+- Saves deployed addresses to file
+- Verifies deployment on chain
+
+**Required variables:**
+- `wallet_private_key` - Ethereum wallet private key (without 0x prefix)
+- `alchemy_api_key` - Alchemy API key for Sepolia RPC
+
+**Optional variables:**
+- `etherscan_api_key` - Etherscan API key for contract verification
+- `deploy_app_impl` - Deploy DstackApp implementation (default: true)
+
+**Output:**
+- Addresses saved to `~/dstack/kms/auth-eth/.deployed-addresses`
+
+**Usage:** See [Contract Deployment Tutorial](https://dstack.info/tutorial/contract-deployment)
+
+**Exit codes:**
+- `0` - Contracts deployed successfully
+- `1` - Deployment failed
 
 ## Troubleshooting
 
