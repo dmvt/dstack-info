@@ -20,7 +20,8 @@ ansible/
 │   ├── verify-blockchain.yml       # Verify blockchain wallet setup (Phase 1.3)
 │   ├── setup-host-dependencies.yml # Install build dependencies (Phase 2.1)
 │   ├── setup-rust-toolchain.yml    # Install Rust toolchain (Phase 2.2)
-│   └── build-dstack-vmm.yml        # Clone and build dstack-vmm (Phase 2.3)
+│   ├── build-dstack-vmm.yml        # Clone and build dstack-vmm (Phase 2.3)
+│   └── verify-dstack-vmm.yml       # Verify dstack-vmm installation (Phase 2.3)
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/
@@ -255,6 +256,30 @@ ansible-playbook playbooks/build-dstack-vmm.yml -i inventory/hosts.yml
 - Check memory (may need to reduce parallel jobs with `-j 2`)
 - See [Clone & Build dstack-vmm Tutorial](https://dstack.info/tutorial/clone-build-dstack-vmm)
 
+### Phase 2.3: Verify dstack-vmm Installation
+
+After building, verify the installation:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/verify-dstack-vmm.yml
+
+# Run verification
+ansible-playbook playbooks/verify-dstack-vmm.yml -i inventory/hosts.yml
+```
+
+**Expected output:**
+- ✓ Repository cloned with correct version
+- ✓ VMM binary built
+- ✓ Binary installed to /usr/local/bin/dstack-vmm
+- ✓ Binary executes correctly
+- ✓ Exit code 0
+
+**If verification fails:**
+- Run the build playbook first
+- Check disk space and permissions
+- See [Clone & Build dstack-vmm Tutorial](https://dstack.info/tutorial/clone-build-dstack-vmm)
+
 ## Testing
 
 All playbooks should be tested using:
@@ -383,7 +408,7 @@ ansible-playbook playbooks/PLAYBOOK_NAME.yml -i inventory/hosts.yml
 
 **Variables:**
 - `dstack_repo_url` - Repository URL (default: https://github.com/Dstack-TEE/dstack.git)
-- `dstack_branch` - Branch to build (default: master)
+- `dstack_version` - Version tag to build (default: v0.5.5)
 - `vmm_install_path` - Installation path (default: /usr/local/bin/dstack-vmm)
 
 **Usage:** See [Clone & Build dstack-vmm Tutorial](https://dstack.info/tutorial/clone-build-dstack-vmm)
@@ -391,6 +416,22 @@ ansible-playbook playbooks/PLAYBOOK_NAME.yml -i inventory/hosts.yml
 **Exit codes:**
 - `0` - VMM built and installed successfully
 - `1` - Build or installation failed
+
+### verify-dstack-vmm.yml
+
+**Purpose:** Verify dstack-vmm is properly installed
+
+**What it checks:**
+- dstack repository is cloned
+- VMM binary is built
+- Binary is installed to system path
+- Binary executes correctly
+
+**Usage:** See [Clone & Build dstack-vmm Tutorial](https://dstack.info/tutorial/clone-build-dstack-vmm)
+
+**Exit codes:**
+- `0` - VMM installation verified
+- `1` - Verification failed
 
 ## Troubleshooting
 

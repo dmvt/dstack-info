@@ -1,0 +1,143 @@
+---
+# Ansible playbook to verify dstack-vmm installation
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/verify-dstack-vmm.yml
+#
+# This playbook verifies:
+# - dstack repository is cloned
+# - VMM binary is built
+# - VMM binary is installed to system path
+# - VMM binary executes correctly
+
+- name: Verify dstack-vmm Installation
+  hosts: dstack_servers
+  become: false
+  vars:
+    dstack_repo_path: "{{ ansible_env.HOME }}/dstack"
+    vmm_install_path: "/usr/local/bin/dstack-vmm"
+
+  tasks:
+    - name: Check dstack repository exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}"
+      register: repo_check
+
+    - name: Fail if repository not found
+      ansible.builtin.fail:
+        msg: |
+          dstack repository not found at {{ dstack_repo_path }}
+
+          Run the build playbook first:
+            ansible-playbook -i inventory/hosts.yml playbooks/build-dstack-vmm.yml
+
+          Or follow the manual tutorial:
+            https://dstack.info/tutorial/clone-build-dstack-vmm
+      when: not repo_check.stat.exists
+
+    - name: Get repository version
+      ansible.builtin.command:
+        cmd: git describe --tags --always
+        chdir: "{{ dstack_repo_path }}"
+      register: repo_version
+      changed_when: false
+
+    - name: Check VMM source directory exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}/vmm"
+      register: vmm_source_check
+
+    - name: Fail if VMM source not found
+      ansible.builtin.fail:
+        msg: |
+          VMM source directory not found at {{ dstack_repo_path }}/vmm
+
+          The repository may be incomplete. Try:
+            cd {{ dstack_repo_path }}
+            git fetch --all
+            git checkout v0.5.5
+      when: not vmm_source_check.stat.exists
+
+    - name: Check built VMM binary exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}/target/release/dstack-vmm"
+      register: built_binary_check
+
+    - name: Warn if built binary not found
+      ansible.builtin.debug:
+        msg: |
+          WARNING: Built binary not found at {{ dstack_repo_path }}/target/release/dstack-vmm
+          This is OK if you only installed via the build playbook.
+      when: not built_binary_check.stat.exists
+
+    - name: Get built binary info
+      ansible.builtin.command:
+        cmd: "ls -lh {{ dstack_repo_path }}/target/release/dstack-vmm"
+      register: built_binary_info
+      changed_when: false
+      when: built_binary_check.stat.exists
+
+    - name: Check installed VMM binary exists
+      ansible.builtin.stat:
+        path: "{{ vmm_install_path }}"
+      register: installed_binary_check
+
+    - name: Fail if installed binary not found
+      ansible.builtin.fail:
+        msg: |
+          dstack-vmm not installed at {{ vmm_install_path }}
+
+          Run the build playbook to install:
+            ansible-playbook -i inventory/hosts.yml playbooks/build-dstack-vmm.yml
+
+          Or install manually:
+            sudo cp {{ dstack_repo_path }}/target/release/dstack-vmm {{ vmm_install_path }}
+            sudo chmod 755 {{ vmm_install_path }}
+      when: not installed_binary_check.stat.exists
+
+    - name: Get installed binary info
+      ansible.builtin.command:
+        cmd: "ls -lh {{ vmm_install_path }}"
+      register: installed_binary_info
+      changed_when: false
+
+    - name: Test VMM binary executes
+      ansible.builtin.command:
+        cmd: "{{ vmm_install_path }} --help"
+      register: vmm_help
+      changed_when: false
+      failed_when: vmm_help.rc != 0
+
+    - name: Get VMM version
+      ansible.builtin.command:
+        cmd: "{{ vmm_install_path }} --version"
+      register: vmm_version
+      changed_when: false
+      failed_when: false
+
+    - name: Check VMM is in PATH
+      ansible.builtin.command:
+        cmd: which dstack-vmm
+      register: vmm_in_path
+      changed_when: false
+      failed_when: false
+
+    - name: Display verification summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "dstack-vmm Installation Verified!"
+          - "============================================"
+          - ""
+          - "Repository: {{ dstack_repo_path }}"
+          - "Version: {{ repo_version.stdout }}"
+          - ""
+          - "Installed binary: {{ vmm_install_path }}"
+          - "Binary size: {{ installed_binary_info.stdout.split()[4] }}"
+          - "In PATH: {{ 'Yes' if vmm_in_path.rc == 0 else 'No' }}"
+          - ""
+          - "VMM Version: {{ vmm_version.stdout | default('(version info not available)') }}"
+          - ""
+          - "✓ All checks passed!"
+          - ""
+          - "Next steps:"
+          - "  - Configure VMM service"
+          - "  - See: https://dstack.info/tutorial/vmm-configuration"

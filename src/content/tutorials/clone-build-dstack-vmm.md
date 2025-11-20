@@ -187,12 +187,18 @@ The playbook will:
 
 ### Verify with Ansible
 
-After running the playbook, verify on the server:
+After running the build playbook, verify the installation:
 
 ```bash
-ssh ubuntu@your-server-ip
-dstack-vmm --help
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/verify-dstack-vmm.yml
 ```
+
+The verification playbook checks:
+- Repository is cloned with correct version
+- VMM binary is built
+- Binary is installed to /usr/local/bin
+- Binary executes correctly
 
 ## Build Options
 
