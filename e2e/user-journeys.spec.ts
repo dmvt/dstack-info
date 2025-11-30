@@ -154,7 +154,8 @@ test.describe('User Journeys', () => {
         '/tutorial/vmm-service-setup',             // dstack Installation #5
         '/tutorial/smart-contract-compilation',    // KMS Deployment #1
         '/tutorial/contract-deployment',           // KMS Deployment #2
-        '/tutorial/kms-build-configuration',       // KMS Deployment #3 (last!)
+        '/tutorial/kms-build-configuration',       // KMS Deployment #3
+        '/tutorial/kms-bootstrap',                 // KMS Deployment #4 (last!)
       ];
 
       for (let i = 0; i < tutorialUrls.length - 1; i++) {
@@ -168,7 +169,7 @@ test.describe('User Journeys', () => {
       }
 
       // Should be on last tutorial
-      await expect(page).toHaveURL(/\/tutorial\/kms-build-configuration/);
+      await expect(page).toHaveURL(/\/tutorial\/kms-bootstrap/);
 
       // Last tutorial should have next button that goes to completion page
       const nextBtn = page.locator('a.nav-next');

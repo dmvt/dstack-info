@@ -29,7 +29,8 @@ ansible/
 │   ├── verify-vmm-service.yml      # Verify VMM service is running (Phase 2.5)
 │   ├── compile-kms-contracts.yml   # Compile KMS smart contracts (Phase 3.1)
 │   ├── deploy-kms-contracts.yml    # Deploy contracts to Sepolia (Phase 3.2)
-│   └── build-kms.yml               # Build and configure KMS (Phase 3.3)
+│   ├── build-kms.yml               # Build and configure KMS (Phase 3.3)
+│   └── bootstrap-kms.yml           # Bootstrap KMS with root keys (Phase 3.4)
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/
@@ -746,6 +747,98 @@ ansible-playbook playbooks/PLAYBOOK_NAME.yml -i inventory/hosts.yml
 **Exit codes:**
 - `0` - Contracts deployed successfully
 - `1` - Deployment failed
+
+### build-kms.yml
+
+**Purpose:** Build and configure dstack KMS and auth-eth service
+
+**What it does:**
+- Builds KMS binary in release mode
+- Installs KMS to /usr/local/bin/dstack-kms
+- Creates configuration directories (/etc/kms, /etc/kms/certs, /var/run/kms, /var/log/kms)
+- Generates kms.toml configuration file
+- Builds auth-eth TypeScript service
+- Creates auth-eth.env configuration
+
+**Configurable variables:**
+- `kms_workers` - Number of worker threads (default: 8)
+- `kms_log_level` - Log level: debug, info, warn, error (default: info)
+- `kms_rpc_port` - KMS RPC port (default: 9100)
+- `auth_eth_port` - Auth-eth service port (default: 9200)
+- `pccs_url` - Intel PCCS URL for quote verification
+- `alchemy_api_key` - Alchemy API key for Sepolia RPC
+- `kms_contract_address` - KMS contract address from deployment
+
+**Example:**
+```bash
+# Basic usage
+ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml
+
+# With custom configuration
+ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml \
+  -e "kms_workers=16" -e "kms_log_level=debug"
+
+# With contract credentials
+ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml \
+  -e "alchemy_api_key=YOUR_KEY" -e "kms_contract_address=0x..."
+```
+
+**Output:**
+- Binary: /usr/local/bin/dstack-kms
+- Config: /etc/kms/kms.toml
+- Auth-eth: /etc/kms/auth-eth.env
+
+**Usage:** See [KMS Build & Configuration Tutorial](https://dstack.info/tutorial/kms-build-configuration)
+
+**Exit codes:**
+- `0` - KMS built and configured successfully
+- `1` - Build or configuration failed
+
+### bootstrap-kms.yml
+
+**Purpose:** Bootstrap KMS with root cryptographic keys and certificates
+
+**What it does:**
+- Checks if bootstrap already completed
+- Backs up existing keys if re-bootstrapping
+- Configures automatic bootstrap in kms.toml
+- Runs KMS to trigger bootstrap
+- Verifies all 8 files generated (root-ca, rpc cert, tmp-ca, k256 key, bootstrap-info.json)
+- Verifies certificate chain
+- Sets restrictive permissions on private keys
+
+**Required variables:**
+- `kms_domain` - Domain name for KMS (e.g., kms.example.com)
+
+**Optional variables:**
+- `force_rebootstrap` - Set to true to destroy existing keys and re-bootstrap (default: false)
+
+**Example:**
+```bash
+# Basic usage
+ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
+  -e "kms_domain=kms.example.com"
+
+# Force re-bootstrap (⚠️ creates new keys!)
+ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
+  -e "kms_domain=kms.example.com" -e "force_rebootstrap=true"
+```
+
+**Generated files (8):**
+- `root-ca.crt` - Root Certificate Authority
+- `root-ca.key` - Root CA private key (P256 ECDSA)
+- `rpc.crt` - RPC TLS certificate
+- `rpc.key` - RPC private key (P256 ECDSA)
+- `tmp-ca.crt` - Temporary CA for onboarding
+- `tmp-ca.key` - Temporary CA private key
+- `root-k256.key` - Ethereum signing key (secp256k1, 32 bytes)
+- `bootstrap-info.json` - Public keys and TDX quote
+
+**Usage:** See [KMS Bootstrap Tutorial](https://dstack.info/tutorial/kms-bootstrap)
+
+**Exit codes:**
+- `0` - Bootstrap completed successfully
+- `1` - Bootstrap failed
 
 ## Troubleshooting
 

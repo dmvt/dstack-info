@@ -332,7 +332,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
           'vmm-service-setup': { completed: true, timestamp: new Date().toISOString() },
           'smart-contract-compilation': { completed: true, timestamp: new Date().toISOString() },
           'contract-deployment': { completed: true, timestamp: new Date().toISOString() },
-          'kms-build-configuration': { completed: true, timestamp: new Date().toISOString() }
+          'kms-build-configuration': { completed: true, timestamp: new Date().toISOString() },
+          'kms-bootstrap': { completed: true, timestamp: new Date().toISOString() }
         }));
       });
 
@@ -398,7 +399,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
           'vmm-service-setup': { completed: true, timestamp: new Date().toISOString() },
           'smart-contract-compilation': { completed: true, timestamp: new Date().toISOString() },
           'contract-deployment': { completed: true, timestamp: new Date().toISOString() },
-          'kms-build-configuration': { completed: true, timestamp: new Date().toISOString() }
+          'kms-build-configuration': { completed: true, timestamp: new Date().toISOString() },
+          'kms-bootstrap': { completed: true, timestamp: new Date().toISOString() }
         }));
       });
 
@@ -430,8 +432,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Wait for component to mount
       await page.waitForSelector('text="Overall Progress"', { timeout: 5000 });
 
-      // Should show progress (2 of 16 = 12.5% ≈ 12-13%)
-      await expect(page.locator('text=/1[23]%/')).toBeVisible();
+      // Should show progress (2 of 17 = 11.76% ≈ 12%)
+      await expect(page.locator('text=/1[123]%/')).toBeVisible();
     });
 
     test('should show section-level breakdown', async ({ page }) => {
@@ -475,8 +477,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
   test.describe('Integration Tests', () => {
     test('should navigate to completion page from last tutorial next button', async ({ page }) => {
-      // Go to last tutorial (kms-build-configuration is last in KMS Deployment section)
-      await page.goto('/tutorial/kms-build-configuration');
+      // Go to last tutorial (kms-bootstrap is last in KMS Deployment section)
+      await page.goto('/tutorial/kms-bootstrap');
 
       // Wait for page to load
       await page.waitForLoadState('networkidle');

@@ -1,0 +1,273 @@
+---
+# Ansible playbook to bootstrap dstack KMS
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml
+#
+# Configurable variables (pass with -e):
+#   kms_domain           - Domain name for KMS (e.g., kms.example.com)
+#   force_rebootstrap    - Set to true to destroy existing keys and re-bootstrap (default: false)
+#
+# Examples:
+#   # Basic usage
+#   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
+#     -e "kms_domain=kms.example.com"
+#
+#   # Force re-bootstrap (destroys existing keys!)
+#   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
+#     -e "kms_domain=kms.example.com" -e "force_rebootstrap=true"
+#
+# This playbook:
+# - Checks if bootstrap already completed
+# - Backs up existing keys if re-bootstrapping
+# - Configures automatic bootstrap in kms.toml
+# - Runs KMS to trigger bootstrap
+# - Verifies all 8 files generated
+# - Verifies certificate chain
+# - Displays bootstrap information
+
+- name: Bootstrap dstack KMS
+  hosts: dstack_servers
+  become: false
+  vars:
+    kms_config_dir: "/etc/kms"
+    kms_certs_dir: "/etc/kms/certs"
+    kms_install_path: "/usr/local/bin/dstack-kms"
+    force_rebootstrap: false
+
+  tasks:
+    - name: Check if kms_domain is provided
+      ansible.builtin.fail:
+        msg: |
+          kms_domain is required.
+
+          Usage:
+            ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
+              -e "kms_domain=kms.example.com"
+      when: kms_domain is not defined or kms_domain == ""
+
+    - name: Check if KMS binary exists
+      ansible.builtin.stat:
+        path: "{{ kms_install_path }}"
+      register: kms_binary
+
+    - name: Fail if KMS not installed
+      ansible.builtin.fail:
+        msg: |
+          KMS binary not found at {{ kms_install_path }}
+
+          Build and install KMS first:
+            ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml
+      when: not kms_binary.stat.exists
+
+    - name: Check if KMS configuration exists
+      ansible.builtin.stat:
+        path: "{{ kms_config_dir }}/kms.toml"
+      register: kms_config
+
+    - name: Fail if KMS not configured
+      ansible.builtin.fail:
+        msg: |
+          KMS configuration not found at {{ kms_config_dir }}/kms.toml
+
+          Build and configure KMS first:
+            ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml
+      when: not kms_config.stat.exists
+
+    - name: Check if bootstrap already completed
+      ansible.builtin.stat:
+        path: "{{ kms_certs_dir }}/root-ca.key"
+      register: bootstrap_check
+
+    - name: Display bootstrap status
+      ansible.builtin.debug:
+        msg: |
+          {% if bootstrap_check.stat.exists %}
+          ⚠️  KMS appears to be already bootstrapped (root-ca.key exists)
+          {% if force_rebootstrap %}
+          force_rebootstrap=true - Will backup and re-bootstrap
+          {% else %}
+          Set force_rebootstrap=true to re-bootstrap (will backup existing keys)
+          {% endif %}
+          {% else %}
+          KMS not yet bootstrapped - proceeding with bootstrap
+          {% endif %}
+
+    - name: Fail if already bootstrapped and not forcing
+      ansible.builtin.fail:
+        msg: |
+          KMS is already bootstrapped.
+
+          To re-bootstrap (⚠️ creates new keys):
+            ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
+              -e "kms_domain={{ kms_domain }}" -e "force_rebootstrap=true"
+      when: bootstrap_check.stat.exists and not force_rebootstrap
+
+    - name: Backup existing keys if re-bootstrapping
+      ansible.builtin.copy:
+        src: "{{ kms_certs_dir }}/"
+        dest: "{{ kms_certs_dir }}.backup-{{ ansible_date_time.epoch }}/"
+        remote_src: true
+        mode: preserve
+      become: true
+      when: bootstrap_check.stat.exists and force_rebootstrap
+
+    - name: Remove existing keys if re-bootstrapping
+      ansible.builtin.file:
+        path: "{{ kms_certs_dir }}/{{ item }}"
+        state: absent
+      become: true
+      loop:
+        - root-ca.crt
+        - root-ca.key
+        - rpc.crt
+        - rpc.key
+        - tmp-ca.crt
+        - tmp-ca.key
+        - root-k256.key
+        - bootstrap-info.json
+      when: bootstrap_check.stat.exists and force_rebootstrap
+
+    - name: Configure automatic bootstrap in kms.toml
+      ansible.builtin.lineinfile:
+        path: "{{ kms_config_dir }}/kms.toml"
+        regexp: '^auto_bootstrap_domain\s*='
+        line: 'auto_bootstrap_domain = "{{ kms_domain }}"'
+        insertafter: '^\[core\.onboard\]'
+      become: true
+
+    - name: Run KMS to trigger automatic bootstrap
+      ansible.builtin.shell: |
+        {{ kms_install_path }} --config {{ kms_config_dir }}/kms.toml 2>&1
+      register: bootstrap_output
+      failed_when: false
+      changed_when: "'Bootstrap completed' in bootstrap_output.stdout or 'Bootstrap completed' in bootstrap_output.stderr"
+
+    - name: Display bootstrap output
+      ansible.builtin.debug:
+        var: bootstrap_output.stdout_lines
+
+    - name: Wait for bootstrap files to be created
+      ansible.builtin.wait_for:
+        path: "{{ kms_certs_dir }}/{{ item }}"
+        timeout: 30
+      loop:
+        - root-ca.crt
+        - root-ca.key
+        - rpc.crt
+        - rpc.key
+        - tmp-ca.crt
+        - tmp-ca.key
+        - root-k256.key
+        - bootstrap-info.json
+
+    - name: Verify all 8 files were generated
+      ansible.builtin.find:
+        paths: "{{ kms_certs_dir }}"
+        patterns: "*"
+        file_type: file
+      register: cert_files
+
+    - name: Check file count
+      ansible.builtin.assert:
+        that:
+          - cert_files.matched == 8
+        fail_msg: "Expected 8 files, found {{ cert_files.matched }}"
+        success_msg: "✓ All 8 files generated"
+
+    - name: Verify Root CA certificate
+      ansible.builtin.shell: |
+        openssl x509 -in {{ kms_certs_dir }}/root-ca.crt -noout -subject | grep "Dstack KMS CA"
+      register: root_ca_verify
+      changed_when: false
+      failed_when: root_ca_verify.rc != 0
+
+    - name: Verify RPC certificate domain
+      ansible.builtin.shell: |
+        openssl x509 -in {{ kms_certs_dir }}/rpc.crt -noout -subject | grep "{{ kms_domain }}"
+      register: rpc_cert_verify
+      changed_when: false
+      failed_when: rpc_cert_verify.rc != 0
+
+    - name: Verify certificate chain
+      ansible.builtin.shell: |
+        openssl verify -CAfile {{ kms_certs_dir }}/root-ca.crt {{ kms_certs_dir }}/rpc.crt
+      register: chain_verify
+      changed_when: false
+      failed_when: "'OK' not in chain_verify.stdout"
+
+    - name: Check K256 key size
+      ansible.builtin.stat:
+        path: "{{ kms_certs_dir }}/root-k256.key"
+      register: k256_key
+
+    - name: Verify K256 key is 32 bytes
+      ansible.builtin.assert:
+        that:
+          - k256_key.stat.size == 32
+        fail_msg: "K256 key should be 32 bytes, found {{ k256_key.stat.size }}"
+        success_msg: "✓ K256 key valid (32 bytes)"
+
+    - name: Verify bootstrap-info.json is valid JSON
+      ansible.builtin.shell: |
+        jq empty {{ kms_certs_dir }}/bootstrap-info.json
+      register: json_verify
+      changed_when: false
+      failed_when: json_verify.rc != 0
+
+    - name: Read bootstrap info
+      ansible.builtin.slurp:
+        src: "{{ kms_certs_dir }}/bootstrap-info.json"
+      register: bootstrap_info_raw
+
+    - name: Parse bootstrap info
+      ansible.builtin.set_fact:
+        bootstrap_info: "{{ bootstrap_info_raw.content | b64decode | from_json }}"
+
+    - name: Ensure private keys have restrictive permissions
+      ansible.builtin.file:
+        path: "{{ kms_certs_dir }}/{{ item }}"
+        mode: '0600'
+      become: true
+      loop:
+        - root-ca.key
+        - rpc.key
+        - tmp-ca.key
+        - root-k256.key
+
+    - name: Display bootstrap success summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "KMS Bootstrap Complete!"
+          - "============================================"
+          - ""
+          - "Domain: {{ kms_domain }}"
+          - "Certificate Directory: {{ kms_certs_dir }}"
+          - ""
+          - "Generated Files (8):"
+          - "  ✓ root-ca.crt       - Root Certificate Authority"
+          - "  ✓ root-ca.key       - Root CA private key (P256 ECDSA)"
+          - "  ✓ rpc.crt           - RPC TLS certificate"
+          - "  ✓ rpc.key           - RPC private key (P256 ECDSA)"
+          - "  ✓ tmp-ca.crt        - Temporary CA for onboarding"
+          - "  ✓ tmp-ca.key        - Temporary CA private key"
+          - "  ✓ root-k256.key     - Ethereum signing key (secp256k1)"
+          - "  ✓ bootstrap-info.json - Public keys and TDX quote"
+          - ""
+          - "Verifications:"
+          - "  ✓ Root CA certificate valid"
+          - "  ✓ RPC certificate domain matches"
+          - "  ✓ Certificate chain valid"
+          - "  ✓ K256 key valid (32 bytes)"
+          - "  ✓ bootstrap-info.json valid JSON"
+          - ""
+          - "CA Public Key (first 64 chars):"
+          - "  {{ bootstrap_info.ca_pubkey[:64] }}..."
+          - ""
+          - "K256 Public Key (first 64 chars):"
+          - "  {{ bootstrap_info.k256_pubkey[:64] }}..."
+          - ""
+          - "Next steps:"
+          - "  - Setup KMS and auth-eth systemd services"
+          - "  - See: https://dstack.info/tutorial/kms-service-setup"
+          - ""
+          - "⚠️  IMPORTANT: Backup {{ kms_certs_dir }}/ securely!"
