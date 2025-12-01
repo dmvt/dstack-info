@@ -6,7 +6,11 @@ stepNumber: 2
 totalSteps: 5
 lastUpdated: 2025-11-19
 prerequisites: ["system-baseline-dependencies"]
-tags: ["rust", "cargo", "rustup", "toolchain"]
+tags:
+  - rust
+  - cargo
+  - rustup
+  - toolchain
 difficulty: "beginner"
 estimatedTime: "10 minutes"
 ---

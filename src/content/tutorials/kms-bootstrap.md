@@ -6,7 +6,12 @@ stepNumber: 4
 totalSteps: 5
 lastUpdated: 2025-11-20
 prerequisites: ["kms-build-configuration"]
-tags: ["dstack", "kms", "bootstrap", "certificates", "cryptography"]
+tags:
+  - dstack
+  - kms
+  - bootstrap
+  - certificates
+  - cryptography
 difficulty: "advanced"
 estimatedTime: "15 minutes"
 ---

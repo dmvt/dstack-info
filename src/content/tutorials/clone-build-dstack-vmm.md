@@ -5,8 +5,14 @@ section: "dstack Installation"
 stepNumber: 3
 totalSteps: 5
 lastUpdated: 2025-11-19
-prerequisites: ["rust-toolchain-installation"]
-tags: ["dstack", "vmm", "cargo", "build", "compilation"]
+prerequisites:
+  - rust-toolchain-installation
+tags:
+  - dstack
+  - vmm
+  - cargo
+  - build
+  - compilation
 difficulty: "intermediate"
 estimatedTime: "20 minutes"
 ---

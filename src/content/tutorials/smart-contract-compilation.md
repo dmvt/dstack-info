@@ -6,7 +6,12 @@ stepNumber: 1
 totalSteps: 5
 lastUpdated: 2025-11-20
 prerequisites: ["vmm-service-setup"]
-tags: ["dstack", "kms", "solidity", "hardhat", "smart-contracts"]
+tags:
+  - dstack
+  - kms
+  - solidity
+  - hardhat
+  - smart-contracts
 difficulty: "intermediate"
 estimatedTime: "15 minutes"
 ---

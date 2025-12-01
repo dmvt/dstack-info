@@ -6,7 +6,11 @@ stepNumber: 4
 totalSteps: 5
 lastUpdated: 2025-11-19
 prerequisites: ["clone-build-dstack-vmm"]
-tags: ["dstack", "vmm", "configuration", "toml"]
+tags:
+  - dstack
+  - vmm
+  - configuration
+  - toml
 difficulty: "intermediate"
 estimatedTime: "15 minutes"
 ---

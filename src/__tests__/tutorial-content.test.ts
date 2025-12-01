@@ -156,6 +156,8 @@ describe('Tutorial Content Validation', () => {
     files.forEach(file => {
       const { frontmatter } = readTutorial(file);
       if (frontmatter.tags) {
+        // Ensure tags is an array
+        expect(Array.isArray(frontmatter.tags), `${file}: tags should be an array, got ${typeof frontmatter.tags}: ${JSON.stringify(frontmatter.tags)}`).toBe(true);
         frontmatter.tags.forEach(tag => {
           expect(tag).toMatch(/^[a-z0-9-]+$/);
         });

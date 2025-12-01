@@ -6,7 +6,11 @@ stepNumber: 5
 totalSteps: 5
 lastUpdated: 2025-11-19
 prerequisites: ["vmm-configuration"]
-tags: ["dstack", "vmm", "systemd", "service"]
+tags:
+  - dstack
+  - vmm
+  - systemd
+  - service
 difficulty: "intermediate"
 estimatedTime: "10 minutes"
 ---

@@ -6,7 +6,12 @@ stepNumber: 3
 totalSteps: 5
 lastUpdated: 2025-11-20
 prerequisites: ["contract-deployment"]
-tags: ["dstack", "kms", "cargo", "build", "configuration"]
+tags:
+  - dstack
+  - kms
+  - cargo
+  - build
+  - configuration
 difficulty: "advanced"
 estimatedTime: "25 minutes"
 ---
