@@ -1,0 +1,252 @@
+---
+# Ansible playbook to set up dstack KMS as systemd services
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/setup-kms-services.yml
+#
+# This playbook:
+# - Creates auth-eth systemd service
+# - Creates KMS systemd service
+# - Enables both services for automatic startup
+# - Starts both services
+# - Verifies services are running
+
+- name: Setup dstack KMS Services
+  hosts: dstack_servers
+  become: true
+  vars:
+    kms_binary: "/usr/local/bin/dstack-kms"
+    kms_config: "/etc/kms/kms.toml"
+    auth_eth_env: "/etc/kms/auth-eth.env"
+    auth_eth_dir: "{{ ansible_env.HOME }}/dstack/kms/auth-eth"
+    node_binary: "/usr/bin/node"
+
+  tasks:
+    - name: Check KMS binary exists
+      ansible.builtin.stat:
+        path: "{{ kms_binary }}"
+      register: kms_bin_check
+
+    - name: Fail if KMS binary not found
+      ansible.builtin.fail:
+        msg: |
+          KMS binary not found at {{ kms_binary }}
+
+          Build and install KMS first:
+            ansible-playbook playbooks/build-kms.yml
+      when: not kms_bin_check.stat.exists
+
+    - name: Check KMS configuration exists
+      ansible.builtin.stat:
+        path: "{{ kms_config }}"
+      register: kms_config_check
+
+    - name: Fail if KMS config not found
+      ansible.builtin.fail:
+        msg: |
+          KMS configuration not found at {{ kms_config }}
+
+          Build and configure KMS first:
+            ansible-playbook playbooks/build-kms.yml
+      when: not kms_config_check.stat.exists
+
+    - name: Check auth-eth environment file exists
+      ansible.builtin.stat:
+        path: "{{ auth_eth_env }}"
+      register: auth_eth_env_check
+
+    - name: Fail if auth-eth env not found
+      ansible.builtin.fail:
+        msg: |
+          Auth-eth environment file not found at {{ auth_eth_env }}
+
+          Build and configure KMS first:
+            ansible-playbook playbooks/build-kms.yml
+      when: not auth_eth_env_check.stat.exists
+
+    - name: Check auth-eth build exists
+      ansible.builtin.stat:
+        path: "{{ auth_eth_dir }}/dist/src/main.js"
+      register: auth_eth_build_check
+
+    - name: Fail if auth-eth build not found
+      ansible.builtin.fail:
+        msg: |
+          Auth-eth build not found.
+
+          Build auth-eth first:
+            ansible-playbook playbooks/build-kms.yml
+      when: not auth_eth_build_check.stat.exists
+
+    - name: Check Node.js is installed
+      ansible.builtin.stat:
+        path: "{{ node_binary }}"
+      register: node_check
+
+    - name: Install Node.js if not present
+      ansible.builtin.apt:
+        name: nodejs
+        state: present
+        update_cache: yes
+      when: not node_check.stat.exists
+
+    - name: Create auth-eth systemd service
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=dstack KMS Auth-ETH Webhook
+          Documentation=https://dstack.info
+          After=network.target
+          Before=dstack-kms.service
+
+          [Service]
+          Type=simple
+          User=root
+          WorkingDirectory={{ auth_eth_dir }}
+          EnvironmentFile={{ auth_eth_env }}
+          ExecStart={{ node_binary }} {{ auth_eth_dir }}/dist/src/main.js
+          Restart=always
+          RestartSec=5
+          StandardOutput=journal
+          StandardError=journal
+
+          # Security hardening
+          NoNewPrivileges=true
+          ProtectSystem=strict
+          ReadWritePaths=/var/log /tmp
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/dstack-auth-eth.service
+        owner: root
+        group: root
+        mode: '0644'
+      register: auth_eth_service
+
+    - name: Create KMS systemd service
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=dstack Key Management Service
+          Documentation=https://dstack.info
+          After=network.target dstack-auth-eth.service
+          Requires=dstack-auth-eth.service
+
+          [Service]
+          Type=simple
+          User=root
+          ExecStart={{ kms_binary }} --config {{ kms_config }}
+          Restart=always
+          RestartSec=5
+          StandardOutput=journal
+          StandardError=journal
+
+          # Security hardening
+          NoNewPrivileges=false
+          ProtectSystem=strict
+          ReadWritePaths=/var/run/kms /var/log/kms /etc/kms/certs /tmp
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/dstack-kms.service
+        owner: root
+        group: root
+        mode: '0644'
+      register: kms_service
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+      when: auth_eth_service.changed or kms_service.changed
+
+    - name: Enable auth-eth service
+      ansible.builtin.systemd:
+        name: dstack-auth-eth
+        enabled: yes
+
+    - name: Enable KMS service
+      ansible.builtin.systemd:
+        name: dstack-kms
+        enabled: yes
+
+    - name: Check for placeholder credentials in auth-eth env
+      ansible.builtin.shell: |
+        grep -E "YOUR_(ALCHEMY_API_KEY|KMS_CONTRACT_ADDRESS)" {{ auth_eth_env }} || true
+      register: placeholder_check
+      changed_when: false
+
+    - name: Start auth-eth service
+      ansible.builtin.systemd:
+        name: dstack-auth-eth
+        state: started
+      register: auth_eth_start
+      failed_when: false
+
+    - name: Start KMS service
+      ansible.builtin.systemd:
+        name: dstack-kms
+        state: started
+      register: kms_start
+      failed_when: false
+
+    - name: Wait a moment for services to attempt startup
+      ansible.builtin.pause:
+        seconds: 3
+
+    - name: Check auth-eth service status
+      ansible.builtin.systemd:
+        name: dstack-auth-eth
+      register: auth_eth_status
+
+    - name: Check KMS service status
+      ansible.builtin.systemd:
+        name: dstack-kms
+      register: kms_status
+
+    - name: Display service setup summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "KMS Services Setup Complete!"
+          - "============================================"
+          - ""
+          - "Auth-ETH Service:"
+          - "  Status: {{ auth_eth_status.status.ActiveState }}"
+          - "  Enabled: {{ 'yes' if auth_eth_status.status.UnitFileState == 'enabled' else 'no' }}"
+          - "  Port: 9200 (127.0.0.1)"
+          - ""
+          - "KMS Service:"
+          - "  Status: {{ kms_status.status.ActiveState }}"
+          - "  Enabled: {{ 'yes' if kms_status.status.UnitFileState == 'enabled' else 'no' }}"
+          - "  Port: 9100 (0.0.0.0)"
+          - ""
+          - "Service Files:"
+          - "  /etc/systemd/system/dstack-auth-eth.service"
+          - "  /etc/systemd/system/dstack-kms.service"
+          - ""
+          - "Management Commands:"
+          - "  sudo systemctl status dstack-auth-eth"
+          - "  sudo systemctl status dstack-kms"
+          - "  sudo journalctl -u dstack-auth-eth -f"
+          - "  sudo journalctl -u dstack-kms -f"
+          - ""
+          - "Both services will start automatically on boot."
+
+    - name: Display credential warning if placeholders detected
+      ansible.builtin.debug:
+        msg:
+          - ""
+          - "⚠️  WARNING: Placeholder credentials detected!"
+          - "Services are FAILING until real credentials are configured."
+          - ""
+          - "Found placeholders in /etc/kms/auth-eth.env:"
+          - "{{ placeholder_check.stdout }}"
+          - ""
+          - "Required actions:"
+          - "1. Edit /etc/kms/auth-eth.env"
+          - "2. Set ETH_RPC_URL to your Alchemy Sepolia endpoint"
+          - "3. Set KMS_CONTRACT_ADDR to your deployed contract address"
+          - "4. Restart services:"
+          - "     sudo systemctl restart dstack-auth-eth dstack-kms"
+          - ""
+          - "Check service logs after restart:"
+          - "  sudo journalctl -u dstack-auth-eth -f"
+      when: placeholder_check.stdout != ""
