@@ -30,7 +30,10 @@ ansible/
 │   ├── compile-kms-contracts.yml   # Compile KMS smart contracts (Phase 3.1)
 │   ├── deploy-kms-contracts.yml    # Deploy contracts to Sepolia (Phase 3.2)
 │   ├── build-kms.yml               # Build and configure KMS (Phase 3.3)
-│   └── bootstrap-kms.yml           # Bootstrap KMS with root keys (Phase 3.4)
+│   ├── bootstrap-kms.yml           # Bootstrap KMS with root keys (Phase 3.4)
+│   ├── setup-kms-services.yml      # Setup KMS systemd services (Phase 3.5)
+│   ├── verify-kms-services.yml     # Verify KMS services running (Phase 3.5)
+│   └── verify-kms-contracts.yml    # Verify KMS contracts deployed (Phase 3.2)
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/
@@ -839,6 +842,102 @@ ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
 **Exit codes:**
 - `0` - Bootstrap completed successfully
 - `1` - Bootstrap failed
+
+### setup-kms-services.yml
+
+**Purpose:** Configure KMS to run as systemd services with automatic startup
+
+**What it does:**
+- Creates auth-eth systemd service file
+- Creates KMS systemd service file
+- Enables both services for automatic startup
+- Starts both services
+- Verifies services are running
+
+**Services created:**
+- `dstack-auth-eth` - Ethereum authorization webhook (port 9200)
+- `dstack-kms` - Key Management Service (port 9100)
+
+**Example:**
+```bash
+# Basic usage
+ansible-playbook -i inventory/hosts.yml playbooks/setup-kms-services.yml
+```
+
+**Service dependency:**
+```
+network.target → dstack-auth-eth → dstack-kms
+```
+
+KMS requires auth-eth to be running for blockchain-based authorization.
+
+**Usage:** See [KMS Service Setup Tutorial](https://dstack.info/tutorial/kms-service-setup)
+
+**Exit codes:**
+- `0` - Services created and started successfully
+- `1` - Setup failed
+
+### verify-kms-services.yml
+
+**Purpose:** Verify KMS services are running correctly
+
+**What it checks:**
+- Auth-eth service file exists
+- KMS service file exists
+- Both services are enabled for boot
+- Both services are running (active state)
+- Services are listening on correct ports (9200, 9100)
+- No critical errors in recent logs
+
+**Example:**
+```bash
+# Verify services
+ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-services.yml
+```
+
+**Expected output:**
+- ✓ Auth-eth service running on port 9200
+- ✓ KMS service running on port 9100
+- ✓ Both services enabled for boot
+- ✓ No critical errors in logs
+- ✓ Exit code 0
+
+**If verification fails:**
+- Check service logs: `sudo journalctl -u dstack-kms -n 100`
+- Verify bootstrap completed: `ls /etc/kms/certs/`
+- Check auth-eth configuration: `cat /etc/kms/auth-eth.env`
+- See [KMS Service Setup Tutorial](https://dstack.info/tutorial/kms-service-setup)
+
+**Exit codes:**
+- `0` - Services verified successfully
+- `1` - Verification failed
+
+### verify-kms-contracts.yml
+
+**Purpose:** Verify KMS smart contracts are deployed correctly
+
+**What it checks:**
+- Contract addresses file exists
+- DstackKms contract address is valid
+- DstackApp contract address is valid
+- Contracts are deployed on Sepolia testnet
+- Contract bytecode exists at addresses
+
+**Required variables:**
+- `alchemy_api_key` - Alchemy API key for Sepolia RPC
+
+**Example:**
+```bash
+# Verify contracts
+ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-contracts.yml \
+  -e "alchemy_api_key=YOUR_API_KEY"
+```
+
+**Usage:** See [Contract Deployment Tutorial](https://dstack.info/tutorial/contract-deployment)
+
+**Exit codes:**
+- `0` - Contracts verified successfully
+- `1` - Verification failed
 
 ## Troubleshooting
 

@@ -516,9 +516,9 @@ dstack-kms.service (main KMS)
 
 ## Next Steps
 
-With KMS services running, proceed to gateway deployment:
+With KMS services running, you have completed Phase 3 (KMS Deployment).
 
-- [Gateway Setup](/tutorial/gateway-setup) - Deploy dstack gateway for production access
+The next phase is Gateway Deployment, which will enable external access to your dstack installation. Gateway tutorials are coming soon.
 
 ## Additional Resources
 

@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import TutorialLayout from '../../layouts/TutorialLayout.astro';
 import NavigationButtons from '../../components/NavigationButtons.astro';
 import TutorialProgress from '../../components/TutorialProgress.svelte';
-import PrerequisitesList from '../../components/PrerequisitesList.astro';
+import PrerequisiteBox from '../../components/PrerequisiteBox.svelte';
 import { extractHeadings } from '../../utils/markdown';
 
 export async function getStaticPaths() {
@@ -76,7 +76,17 @@ const headings = extractHeadings(tutorial.body);
   headings={headings}
 >
   {prerequisites && prerequisites.length > 0 && (
-    <PrerequisitesList prerequisites={prerequisites} allTutorials={allTutorials} />
+    <PrerequisiteBox
+      client:load
+      prerequisites={prerequisites}
+      allTutorials={allTutorials.map(t => ({
+        slug: t.slug,
+        title: t.data.title,
+        description: t.data.description,
+        estimatedTime: t.data.estimatedTime,
+        prerequisites: t.data.prerequisites
+      }))}
+    />
   )}
 
   <Content />

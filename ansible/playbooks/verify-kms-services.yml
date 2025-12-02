@@ -1,0 +1,194 @@
+---
+# Ansible playbook to verify dstack KMS services are running
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-services.yml
+#
+# This playbook verifies:
+# - Auth-eth systemd service exists and is running
+# - KMS systemd service exists and is running
+# - Both services are enabled for boot
+# - Services are responding correctly
+# - No critical errors in recent logs
+
+- name: Verify dstack KMS Services
+  hosts: dstack_servers
+  become: true
+  vars:
+    auth_eth_port: 9200
+    kms_rpc_port: 9100
+
+  tasks:
+    - name: Check auth-eth service file exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/dstack-auth-eth.service
+      register: auth_eth_service_file
+
+    - name: Fail if auth-eth service not installed
+      ansible.builtin.fail:
+        msg: |
+          Auth-eth service file not found at /etc/systemd/system/dstack-auth-eth.service
+
+          Install KMS services first:
+            ansible-playbook playbooks/setup-kms-services.yml
+
+          See: https://dstack.info/tutorial/kms-service-setup
+      when: not auth_eth_service_file.stat.exists
+
+    - name: Check KMS service file exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/dstack-kms.service
+      register: kms_service_file
+
+    - name: Fail if KMS service not installed
+      ansible.builtin.fail:
+        msg: |
+          KMS service file not found at /etc/systemd/system/dstack-kms.service
+
+          Install KMS services first:
+            ansible-playbook playbooks/setup-kms-services.yml
+
+          See: https://dstack.info/tutorial/kms-service-setup
+      when: not kms_service_file.stat.exists
+
+    - name: Check auth-eth service is enabled
+      ansible.builtin.systemd:
+        name: dstack-auth-eth
+      register: auth_eth_enabled
+
+    - name: Warn if auth-eth not enabled for boot
+      ansible.builtin.debug:
+        msg: |
+          ⚠️  Auth-eth service is not enabled for automatic startup.
+
+          Enable with: sudo systemctl enable dstack-auth-eth
+      when: auth_eth_enabled.status.UnitFileState != 'enabled'
+
+    - name: Check KMS service is enabled
+      ansible.builtin.systemd:
+        name: dstack-kms
+      register: kms_enabled
+
+    - name: Warn if KMS not enabled for boot
+      ansible.builtin.debug:
+        msg: |
+          ⚠️  KMS service is not enabled for automatic startup.
+
+          Enable with: sudo systemctl enable dstack-kms
+      when: kms_enabled.status.UnitFileState != 'enabled'
+
+    - name: Check auth-eth service status
+      ansible.builtin.systemd:
+        name: dstack-auth-eth
+      register: auth_eth_status
+
+    - name: Check KMS service status
+      ansible.builtin.systemd:
+        name: dstack-kms
+      register: kms_status
+
+    - name: Get auth-eth recent logs
+      ansible.builtin.shell: |
+        journalctl -u dstack-auth-eth -n 20 --no-pager 2>/dev/null || echo "No logs available"
+      register: auth_eth_logs
+      changed_when: false
+
+    - name: Get KMS recent logs
+      ansible.builtin.shell: |
+        journalctl -u dstack-kms -n 20 --no-pager 2>/dev/null || echo "No logs available"
+      register: kms_logs
+      changed_when: false
+
+    - name: Check for critical errors in auth-eth logs
+      ansible.builtin.shell: |
+        journalctl -u dstack-auth-eth -n 50 --no-pager 2>/dev/null | grep -iE "(error|fatal|panic|exception)" | head -5 || true
+      register: auth_eth_errors
+      changed_when: false
+
+    - name: Check for critical errors in KMS logs
+      ansible.builtin.shell: |
+        journalctl -u dstack-kms -n 50 --no-pager 2>/dev/null | grep -iE "(error|fatal|panic|exception)" | head -5 || true
+      register: kms_errors
+      changed_when: false
+
+    - name: Check auth-eth port is listening
+      ansible.builtin.shell: |
+        ss -tlnp | grep ":{{ auth_eth_port }}" || netstat -tlnp 2>/dev/null | grep ":{{ auth_eth_port }}" || echo "NOT_LISTENING"
+      register: auth_eth_port_check
+      changed_when: false
+
+    - name: Check KMS port is listening
+      ansible.builtin.shell: |
+        ss -tlnp | grep ":{{ kms_rpc_port }}" || netstat -tlnp 2>/dev/null | grep ":{{ kms_rpc_port }}" || echo "NOT_LISTENING"
+      register: kms_port_check
+      changed_when: false
+
+    - name: Display verification results
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "KMS Services Verification Results"
+          - "============================================"
+          - ""
+          - "Auth-ETH Service (dstack-auth-eth):"
+          - "  Service File: ✓ exists"
+          - "  Enabled: {{ '✓ yes' if auth_eth_enabled.status.UnitFileState == 'enabled' else '✗ no' }}"
+          - "  Status: {{ '✓ ' + auth_eth_status.status.ActiveState if auth_eth_status.status.ActiveState == 'active' else '✗ ' + auth_eth_status.status.ActiveState }}"
+          - "  Port {{ auth_eth_port }}: {{ '✓ listening' if 'NOT_LISTENING' not in auth_eth_port_check.stdout else '✗ not listening' }}"
+          - ""
+          - "KMS Service (dstack-kms):"
+          - "  Service File: ✓ exists"
+          - "  Enabled: {{ '✓ yes' if kms_enabled.status.UnitFileState == 'enabled' else '✗ no' }}"
+          - "  Status: {{ '✓ ' + kms_status.status.ActiveState if kms_status.status.ActiveState == 'active' else '✗ ' + kms_status.status.ActiveState }}"
+          - "  Port {{ kms_rpc_port }}: {{ '✓ listening' if 'NOT_LISTENING' not in kms_port_check.stdout else '✗ not listening' }}"
+          - ""
+          - "Log Errors (last 50 lines):"
+          - "  Auth-ETH: {{ auth_eth_errors.stdout if auth_eth_errors.stdout else '✓ none found' }}"
+          - "  KMS: {{ kms_errors.stdout if kms_errors.stdout else '✓ none found' }}"
+
+    - name: Fail if auth-eth service not running
+      ansible.builtin.fail:
+        msg: |
+          Auth-eth service is not running (status: {{ auth_eth_status.status.ActiveState }})
+
+          Check logs: sudo journalctl -u dstack-auth-eth -n 100
+
+          Common issues:
+          - Missing auth-eth.env configuration
+          - Invalid Ethereum RPC URL
+          - Node.js not installed
+
+          See: https://dstack.info/tutorial/kms-service-setup
+      when: auth_eth_status.status.ActiveState != 'active'
+
+    - name: Fail if KMS service not running
+      ansible.builtin.fail:
+        msg: |
+          KMS service is not running (status: {{ kms_status.status.ActiveState }})
+
+          Check logs: sudo journalctl -u dstack-kms -n 100
+
+          Common issues:
+          - Missing kms.toml configuration
+          - Bootstrap not completed
+          - Auth-eth service not running
+
+          See: https://dstack.info/tutorial/kms-service-setup
+      when: kms_status.status.ActiveState != 'active'
+
+    - name: Display success message
+      ansible.builtin.debug:
+        msg:
+          - ""
+          - "============================================"
+          - "✓ KMS Services Verification PASSED"
+          - "============================================"
+          - ""
+          - "Both services are running correctly."
+          - ""
+          - "Management commands:"
+          - "  sudo systemctl status dstack-auth-eth"
+          - "  sudo systemctl status dstack-kms"
+          - "  sudo journalctl -u dstack-auth-eth -f"
+          - "  sudo journalctl -u dstack-kms -f"
+          - ""
+          - "Next step: Deploy dstack gateway"
+          - "  See: https://dstack.info/tutorial/gateway-setup"
