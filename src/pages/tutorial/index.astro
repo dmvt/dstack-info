@@ -2,8 +2,8 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-// Define section order (tutorials flow: Host Setup -> Prerequisites -> dstack Installation -> KMS -> Gateway)
-const sectionOrder = ['Host Setup', 'Prerequisites', 'dstack Installation', 'KMS Deployment', 'Gateway Deployment'];
+// Define section order (tutorials flow: Host Setup -> Prerequisites -> dstack Installation -> KMS -> Gateway -> First Application)
+const sectionOrder = ['Host Setup', 'Prerequisites', 'dstack Installation', 'KMS Deployment', 'Gateway Deployment', 'First Application'];
 
 // Get all tutorials sorted properly
 const allTutorials = (await getCollection('tutorials')).sort((a, b) => {

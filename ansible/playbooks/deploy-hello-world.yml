@@ -1,0 +1,286 @@
+---
+# deploy-hello-world.yml
+# Phase 5.2: Deploy Hello World application to a CVM
+#
+# Prerequisites:
+#   - Guest images configured (Phase 5.1)
+#   - Teepod service running
+#
+# Variables (set in group_vars/all.yml or via -e):
+#   - app_name: Application name (default: hello-world)
+#   - dstack_version: Image version (default: 0.4.0)
+#   - app_vcpus: Number of vCPUs (default: 2)
+#   - app_memory: Memory in MB (default: 2048)
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/deploy-hello-world.yml
+
+- name: Deploy Hello World Application
+  hosts: dstack_servers
+  become: yes
+  vars:
+    teepod_http_port: 9080
+    app_name: "hello-world"
+    dstack_version: "0.4.0"
+    app_vcpus: 2
+    app_memory: 2048
+    app_dir: "/root/dstack-apps/{{ app_name }}"
+
+  tasks:
+    - name: Check teepod is running
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ teepod_http_port }}/api/images"
+        method: GET
+      register: teepod_check
+      failed_when: false
+
+    - name: Fail if teepod not running
+      ansible.builtin.fail:
+        msg: "Teepod not running. Run setup-guest-images.yml first."
+      when: teepod_check.status != 200
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Create HTML content directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}/html"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Create Docker Compose file
+      ansible.builtin.copy:
+        content: |
+          version: '3'
+          services:
+            nginx:
+              image: nginx:alpine
+              ports:
+                - "80:80"
+              volumes:
+                - ./html:/usr/share/nginx/html:ro
+                - /var/run/tappd.sock:/var/run/tappd.sock
+              restart: always
+              environment:
+                - NGINX_HOST=localhost
+                - NGINX_PORT=80
+        dest: "{{ app_dir }}/docker-compose.yaml"
+        mode: '0644'
+        owner: root
+        group: root
+
+    - name: Create HTML index page
+      ansible.builtin.copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>dstack Hello World</title>
+              <style>
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                      max-width: 800px;
+                      margin: 50px auto;
+                      padding: 20px;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      min-height: 100vh;
+                  }
+                  .container {
+                      background: white;
+                      border-radius: 10px;
+                      padding: 40px;
+                      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                  }
+                  h1 { color: #333; margin-bottom: 20px; }
+                  .success {
+                      background: #d4edda;
+                      border: 1px solid #c3e6cb;
+                      color: #155724;
+                      padding: 15px;
+                      border-radius: 5px;
+                      margin: 20px 0;
+                  }
+                  .info {
+                      background: #e7f3ff;
+                      border: 1px solid #b6d4fe;
+                      color: #084298;
+                      padding: 15px;
+                      border-radius: 5px;
+                      margin: 20px 0;
+                  }
+                  code {
+                      background: #f4f4f4;
+                      padding: 2px 6px;
+                      border-radius: 3px;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>Hello from dstack CVM!</h1>
+                  <div class="success">
+                      <strong>Success!</strong> Your application is running inside a
+                      TDX-protected Confidential Virtual Machine.
+                  </div>
+                  <div class="info">
+                      <strong>Deployed by Ansible</strong>
+                      <ul>
+                          <li>Your code is running in encrypted memory</li>
+                          <li>The host cannot inspect your application's data</li>
+                          <li>Hardware attestation proves this environment is genuine</li>
+                      </ul>
+                  </div>
+                  <h2>Environment Details</h2>
+                  <ul>
+                      <li>Intel TDX hardware protection</li>
+                      <li>Measured boot chain (MRTD, RTMR0-3)</li>
+                      <li>Encrypted memory isolation</li>
+                      <li>Remote attestation capability</li>
+                  </ul>
+              </div>
+          </body>
+          </html>
+        dest: "{{ app_dir }}/html/index.html"
+        mode: '0644'
+        owner: root
+        group: root
+
+    - name: Check if application already deployed
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances"
+        method: GET
+        return_content: yes
+      register: instances
+
+    - name: Set existing instance fact
+      ansible.builtin.set_fact:
+        app_exists: "{{ instances.json.instances | selectattr('name', 'equalto', app_name) | list | length > 0 }}"
+
+    - name: Delete existing application if present
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ app_name }}"
+        method: DELETE
+      when: app_exists
+      failed_when: false
+
+    - name: Wait for cleanup
+      ansible.builtin.pause:
+        seconds: 3
+      when: app_exists
+
+    - name: Read docker-compose file
+      ansible.builtin.slurp:
+        src: "{{ app_dir }}/docker-compose.yaml"
+      register: compose_content
+
+    - name: Deploy application via teepod API
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ teepod_http_port }}/api/deploy"
+        method: POST
+        body_format: json
+        body:
+          name: "{{ app_name }}"
+          image: "dstack-{{ dstack_version }}"
+          compose: "{{ compose_content.content }}"
+          vcpus: "{{ app_vcpus }}"
+          memory: "{{ app_memory }}"
+          env: {}
+        return_content: yes
+        status_code: [200, 201]
+      register: deploy_result
+      retries: 3
+      delay: 5
+
+    - name: Display deployment result
+      ansible.builtin.debug:
+        msg: "Deployment result: {{ deploy_result.json }}"
+      when: deploy_result.json is defined
+
+    - name: Wait for CVM to boot
+      ansible.builtin.pause:
+        seconds: 30
+
+    - name: Check instance status
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances"
+        method: GET
+        return_content: yes
+      register: final_instances
+      retries: 10
+      delay: 5
+      until: >
+        final_instances.json.instances | selectattr('name', 'equalto', app_name) |
+        selectattr('status', 'equalto', 'running') | list | length > 0
+
+    - name: Get instance details
+      ansible.builtin.set_fact:
+        instance_info: "{{ final_instances.json.instances | selectattr('name', 'equalto', app_name) | first }}"
+
+    - name: Display instance information
+      ansible.builtin.debug:
+        msg:
+          - "Instance ID: {{ instance_info.id | default('N/A') }}"
+          - "Status: {{ instance_info.status | default('N/A') }}"
+          - "Image: {{ instance_info.image | default('N/A') }}"
+          - "vCPUs: {{ instance_info.vcpus | default('N/A') }}"
+          - "Memory: {{ instance_info.memory | default('N/A') }} MB"
+          - "Ports: {{ instance_info.ports | default({}) }}"
+
+    - name: Get mapped port
+      ansible.builtin.set_fact:
+        app_port: "{{ instance_info.ports['80'] | default('10080') }}"
+
+    - name: Test application accessibility
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ app_port }}/"
+        method: GET
+        return_content: yes
+      register: app_response
+      retries: 10
+      delay: 5
+      until: app_response.status == 200
+      failed_when: false
+
+    - name: Verify application content
+      ansible.builtin.assert:
+        that:
+          - "'dstack' in app_response.content"
+        fail_msg: "Application content verification failed"
+        success_msg: "Application content verified successfully"
+      when: app_response.status == 200
+
+    - name: Get application logs
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ app_name }}/logs?lines=20"
+        method: GET
+        return_content: yes
+      register: app_logs
+      failed_when: false
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg:
+          - "========================================"
+          - "Hello World Deployment Complete!"
+          - "========================================"
+          - ""
+          - "Application: {{ app_name }}"
+          - "Status: {{ instance_info.status | default('unknown') }}"
+          - "Image: dstack-{{ dstack_version }}"
+          - "Resources: {{ app_vcpus }} vCPUs, {{ app_memory }} MB RAM"
+          - ""
+          - "Access URL: http://127.0.0.1:{{ app_port }}/"
+          - "Accessibility: {{ 'OK' if app_response.status == 200 else 'FAILED' }}"
+          - ""
+          - "Commands:"
+          - "  View instance: curl http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ app_name }}"
+          - "  View logs:     curl http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ app_name }}/logs"
+          - "  Stop:          curl -X POST http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ app_name }}/stop"
+          - "  Delete:        curl -X DELETE http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ app_name }}"

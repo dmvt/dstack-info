@@ -1943,6 +1943,114 @@ Per PROJECT_PLAN.md methodology (Phase 2+ pattern):
 
 ---
 
+## Phase 4: Gateway Deployment - COMPLETE ✅
+
+**Date:** 2025-12-02
+**Status:** Complete and deployed
+**Commit:** 1368571
+
+### What Was Accomplished
+
+**Gateway Tutorials Created (3 tutorials):**
+1. ✅ `gateway-ssl-setup.md` - Phase 4.1: SSL Certificate Setup with Cloudflare DNS
+2. ✅ `gateway-build-configuration.md` - Phase 4.2: Gateway Build & WireGuard Setup
+3. ✅ `gateway-service-setup.md` - Phase 4.3: Systemd Service & Certificate Renewal
+
+**Ansible Playbooks Created (4 playbooks):**
+1. ✅ `setup-gateway-ssl.yml` - Automates SSL certificate provisioning with Let's Encrypt
+2. ✅ `build-gateway.yml` - Builds gateway binary and configures WireGuard interface
+3. ✅ `setup-gateway-service.yml` - Creates systemd services and renewal timers
+4. ✅ `verify-gateway.yml` - Comprehensive deployment verification
+
+**Infrastructure Updates:**
+- ✅ Updated sectionOrder in 3 files to include "KMS Deployment" and "Gateway Deployment"
+- ✅ Fixed E2E tests for 22-tutorial navigation flow
+- ✅ Updated ansible/README.md with Phase 4 documentation
+
+### Tutorial Content Summary
+
+**Phase 4.1: SSL Certificate Setup (gateway-ssl-setup.md)**
+- Cloudflare API token creation with DNS edit permissions
+- certbot installation and Cloudflare plugin configuration
+- Wildcard certificate request for *.gateway_domain
+- Certificate renewal hook setup
+- CAA record configuration
+
+**Phase 4.2: Gateway Build & Configuration (gateway-build-configuration.md)**
+- Build dstack-gateway from source with cargo
+- WireGuard interface setup (dgw) for CVM communication
+- Gateway configuration file (gateway.toml) creation
+- WireGuard key generation and interface startup
+
+**Phase 4.3: Gateway Service Setup (gateway-service-setup.md)**
+- systemd service file creation for dstack-gateway
+- Certificate renewal timer (twice daily)
+- Service management commands
+- Port verification (443 HTTPS, 80 HTTP)
+
+### Git Commits (1 total)
+
+1. `1368571` - Add Phase 4 Gateway Deployment tutorials and Ansible playbooks
+
+### Testing Results
+
+- ✅ Unit tests: 358 passed
+- ✅ E2E tests: 94 passed
+- ✅ Build successful: 28 pages generated
+- ✅ Deployed to Cloudflare Pages
+
+### Files Created
+
+**Tutorials:**
+- src/content/tutorials/gateway-ssl-setup.md
+- src/content/tutorials/gateway-build-configuration.md
+- src/content/tutorials/gateway-service-setup.md
+
+**Ansible Playbooks:**
+- ansible/playbooks/setup-gateway-ssl.yml
+- ansible/playbooks/build-gateway.yml
+- ansible/playbooks/setup-gateway-service.yml
+- ansible/playbooks/verify-gateway.yml
+
+### Files Modified
+
+- ansible/README.md (added Phase 4 documentation)
+- src/pages/tutorial/[...slug].astro (added Gateway Deployment to sectionOrder)
+- src/pages/tutorial/index.astro (added Gateway Deployment to sectionOrder)
+- src/components/TutorialSidebar.svelte (added Gateway Deployment to sectionOrder)
+- e2e/tutorial-navigation-enhancements.spec.ts (updated for 22 tutorials)
+- e2e/user-journeys.spec.ts (updated tutorial sequence)
+
+### Deployment
+
+- ✅ https://2b888c84.dstack-info.pages.dev
+
+### Key Features
+
+**Gateway SSL Setup:**
+- Uses Cloudflare DNS-01 challenge for certificate validation
+- Wildcard certificates for all subdomains
+- Automatic renewal with deploy hooks
+- Credentials stored securely
+
+**Gateway Build:**
+- WireGuard VPN for secure CVM communication
+- Configurable subnet (default: 10.0.3.0/24)
+- Integration with KMS for key operations
+
+**Gateway Service:**
+- Automatic restart on failure
+- Certificate renewal timer (twice daily with 1-hour random delay)
+- Comprehensive logging to journald
+
+### Status
+
+- ✅ User approved (2025-12-02)
+- ✅ All tests passing
+- ✅ Deployed to production
+
+---
+
 **End of Progress Document**
 
 This document is updated after every checkpoint approval to preserve context during conversation compression.

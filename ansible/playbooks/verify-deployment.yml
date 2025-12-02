@@ -1,0 +1,218 @@
+---
+# verify-deployment.yml
+# Phase 5: Comprehensive verification of first application deployment
+#
+# Prerequisites:
+#   - All Phase 5 steps completed
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/verify-deployment.yml
+
+- name: Verify First Application Deployment
+  hosts: dstack_servers
+  become: yes
+  vars:
+    images_dir: /var/lib/dstack/images
+    teepod_http_port: 9080
+
+  tasks:
+    - name: "=== Phase 5.1: Guest Image Verification ==="
+      ansible.builtin.debug:
+        msg: "Checking guest OS images..."
+
+    - name: Check images directory exists
+      ansible.builtin.stat:
+        path: "{{ images_dir }}"
+      register: images_dir_stat
+
+    - name: Verify images directory
+      ansible.builtin.assert:
+        that: images_dir_stat.stat.exists
+        fail_msg: "Images directory not found. Run setup-guest-images.yml"
+        success_msg: "✓ Images directory exists"
+
+    - name: Find installed images
+      ansible.builtin.find:
+        paths: "{{ images_dir }}"
+        file_type: directory
+        patterns: "dstack-*"
+      register: installed_images
+
+    - name: Verify at least one image installed
+      ansible.builtin.assert:
+        that: installed_images.files | length > 0
+        fail_msg: "No guest OS images found"
+        success_msg: "✓ {{ installed_images.files | length }} image(s) installed"
+
+    - name: Check image components
+      ansible.builtin.stat:
+        path: "{{ item.path }}/metadata.json"
+      loop: "{{ installed_images.files }}"
+      register: image_metadata
+
+    - name: Display installed images
+      ansible.builtin.debug:
+        msg: "  - {{ item.path | basename }}"
+      loop: "{{ installed_images.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+
+    - name: Check teepod binary exists
+      ansible.builtin.stat:
+        path: /usr/local/bin/teepod
+      register: teepod_bin
+
+    - name: Verify teepod binary
+      ansible.builtin.assert:
+        that: teepod_bin.stat.exists
+        fail_msg: "Teepod binary not found. Run setup-guest-images.yml"
+        success_msg: "✓ Teepod binary installed"
+
+    - name: Check teepod configuration exists
+      ansible.builtin.stat:
+        path: /etc/dstack/teepod/teepod.toml
+      register: teepod_conf
+
+    - name: Verify teepod configuration
+      ansible.builtin.assert:
+        that: teepod_conf.stat.exists
+        fail_msg: "Teepod configuration not found. Run setup-guest-images.yml"
+        success_msg: "✓ Teepod configuration exists"
+
+    - name: Check teepod service status
+      ansible.builtin.command:
+        cmd: systemctl is-active dstack-teepod
+      register: teepod_active
+      changed_when: false
+      failed_when: false
+
+    - name: Verify teepod service running
+      ansible.builtin.assert:
+        that: teepod_active.stdout == 'active'
+        fail_msg: "Teepod service not running. Run: sudo systemctl start dstack-teepod"
+        success_msg: "✓ Teepod service running"
+
+    - name: Test teepod HTTP API
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ teepod_http_port }}/api/images"
+        method: GET
+        return_content: yes
+      register: teepod_api
+      failed_when: false
+
+    - name: Verify teepod API responding
+      ansible.builtin.assert:
+        that: teepod_api.status == 200
+        fail_msg: "Teepod HTTP API not responding"
+        success_msg: "✓ Teepod HTTP API responding"
+
+    - name: "=== Phase 5.2: Application Deployment Verification ==="
+      ansible.builtin.debug:
+        msg: "Checking deployed applications..."
+
+    - name: Get running instances
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances"
+        method: GET
+        return_content: yes
+      register: instances
+      failed_when: false
+
+    - name: Count running instances
+      ansible.builtin.set_fact:
+        running_instances: "{{ instances.json.instances | selectattr('status', 'equalto', 'running') | list }}"
+      when: instances.status == 200
+
+    - name: Display instance count
+      ansible.builtin.debug:
+        msg: "Running instances: {{ running_instances | length }}"
+      when: running_instances is defined
+
+    - name: Display each running instance
+      ansible.builtin.debug:
+        msg: "  - {{ item.name }} ({{ item.status }}, image: {{ item.image }})"
+      loop: "{{ running_instances }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: running_instances is defined and running_instances | length > 0
+
+    - name: Check hello-world instance exists
+      ansible.builtin.set_fact:
+        hello_world_exists: "{{ instances.json.instances | selectattr('name', 'equalto', 'hello-world') | list | length > 0 }}"
+      when: instances.status == 200
+
+    - name: Get hello-world details if exists
+      ansible.builtin.set_fact:
+        hello_world_info: "{{ instances.json.instances | selectattr('name', 'equalto', 'hello-world') | first }}"
+      when: hello_world_exists | default(false)
+
+    - name: Test hello-world accessibility
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ hello_world_info.ports['80'] | default('10080') }}/"
+        method: GET
+        return_content: yes
+      register: hello_world_response
+      when: hello_world_exists | default(false)
+      failed_when: false
+
+    - name: Verify hello-world content
+      ansible.builtin.assert:
+        that: "'dstack' in hello_world_response.content"
+        fail_msg: "Hello World application content verification failed"
+        success_msg: "✓ Hello World application responding correctly"
+      when: hello_world_exists | default(false) and hello_world_response.status == 200
+
+    - name: "=== Phase 5.3: Attestation Verification ==="
+      ansible.builtin.debug:
+        msg: "Checking attestation capability..."
+
+    - name: Request TDX quote from hello-world
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances/hello-world/quote"
+        method: POST
+        body_format: json
+        body:
+          report_data: "766572696679"
+        return_content: yes
+      register: quote_response
+      when: hello_world_exists | default(false)
+      failed_when: false
+
+    - name: Verify quote contains measurements
+      ansible.builtin.assert:
+        that:
+          - quote_response.json.measurements.mrtd is defined
+          - quote_response.json.measurements.rtmr0 is defined
+          - quote_response.json.measurements.rtmr1 is defined
+          - quote_response.json.measurements.rtmr2 is defined
+          - quote_response.json.measurements.rtmr3 is defined
+        fail_msg: "TDX quote missing measurements"
+        success_msg: "✓ TDX attestation working - all measurements present"
+      when: quote_response.status | default(0) == 200
+
+    - name: "=== Verification Summary ==="
+      ansible.builtin.debug:
+        msg:
+          - "========================================="
+          - "Phase 5 Deployment Verification Complete!"
+          - "========================================="
+          - ""
+          - "Phase 5.1 - Guest Images:"
+          - "  - Images directory: {{ '✓' if images_dir_stat.stat.exists else '✗' }}"
+          - "  - Images installed: {{ installed_images.files | length }}"
+          - "  - Teepod binary: {{ '✓' if teepod_bin.stat.exists else '✗' }}"
+          - "  - Teepod config: {{ '✓' if teepod_conf.stat.exists else '✗' }}"
+          - "  - Teepod service: {{ '✓' if teepod_active.stdout == 'active' else '✗' }}"
+          - "  - Teepod API: {{ '✓' if teepod_api.status == 200 else '✗' }}"
+          - ""
+          - "Phase 5.2 - Application Deployment:"
+          - "  - Running instances: {{ running_instances | length | default(0) }}"
+          - "  - Hello World: {{ '✓' if hello_world_exists | default(false) else '✗ Not deployed' }}"
+          - "  - Hello World accessible: {{ '✓' if (hello_world_response.status | default(0)) == 200 else '✗' }}"
+          - ""
+          - "Phase 5.3 - Attestation:"
+          - "  - TDX quotes: {{ '✓ Working' if (quote_response.status | default(0)) == 200 else '⚠ Not tested' }}"
+          - "  - Measurements: {{ '✓ Present' if (quote_response.json.measurements.mrtd | default('')) != '' else '⚠ Not verified' }}"
+          - ""
+          - "Overall Status: {{ 'All checks passed!' if teepod_active.stdout == 'active' and teepod_api.status == 200 else 'Some checks failed' }}"
+          - "========================================="

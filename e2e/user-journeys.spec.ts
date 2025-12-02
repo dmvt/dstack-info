@@ -136,7 +136,7 @@ test.describe('User Journeys', () => {
       await page.waitForLoadState('networkidle');
 
       // Navigate through all tutorials using Next button
-      // Full sorted order: Host Setup (5 steps + 2 appendices), Prerequisites (2 steps), dstack Installation (5 steps), KMS Deployment (5 steps), Gateway Deployment (3 steps)
+      // Full sorted order: Host Setup (5 steps + 2 appendices), Prerequisites (2 steps), dstack Installation (5 steps), KMS Deployment (5 steps), Gateway Deployment (3 steps), First Application (3 steps)
       const tutorialUrls = [
         '/tutorial/tdx-hardware-verification',      // Host Setup #1
         '/tutorial/tdx-software-setup',             // Host Setup #2
@@ -159,7 +159,10 @@ test.describe('User Journeys', () => {
         '/tutorial/kms-service-setup',              // KMS Deployment #5
         '/tutorial/gateway-ssl-setup',              // Gateway Deployment #1
         '/tutorial/gateway-build-configuration',    // Gateway Deployment #2
-        '/tutorial/gateway-service-setup',          // Gateway Deployment #3 (last!)
+        '/tutorial/gateway-service-setup',          // Gateway Deployment #3
+        '/tutorial/guest-image-setup',              // First Application #1
+        '/tutorial/hello-world-app',                // First Application #2
+        '/tutorial/attestation-verification',       // First Application #3 (last!)
       ];
 
       for (let i = 0; i < tutorialUrls.length - 1; i++) {
@@ -173,7 +176,7 @@ test.describe('User Journeys', () => {
       }
 
       // Should be on last tutorial
-      await expect(page).toHaveURL(/\/tutorial\/gateway-service-setup/);
+      await expect(page).toHaveURL(/\/tutorial\/attestation-verification/);
 
       // Last tutorial should have next button that goes to completion page
       const nextBtn = page.locator('a.nav-next');

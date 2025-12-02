@@ -337,7 +337,10 @@ test.describe('Tutorial Navigation Enhancements', () => {
           'kms-service-setup': { completed: true, timestamp: new Date().toISOString() },
           'gateway-ssl-setup': { completed: true, timestamp: new Date().toISOString() },
           'gateway-build-configuration': { completed: true, timestamp: new Date().toISOString() },
-          'gateway-service-setup': { completed: true, timestamp: new Date().toISOString() }
+          'gateway-service-setup': { completed: true, timestamp: new Date().toISOString() },
+          'guest-image-setup': { completed: true, timestamp: new Date().toISOString() },
+          'hello-world-app': { completed: true, timestamp: new Date().toISOString() },
+          'attestation-verification': { completed: true, timestamp: new Date().toISOString() }
         }));
       });
 
@@ -408,7 +411,10 @@ test.describe('Tutorial Navigation Enhancements', () => {
           'kms-service-setup': { completed: true, timestamp: new Date().toISOString() },
           'gateway-ssl-setup': { completed: true, timestamp: new Date().toISOString() },
           'gateway-build-configuration': { completed: true, timestamp: new Date().toISOString() },
-          'gateway-service-setup': { completed: true, timestamp: new Date().toISOString() }
+          'gateway-service-setup': { completed: true, timestamp: new Date().toISOString() },
+          'guest-image-setup': { completed: true, timestamp: new Date().toISOString() },
+          'hello-world-app': { completed: true, timestamp: new Date().toISOString() },
+          'attestation-verification': { completed: true, timestamp: new Date().toISOString() }
         }));
       });
 
@@ -440,8 +446,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Wait for component to mount
       await page.waitForSelector('text="Overall Progress"', { timeout: 5000 });
 
-      // Should show progress (2 of 22 = 9.09% ≈ 9%)
-      await expect(page.locator('text=/[89]%/')).toBeVisible();
+      // Should show progress (2 of 25 = 8%)
+      await expect(page.locator('text=/[78]%/')).toBeVisible();
     });
 
     test('should show section-level breakdown', async ({ page }) => {
@@ -450,12 +456,13 @@ test.describe('Tutorial Navigation Enhancements', () => {
       // Should have section breakdown
       await expect(page.locator('text="Progress by Section"')).toBeVisible();
 
-      // Should list all five sections (use specific selector for section breakdown)
+      // Should list all six sections (use specific selector for section breakdown)
       await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("Host Setup")')).toBeVisible();
       await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("Prerequisites")')).toBeVisible();
       await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("dstack Installation")')).toBeVisible();
       await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("KMS Deployment")')).toBeVisible();
       await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("Gateway Deployment")')).toBeVisible();
+      await expect(page.locator('.space-y-4 .text-sm.font-medium:has-text("First Application")')).toBeVisible();
     });
 
     test('should clear progress when reset button clicked and confirmed', async ({ page }) => {
@@ -469,8 +476,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
       await page.goto('/tutorial/complete');
 
-      // Should show 1 of 22 complete (1/22 = 4.5% ≈ 5%)
-      await expect(page.locator('text=/[45]%/')).toBeVisible();
+      // Should show 1 of 25 complete (1/25 = 4%)
+      await expect(page.locator('text=/[34]%/')).toBeVisible();
 
       // Click reset button
       page.on('dialog', dialog => dialog.accept());
@@ -486,8 +493,8 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
   test.describe('Integration Tests', () => {
     test('should navigate to completion page from last tutorial next button', async ({ page }) => {
-      // Go to last tutorial (gateway-service-setup is last in Gateway Deployment section)
-      await page.goto('/tutorial/gateway-service-setup');
+      // Go to last tutorial (attestation-verification is last in First Application section)
+      await page.goto('/tutorial/attestation-verification');
 
       // Wait for page to load
       await page.waitForLoadState('networkidle');
