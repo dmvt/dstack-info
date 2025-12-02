@@ -84,7 +84,8 @@ const headings = extractHeadings(tutorial.body);
         title: t.data.title,
         description: t.data.description,
         estimatedTime: t.data.estimatedTime,
-        prerequisites: t.data.prerequisites
+        prerequisites: t.data.prerequisites,
+        isAppendix: t.data.isAppendix || t.data.stepNumber === null
       }))}
     />
   )}

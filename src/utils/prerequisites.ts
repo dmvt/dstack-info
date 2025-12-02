@@ -11,6 +11,7 @@ export interface TutorialInfo {
   description: string;
   estimatedTime?: string;
   prerequisites?: string[];
+  isAppendix?: boolean;
 }
 
 /**
@@ -79,6 +80,9 @@ export function findNearestIncompletePrerequisite(
     const prereqTutorial = tutorialMap.get(prereqSlug);
     if (!prereqTutorial) continue;
 
+    // Skip appendix tutorials - they are not required prerequisites
+    if (prereqTutorial.isAppendix) continue;
+
     // If this prerequisite is not complete, check if its chain is complete
     if (!progress[prereqSlug]?.completed) {
       // This prerequisite is incomplete - but first check if IT has incomplete prerequisites
@@ -128,4 +132,78 @@ export function shouldShowPrerequisites(
   }
 
   return findNearestIncompletePrerequisite(prerequisites, tutorialMap, progress) !== null;
+}
+
+/**
+ * Result of collecting all incomplete prerequisites
+ */
+export interface IncompletePrerequisites {
+  /** The nearest/deepest incomplete prerequisite - should be most prominent */
+  primary: TutorialInfo;
+  /** Other incomplete prerequisites in the chain - shown as secondary */
+  others: TutorialInfo[];
+}
+
+/**
+ * Collect all incomplete prerequisites in the dependency chain
+ * Returns the primary (nearest) and all other incomplete prerequisites
+ *
+ * @param prerequisites - Direct prerequisites of the current tutorial
+ * @param tutorialMap - Map of all tutorials
+ * @param progress - Current progress data
+ * @returns Object with primary and other incomplete prerequisites, or null if all complete
+ */
+export function collectAllIncompletePrerequisites(
+  prerequisites: string[] | undefined,
+  tutorialMap: Map<string, TutorialInfo>,
+  progress: ProgressData
+): IncompletePrerequisites | null {
+  if (!prerequisites || prerequisites.length === 0) {
+    return null;
+  }
+
+  // Collect all incomplete prerequisites
+  const allIncomplete: TutorialInfo[] = [];
+  const visited = new Set<string>();
+
+  function collectIncomplete(prereqSlugs: string[]) {
+    for (const slug of prereqSlugs) {
+      if (visited.has(slug)) continue;
+      visited.add(slug);
+
+      const tutorial = tutorialMap.get(slug);
+      if (!tutorial) continue;
+
+      // Skip appendix tutorials - they are not required prerequisites
+      if (tutorial.isAppendix) continue;
+
+      // If incomplete, add to list
+      if (!progress[slug]?.completed) {
+        allIncomplete.push(tutorial);
+      }
+
+      // Recurse into this tutorial's prerequisites
+      const nestedPrereqs = tutorial.prerequisites || [];
+      if (nestedPrereqs.length > 0) {
+        collectIncomplete(nestedPrereqs);
+      }
+    }
+  }
+
+  collectIncomplete(prerequisites);
+
+  if (allIncomplete.length === 0) {
+    return null;
+  }
+
+  // Find the primary (nearest/deepest) using existing function
+  const primary = findNearestIncompletePrerequisite(prerequisites, tutorialMap, progress);
+  if (!primary) {
+    return null;
+  }
+
+  // Others are all incomplete except the primary
+  const others = allIncomplete.filter(t => t.slug !== primary.slug);
+
+  return { primary, others };
 }
