@@ -7,7 +7,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 	description="The open-source, developer-friendly TEE SDK for deploying confidential applications. Deploy Docker containers to Trusted Execution Environments in minutes."
 >
 	<!-- Navigation -->
-	<nav class="fixed top-0 w-full bg-bg-space/98 backdrop-blur-md px-8 py-4 z-50 border-b border-border-subtle">
+	<header>
+	<nav aria-label="Main navigation" class="fixed top-0 w-full bg-bg-space/98 backdrop-blur-md px-8 py-4 z-50 border-b border-border-subtle">
 		<div class="max-w-7xl mx-auto flex justify-between items-center">
 			<div class="h-10 flex items-center">
 				<img src="/logos/dstack-horizontal-light.svg" alt="dstack" class="h-full w-auto" />
@@ -23,7 +24,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 			</ul>
 		</div>
 	</nav>
+	</header>
 
+	<main>
 	<!-- Hero Section -->
 	<section class="min-h-screen flex items-center justify-center text-center px-8 pt-32 pb-16 relative overflow-hidden">
 		<div class="max-w-4xl relative z-10">
@@ -451,6 +454,7 @@ cd dstack
 			</div>
 		</div>
 	</section>
+	</main>
 
 	<!-- Footer -->
 	<footer class="bg-bg-deep py-12 px-8 border-t border-border-default text-center">
