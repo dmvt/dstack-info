@@ -2051,6 +2051,116 @@ Per PROJECT_PLAN.md methodology (Phase 2+ pattern):
 
 ---
 
+## Phase 5: First Application Deployment - COMPLETE ✅
+
+**Date:** 2025-12-02
+**Status:** Complete and deployed
+**Commit:** 2106898
+
+### What Was Accomplished
+
+**First Application Tutorials Created (3 tutorials):**
+1. ✅ `guest-image-setup.md` - Phase 5.1: Guest OS Image Setup
+2. ✅ `hello-world-app.md` - Phase 5.2: Hello World Application Deployment
+3. ✅ `attestation-verification.md` - Phase 5.3: TDX Attestation Verification
+
+**Ansible Playbooks Created (4 playbooks):**
+1. ✅ `setup-guest-images.yml` - Downloads guest images and builds teepod
+2. ✅ `deploy-hello-world.yml` - Deploys nginx hello world app via teepod
+3. ✅ `verify-attestation.yml` - Verifies TDX attestation and measurements
+4. ✅ `verify-deployment.yml` - Comprehensive Phase 5 verification
+
+**Infrastructure Updates:**
+- ✅ Updated sectionOrder in 3 files to include "First Application"
+- ✅ Fixed E2E tests for 25-tutorial navigation flow
+- ✅ Updated progress statistics tests for new tutorial count
+
+### Tutorial Content Summary
+
+**Phase 5.1: Guest OS Image Setup (guest-image-setup.md)**
+- Guest OS image architecture overview (OVMF.fd, bzImage, initramfs, rootfs)
+- Image download and installation from GitHub releases
+- Teepod build and configuration
+- Systemd service setup for teepod
+- Image verification and listing
+
+**Phase 5.2: Hello World Application (hello-world-app.md)**
+- Docker Compose application preparation
+- CVM deployment via teepod API
+- Container orchestration within CVMs
+- Application accessibility verification
+- Port mapping and network configuration
+
+**Phase 5.3: Attestation Verification (attestation-verification.md)**
+- TDX measurement explanation (MRTD, RTMR0-3)
+- Quote generation with report data
+- Measurement extraction and verification
+- Event log analysis for RTMR3
+- Quote signature verification with dcap-qvl
+
+### Git Commits (1 total)
+
+1. `2106898` - Add Phase 5: First Application Deployment tutorials and playbooks
+
+### Testing Results
+
+- ✅ Unit tests: 358 passed
+- ✅ E2E tests: 94 passed
+- ✅ Build successful: 31 pages generated
+- ✅ Deployed to Cloudflare Pages
+
+### Files Created
+
+**Tutorials:**
+- src/content/tutorials/guest-image-setup.md
+- src/content/tutorials/hello-world-app.md
+- src/content/tutorials/attestation-verification.md
+
+**Ansible Playbooks:**
+- ansible/playbooks/setup-guest-images.yml
+- ansible/playbooks/deploy-hello-world.yml
+- ansible/playbooks/verify-attestation.yml
+- ansible/playbooks/verify-deployment.yml
+
+### Files Modified
+
+- src/pages/tutorial/[...slug].astro (added First Application to sectionOrder)
+- src/pages/tutorial/index.astro (added First Application to sectionOrder)
+- src/components/TutorialSidebar.svelte (added First Application to sectionOrder)
+- e2e/tutorial-navigation-enhancements.spec.ts (updated for 25 tutorials)
+- e2e/user-journeys.spec.ts (updated tutorial sequence)
+
+### Deployment
+
+- ✅ https://eb28e930.dstack-info.pages.dev
+
+### Key Features
+
+**Guest OS Images:**
+- Yocto-based dstack OS images for CVMs
+- Components: Virtual firmware (OVMF.fd), Linux kernel, initramfs, rootfs
+- Tappd daemon for attestation and container management
+
+**Application Deployment:**
+- Docker Compose-based application definitions
+- Teepod CVM manager for QEMU+TDX launch
+- Encrypted secrets provisioning via KMS
+
+**TDX Attestation:**
+- Full measurement chain verification (MRTD through RTMR3)
+- Report data binding for challenge-response
+- Event log replay capability
+- Optional quote signature verification
+
+### Status
+
+- ✅ All tests passing (358 unit + 94 E2E)
+- ✅ Deployed to production
+- ✅ Tutorial navigation working correctly
+- ✅ Progress tracking updated for 25 tutorials
+
+---
+
 **End of Progress Document**
 
 This document is updated after every checkpoint approval to preserve context during conversation compression.
