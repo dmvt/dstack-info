@@ -9,8 +9,8 @@ import { extractHeadings } from '../../utils/markdown';
 export async function getStaticPaths() {
   const tutorials = await getCollection('tutorials');
 
-  // Define section order (tutorials flow: Host Setup -> Prerequisites -> dstack installation)
-  const sectionOrder = ['Host Setup', 'Prerequisites', 'dstack Installation'];
+  // Define section order (tutorials flow: Host Setup -> Prerequisites -> dstack Installation -> KMS -> Gateway)
+  const sectionOrder = ['Host Setup', 'Prerequisites', 'dstack Installation', 'KMS Deployment', 'Gateway Deployment'];
 
   // Sort tutorials by section, then numbered steps, then appendices
   const sortedTutorials = tutorials.sort((a, b) => {

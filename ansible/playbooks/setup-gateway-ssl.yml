@@ -1,0 +1,212 @@
+---
+# setup-gateway-ssl.yml
+# Phase 4.1: Set up SSL certificates for dstack gateway using Cloudflare DNS
+#
+# Prerequisites:
+#   - Cloudflare account managing your domain
+#   - Cloudflare API token with DNS:Edit permission
+#   - Domain with wildcard DNS pointing to TDX server
+#
+# Variables (set in group_vars/all.yml or via -e):
+#   - cf_api_token: Cloudflare API token
+#   - cf_zone_id: Cloudflare zone ID
+#   - cf_account_id: Cloudflare account ID (optional)
+#   - gateway_domain: Base domain for gateway (e.g., hosted.yourdomain.com)
+#   - admin_email: Email for Let's Encrypt notifications
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/setup-gateway-ssl.yml \
+#     -e "cf_api_token=your-token" \
+#     -e "cf_zone_id=your-zone-id" \
+#     -e "gateway_domain=hosted.yourdomain.com" \
+#     -e "admin_email=admin@yourdomain.com"
+
+- name: Set up Gateway SSL Certificates
+  hosts: dstack_servers
+  become: yes
+  vars:
+    cf_credentials_dir: /etc/dstack/cloudflare
+    certs_dir: /etc/dstack/certs
+    certbot_dir: /etc/dstack/certbot
+    dns_propagation_seconds: 60
+
+  tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - cf_api_token is defined and cf_api_token | length > 0
+          - cf_zone_id is defined and cf_zone_id | length > 0
+          - gateway_domain is defined and gateway_domain | length > 0
+          - admin_email is defined and admin_email | length > 0
+        fail_msg: "Required variables: cf_api_token, cf_zone_id, gateway_domain, admin_email"
+
+    - name: Create Cloudflare credentials directory
+      ansible.builtin.file:
+        path: "{{ cf_credentials_dir }}"
+        state: directory
+        mode: '0700'
+        owner: root
+        group: root
+
+    - name: Create certificate directory
+      ansible.builtin.file:
+        path: "{{ certs_dir }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Create certbot configuration directory
+      ansible.builtin.file:
+        path: "{{ certbot_dir }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Store Cloudflare environment credentials
+      ansible.builtin.copy:
+        content: |
+          # Cloudflare API credentials for dstack gateway
+          CF_API_TOKEN={{ cf_api_token }}
+          CF_ZONE_ID={{ cf_zone_id }}
+          CF_ACCOUNT_ID={{ cf_account_id | default('') }}
+        dest: "{{ cf_credentials_dir }}/credentials.env"
+        mode: '0600'
+        owner: root
+        group: root
+
+    - name: Store Cloudflare credentials for Certbot
+      ansible.builtin.copy:
+        content: |
+          # Cloudflare API credentials for Certbot
+          dns_cloudflare_api_token = {{ cf_api_token }}
+        dest: "{{ cf_credentials_dir }}/cloudflare.ini"
+        mode: '0600'
+        owner: root
+        group: root
+
+    - name: Install certbot and Cloudflare plugin
+      ansible.builtin.apt:
+        name:
+          - certbot
+          - python3-certbot-dns-cloudflare
+        state: present
+        update_cache: yes
+
+    - name: Check if certificate already exists
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/live/{{ gateway_domain }}/fullchain.pem"
+      register: existing_cert
+
+    - name: Request wildcard certificate
+      ansible.builtin.command:
+        cmd: >
+          certbot certonly
+          --dns-cloudflare
+          --dns-cloudflare-credentials {{ cf_credentials_dir }}/cloudflare.ini
+          --dns-cloudflare-propagation-seconds {{ dns_propagation_seconds }}
+          -d "*.{{ gateway_domain }}"
+          -d "{{ gateway_domain }}"
+          --agree-tos
+          --non-interactive
+          --email {{ admin_email }}
+      when: not existing_cert.stat.exists
+      register: certbot_result
+
+    - name: Display certbot result
+      ansible.builtin.debug:
+        var: certbot_result.stdout_lines
+      when: certbot_result is changed
+
+    - name: Copy certificate to dstack directory
+      ansible.builtin.copy:
+        src: "/etc/letsencrypt/live/{{ gateway_domain }}/fullchain.pem"
+        dest: "{{ certs_dir }}/fullchain.pem"
+        remote_src: yes
+        mode: '0644'
+        owner: root
+        group: root
+
+    - name: Copy private key to dstack directory
+      ansible.builtin.copy:
+        src: "/etc/letsencrypt/live/{{ gateway_domain }}/privkey.pem"
+        dest: "{{ certs_dir }}/privkey.pem"
+        remote_src: yes
+        mode: '0600'
+        owner: root
+        group: root
+
+    - name: Create certificate renewal hook directory
+      ansible.builtin.file:
+        path: /etc/letsencrypt/renewal-hooks/deploy
+        state: directory
+        mode: '0755'
+
+    - name: Create certificate renewal hook
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Copy renewed certificates to dstack directory
+          cp /etc/letsencrypt/live/{{ gateway_domain }}/fullchain.pem {{ certs_dir }}/
+          cp /etc/letsencrypt/live/{{ gateway_domain }}/privkey.pem {{ certs_dir }}/
+          chmod 600 {{ certs_dir }}/privkey.pem
+          chmod 644 {{ certs_dir }}/fullchain.pem
+
+          # Reload gateway service if running
+          systemctl is-active --quiet dstack-gateway && systemctl reload dstack-gateway
+        dest: /etc/letsencrypt/renewal-hooks/deploy/dstack-gateway.sh
+        mode: '0755'
+
+    - name: Create certbot configuration
+      ansible.builtin.copy:
+        content: |
+          # dstack Gateway Certbot Configuration
+
+          [acme]
+          url = "https://acme-v02.api.letsencrypt.org/directory"
+          email = "{{ admin_email }}"
+
+          [cloudflare]
+          api_token_env = "CF_API_TOKEN"
+          zone_id_env = "CF_ZONE_ID"
+
+          [domain]
+          base = "{{ gateway_domain }}"
+          wildcard = true
+
+          [output]
+          cert_dir = "{{ certs_dir }}"
+          cert_file = "fullchain.pem"
+          key_file = "privkey.pem"
+        dest: "{{ certbot_dir }}/certbot.toml"
+        mode: '0644'
+
+    - name: Test certificate renewal (dry-run)
+      ansible.builtin.command:
+        cmd: certbot renew --dry-run
+      register: renewal_test
+      changed_when: false
+
+    - name: Display renewal test result
+      ansible.builtin.debug:
+        msg: "Certificate renewal test: {{ 'PASSED' if renewal_test.rc == 0 else 'FAILED' }}"
+
+    - name: Verify certificate validity
+      ansible.builtin.command:
+        cmd: openssl x509 -in {{ certs_dir }}/fullchain.pem -noout -enddate
+      register: cert_expiry
+      changed_when: false
+
+    - name: Display certificate expiry
+      ansible.builtin.debug:
+        msg: "Certificate {{ cert_expiry.stdout }}"
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg:
+          - "Gateway SSL setup complete!"
+          - "Credentials: {{ cf_credentials_dir }}/cloudflare.ini"
+          - "Certificate: {{ certs_dir }}/fullchain.pem"
+          - "Private Key: {{ certs_dir }}/privkey.pem"
+          - "Domain: *.{{ gateway_domain }}"

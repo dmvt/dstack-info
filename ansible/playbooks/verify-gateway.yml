@@ -1,0 +1,240 @@
+---
+# verify-gateway.yml
+# Phase 4: Verify dstack gateway deployment
+#
+# Prerequisites:
+#   - Gateway SSL setup (Phase 4.1)
+#   - Gateway build and configuration (Phase 4.2)
+#   - Gateway service setup (Phase 4.3)
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/verify-gateway.yml
+
+- name: Verify dstack Gateway Deployment
+  hosts: dstack_servers
+  become: yes
+  vars:
+    gateway_config_dir: /etc/dstack/gateway
+    certs_dir: /etc/dstack/certs
+    cf_credentials_dir: /etc/dstack/cloudflare
+    wireguard_interface: "dgw"
+
+  tasks:
+    - name: "=== Phase 4.1: SSL Certificate Verification ==="
+      ansible.builtin.debug:
+        msg: "Checking SSL certificates..."
+
+    - name: Check Cloudflare credentials exist
+      ansible.builtin.stat:
+        path: "{{ cf_credentials_dir }}/cloudflare.ini"
+      register: cf_creds
+
+    - name: Verify Cloudflare credentials
+      ansible.builtin.assert:
+        that: cf_creds.stat.exists
+        fail_msg: "Cloudflare credentials not found. Run setup-gateway-ssl.yml"
+        success_msg: "✓ Cloudflare credentials exist"
+
+    - name: Check SSL certificate exists
+      ansible.builtin.stat:
+        path: "{{ certs_dir }}/fullchain.pem"
+      register: ssl_cert
+
+    - name: Verify SSL certificate
+      ansible.builtin.assert:
+        that: ssl_cert.stat.exists
+        fail_msg: "SSL certificate not found. Run setup-gateway-ssl.yml"
+        success_msg: "✓ SSL certificate exists"
+
+    - name: Check SSL private key exists
+      ansible.builtin.stat:
+        path: "{{ certs_dir }}/privkey.pem"
+      register: ssl_key
+
+    - name: Verify SSL private key
+      ansible.builtin.assert:
+        that: ssl_key.stat.exists
+        fail_msg: "SSL private key not found. Run setup-gateway-ssl.yml"
+        success_msg: "✓ SSL private key exists"
+
+    - name: Check certificate validity
+      ansible.builtin.command:
+        cmd: openssl x509 -in {{ certs_dir }}/fullchain.pem -noout -checkend 86400
+      register: cert_valid
+      changed_when: false
+      failed_when: false
+
+    - name: Verify certificate not expiring soon
+      ansible.builtin.assert:
+        that: cert_valid.rc == 0
+        fail_msg: "Certificate expires within 24 hours! Run certbot renew"
+        success_msg: "✓ Certificate valid for at least 24 hours"
+
+    - name: Get certificate expiry date
+      ansible.builtin.command:
+        cmd: openssl x509 -in {{ certs_dir }}/fullchain.pem -noout -enddate
+      register: cert_expiry
+      changed_when: false
+
+    - name: Display certificate expiry
+      ansible.builtin.debug:
+        msg: "Certificate {{ cert_expiry.stdout }}"
+
+    - name: "=== Phase 4.2: Gateway Build Verification ==="
+      ansible.builtin.debug:
+        msg: "Checking gateway build..."
+
+    - name: Check gateway binary exists
+      ansible.builtin.stat:
+        path: /usr/local/bin/dstack-gateway
+      register: gateway_bin
+
+    - name: Verify gateway binary
+      ansible.builtin.assert:
+        that: gateway_bin.stat.exists
+        fail_msg: "Gateway binary not found. Run build-gateway.yml"
+        success_msg: "✓ Gateway binary installed"
+
+    - name: Check gateway configuration exists
+      ansible.builtin.stat:
+        path: "{{ gateway_config_dir }}/gateway.toml"
+      register: gateway_conf
+
+    - name: Verify gateway configuration
+      ansible.builtin.assert:
+        that: gateway_conf.stat.exists
+        fail_msg: "Gateway configuration not found. Run build-gateway.yml"
+        success_msg: "✓ Gateway configuration exists"
+
+    - name: Check WireGuard interface
+      ansible.builtin.command:
+        cmd: ip link show {{ wireguard_interface }}
+      register: wg_interface
+      changed_when: false
+      failed_when: false
+
+    - name: Verify WireGuard interface
+      ansible.builtin.assert:
+        that: wg_interface.rc == 0
+        fail_msg: "WireGuard interface {{ wireguard_interface }} not found. Run build-gateway.yml"
+        success_msg: "✓ WireGuard interface {{ wireguard_interface }} exists"
+
+    - name: Get WireGuard status
+      ansible.builtin.command:
+        cmd: wg show {{ wireguard_interface }}
+      register: wg_status
+      changed_when: false
+      failed_when: false
+
+    - name: Display WireGuard status
+      ansible.builtin.debug:
+        msg: "{{ wg_status.stdout_lines }}"
+      when: wg_status.rc == 0
+
+    - name: "=== Phase 4.3: Gateway Service Verification ==="
+      ansible.builtin.debug:
+        msg: "Checking gateway service..."
+
+    - name: Check gateway service exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/dstack-gateway.service
+      register: gateway_svc
+
+    - name: Verify gateway service file
+      ansible.builtin.assert:
+        that: gateway_svc.stat.exists
+        fail_msg: "Gateway service not found. Run setup-gateway-service.yml"
+        success_msg: "✓ Gateway service file exists"
+
+    - name: Check gateway service status
+      ansible.builtin.command:
+        cmd: systemctl is-active dstack-gateway
+      register: gateway_active
+      changed_when: false
+      failed_when: false
+
+    - name: Verify gateway service running
+      ansible.builtin.assert:
+        that: gateway_active.stdout == 'active'
+        fail_msg: "Gateway service not running. Run: sudo systemctl start dstack-gateway"
+        success_msg: "✓ Gateway service running"
+
+    - name: Check gateway enabled for boot
+      ansible.builtin.command:
+        cmd: systemctl is-enabled dstack-gateway
+      register: gateway_enabled
+      changed_when: false
+      failed_when: false
+
+    - name: Verify gateway enabled
+      ansible.builtin.assert:
+        that: gateway_enabled.stdout == 'enabled'
+        fail_msg: "Gateway not enabled for boot. Run: sudo systemctl enable dstack-gateway"
+        success_msg: "✓ Gateway enabled for boot"
+
+    - name: Check HTTPS port listening
+      ansible.builtin.wait_for:
+        port: 443
+        host: 0.0.0.0
+        timeout: 5
+      register: port_443
+      failed_when: false
+
+    - name: Verify HTTPS port
+      ansible.builtin.assert:
+        that: port_443 is not failed
+        fail_msg: "HTTPS port 443 not listening"
+        success_msg: "✓ HTTPS port 443 listening"
+
+    - name: Check HTTP port listening
+      ansible.builtin.wait_for:
+        port: 80
+        host: 0.0.0.0
+        timeout: 5
+      register: port_80
+      failed_when: false
+
+    - name: Verify HTTP port
+      ansible.builtin.assert:
+        that: port_80 is not failed
+        fail_msg: "HTTP port 80 not listening"
+        success_msg: "✓ HTTP port 80 listening"
+
+    - name: Check certificate renewal timer
+      ansible.builtin.command:
+        cmd: systemctl is-active dstack-certbot-renew.timer
+      register: renewal_timer
+      changed_when: false
+      failed_when: false
+
+    - name: Verify renewal timer (non-fatal)
+      ansible.builtin.debug:
+        msg: "{{ '✓ Certificate renewal timer active' if renewal_timer.stdout == 'active' else '⚠ Certificate renewal timer not active' }}"
+
+    - name: "=== Gateway Verification Summary ==="
+      ansible.builtin.debug:
+        msg:
+          - "========================================="
+          - "Phase 4 Gateway Verification Complete!"
+          - "========================================="
+          - ""
+          - "SSL Certificates:"
+          - "  - Cloudflare credentials: {{ '✓' if cf_creds.stat.exists else '✗' }}"
+          - "  - SSL certificate: {{ '✓' if ssl_cert.stat.exists else '✗' }}"
+          - "  - SSL private key: {{ '✓' if ssl_key.stat.exists else '✗' }}"
+          - "  - Certificate valid: {{ '✓' if cert_valid.rc == 0 else '✗' }}"
+          - ""
+          - "Gateway Build:"
+          - "  - Gateway binary: {{ '✓' if gateway_bin.stat.exists else '✗' }}"
+          - "  - Gateway config: {{ '✓' if gateway_conf.stat.exists else '✗' }}"
+          - "  - WireGuard interface: {{ '✓' if wg_interface.rc == 0 else '✗' }}"
+          - ""
+          - "Gateway Service:"
+          - "  - Service file: {{ '✓' if gateway_svc.stat.exists else '✗' }}"
+          - "  - Service running: {{ '✓' if gateway_active.stdout == 'active' else '✗' }}"
+          - "  - Service enabled: {{ '✓' if gateway_enabled.stdout == 'enabled' else '✗' }}"
+          - "  - HTTPS (443): {{ '✓' if port_443 is not failed else '✗' }}"
+          - "  - HTTP (80): {{ '✓' if port_80 is not failed else '✗' }}"
+          - "  - Renewal timer: {{ '✓' if renewal_timer.stdout == 'active' else '⚠' }}"
+          - ""
+          - "{{ cert_expiry.stdout }}"

@@ -33,7 +33,11 @@ ansible/
 │   ├── bootstrap-kms.yml           # Bootstrap KMS with root keys (Phase 3.4)
 │   ├── setup-kms-services.yml      # Setup KMS systemd services (Phase 3.5)
 │   ├── verify-kms-services.yml     # Verify KMS services running (Phase 3.5)
-│   └── verify-kms-contracts.yml    # Verify KMS contracts deployed (Phase 3.2)
+│   ├── verify-kms-contracts.yml    # Verify KMS contracts deployed (Phase 3.2)
+│   ├── setup-gateway-ssl.yml       # Setup SSL certificates (Phase 4.1)
+│   ├── build-gateway.yml           # Build and configure gateway (Phase 4.2)
+│   ├── setup-gateway-service.yml   # Setup gateway systemd service (Phase 4.3)
+│   └── verify-gateway.yml          # Verify gateway deployment (Phase 4)
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/
@@ -937,6 +941,241 @@ ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-contracts.yml \
 
 **Exit codes:**
 - `0` - Contracts verified successfully
+- `1` - Verification failed
+
+### Phase 4.1: Setup Gateway SSL
+
+Configure SSL certificates for dstack gateway using Cloudflare DNS:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/setup-gateway-ssl.yml
+
+# Run setup (requires credentials)
+ansible-playbook playbooks/setup-gateway-ssl.yml -i inventory/hosts.yml \
+  -e "cf_api_token=YOUR_CLOUDFLARE_TOKEN" \
+  -e "cf_zone_id=YOUR_ZONE_ID" \
+  -e "gateway_domain=hosted.yourdomain.com" \
+  -e "admin_email=admin@yourdomain.com"
+```
+
+**Expected output:**
+- ✓ Cloudflare credentials stored
+- ✓ Certbot installed
+- ✓ Wildcard certificate requested
+- ✓ Certificate copied to /etc/dstack/certs/
+- ✓ Renewal hook configured
+- ✓ Exit code 0
+
+**Required variables:**
+- `cf_api_token` - Cloudflare API token with DNS:Edit permission
+- `cf_zone_id` - Cloudflare zone ID for your domain
+- `gateway_domain` - Base domain for gateway (e.g., hosted.yourdomain.com)
+- `admin_email` - Email for Let's Encrypt notifications
+
+**If setup fails:**
+- Verify Cloudflare API token has DNS:Edit permission
+- Check domain is managed by Cloudflare
+- Wait for DNS propagation if just configured
+- See [Gateway SSL Setup Tutorial](https://dstack.info/tutorial/gateway-ssl-setup)
+
+### Phase 4.2: Build Gateway
+
+Build dstack gateway from source and configure it:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/build-gateway.yml
+
+# Run build
+ansible-playbook playbooks/build-gateway.yml -i inventory/hosts.yml \
+  -e "gateway_domain=hosted.yourdomain.com"
+```
+
+**Expected output:**
+- ✓ dstack-gateway built
+- ✓ Binary installed to /usr/local/bin
+- ✓ WireGuard interface configured
+- ✓ Gateway configuration created
+- ✓ Exit code 0
+
+**Required variables:**
+- `gateway_domain` - Base domain for gateway routing
+
+**Optional variables:**
+- `kms_url` - KMS RPC endpoint (default: http://127.0.0.1:9100)
+- `wireguard_ip` - Gateway WireGuard IP (default: 10.0.3.1)
+- `wireguard_port` - WireGuard listen port (default: 9182)
+- `gateway_workers` - Number of worker threads (default: 0 = auto)
+- `gateway_log_level` - Log level (default: info)
+
+**If build fails:**
+- Verify Rust toolchain is installed (Phase 2.2)
+- Check dstack repository is cloned (Phase 2.3)
+- Ensure sufficient disk space
+- See [Gateway Build & Configuration Tutorial](https://dstack.info/tutorial/gateway-build-configuration)
+
+### Phase 4.3: Setup Gateway Service
+
+Configure gateway to run as a systemd service:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/setup-gateway-service.yml
+
+# Run setup
+ansible-playbook playbooks/setup-gateway-service.yml -i inventory/hosts.yml
+```
+
+**Expected output:**
+- ✓ Gateway systemd service created
+- ✓ Service enabled for boot
+- ✓ Service started
+- ✓ HTTPS port 443 listening
+- ✓ HTTP port 80 listening
+- ✓ Certificate renewal timer active
+- ✓ Exit code 0
+
+**If setup fails:**
+- Verify gateway binary exists
+- Check gateway configuration is valid
+- Ensure ports 80/443 are not in use
+- Check service logs: `journalctl -u dstack-gateway -n 50`
+- See [Gateway Service Setup Tutorial](https://dstack.info/tutorial/gateway-service-setup)
+
+### Phase 4: Verify Gateway Deployment
+
+Verify complete gateway deployment:
+
+```bash
+# Syntax check
+ansible-playbook --syntax-check playbooks/verify-gateway.yml
+
+# Run verification
+ansible-playbook playbooks/verify-gateway.yml -i inventory/hosts.yml
+```
+
+**Expected output:**
+- ✓ SSL certificates valid
+- ✓ Gateway binary installed
+- ✓ WireGuard interface running
+- ✓ Gateway service running
+- ✓ HTTPS/HTTP ports listening
+- ✓ Certificate renewal configured
+- ✓ Exit code 0
+
+**If verification fails:**
+- Run individual setup playbooks for missing components
+- Check service logs for errors
+- Verify SSL certificates are valid
+- See Phase 4 tutorials for troubleshooting
+
+### setup-gateway-ssl.yml
+
+**Purpose:** Configure SSL certificates for dstack gateway using Cloudflare DNS
+
+**What it does:**
+- Creates Cloudflare credentials directory
+- Stores API credentials securely
+- Installs certbot and Cloudflare plugin
+- Requests wildcard certificate from Let's Encrypt
+- Copies certificates to dstack directory
+- Sets up automatic renewal hooks
+
+**Required variables:**
+- `cf_api_token` - Cloudflare API token
+- `cf_zone_id` - Cloudflare zone ID
+- `gateway_domain` - Base domain for gateway
+- `admin_email` - Email for Let's Encrypt notifications
+
+**Output:**
+- Credentials: /etc/dstack/cloudflare/cloudflare.ini
+- Certificate: /etc/dstack/certs/fullchain.pem
+- Private key: /etc/dstack/certs/privkey.pem
+
+**Usage:** See [Gateway SSL Setup Tutorial](https://dstack.info/tutorial/gateway-ssl-setup)
+
+**Exit codes:**
+- `0` - SSL setup completed successfully
+- `1` - Setup failed
+
+### build-gateway.yml
+
+**Purpose:** Build dstack gateway from source and configure it
+
+**What it does:**
+- Builds dstack-gateway binary
+- Builds dstack-certbot binary (if available)
+- Installs binaries to /usr/local/bin
+- Generates WireGuard keys
+- Creates WireGuard interface
+- Creates gateway configuration file
+
+**Required variables:**
+- `gateway_domain` - Base domain for gateway routing
+
+**Optional variables:**
+- `kms_url` - KMS RPC endpoint (default: http://127.0.0.1:9100)
+- `wireguard_ip` - Gateway WireGuard IP (default: 10.0.3.1)
+- `wireguard_port` - WireGuard listen port (default: 9182)
+- `wireguard_interface` - Interface name (default: dgw)
+- `gateway_workers` - Worker threads (default: 0 = auto)
+- `gateway_log_level` - Log level (default: info)
+
+**Output:**
+- Binary: /usr/local/bin/dstack-gateway
+- Config: /etc/dstack/gateway/gateway.toml
+- WireGuard: /etc/wireguard/dgw.conf
+
+**Usage:** See [Gateway Build & Configuration Tutorial](https://dstack.info/tutorial/gateway-build-configuration)
+
+**Exit codes:**
+- `0` - Build and configuration completed successfully
+- `1` - Build or configuration failed
+
+### setup-gateway-service.yml
+
+**Purpose:** Set up dstack gateway as a systemd service
+
+**What it does:**
+- Creates gateway systemd service file
+- Creates certificate renewal service
+- Creates certificate renewal timer
+- Enables and starts gateway service
+- Enables certificate renewal timer
+- Verifies service is running
+
+**Output:**
+- Service: /etc/systemd/system/dstack-gateway.service
+- Renewal service: /etc/systemd/system/dstack-certbot-renew.service
+- Renewal timer: /etc/systemd/system/dstack-certbot-renew.timer
+
+**Ports:**
+- 443 - HTTPS traffic
+- 80 - HTTP redirect
+- 9070 - Internal RPC
+- 9182 - WireGuard (UDP)
+
+**Usage:** See [Gateway Service Setup Tutorial](https://dstack.info/tutorial/gateway-service-setup)
+
+**Exit codes:**
+- `0` - Service setup completed successfully
+- `1` - Setup failed
+
+### verify-gateway.yml
+
+**Purpose:** Verify complete gateway deployment
+
+**What it checks:**
+- Phase 4.1: SSL certificates (credentials, cert, key, validity)
+- Phase 4.2: Gateway build (binary, config, WireGuard)
+- Phase 4.3: Gateway service (service file, running, ports)
+- Certificate renewal timer status
+
+**Usage:** See Phase 4 tutorials for troubleshooting specific issues
+
+**Exit codes:**
+- `0` - Gateway deployment verified successfully
 - `1` - Verification failed
 
 ## Troubleshooting

@@ -1,0 +1,261 @@
+---
+# build-gateway.yml
+# Phase 4.2: Build dstack gateway from source and configure it
+#
+# Prerequisites:
+#   - Rust toolchain installed (Phase 2.2)
+#   - dstack repository cloned (Phase 2.3)
+#   - SSL certificates configured (Phase 4.1)
+#
+# Variables (set in group_vars/all.yml or via -e):
+#   - dstack_repo_path: Path to dstack repository (default: /root/dstack)
+#   - gateway_domain: Base domain for gateway
+#   - kms_url: KMS RPC endpoint (default: http://127.0.0.1:9100)
+#   - wireguard_ip: Gateway WireGuard IP (default: 10.0.3.1)
+#   - wireguard_port: WireGuard listen port (default: 9182)
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/build-gateway.yml \
+#     -e "gateway_domain=hosted.yourdomain.com"
+
+- name: Build and Configure dstack Gateway
+  hosts: dstack_servers
+  become: yes
+  vars:
+    dstack_repo_path: /root/dstack
+    gateway_config_dir: /etc/dstack/gateway
+    certs_dir: /etc/dstack/certs
+    wireguard_dir: /etc/dstack/wireguard
+    kms_url: "http://127.0.0.1:9100"
+    wireguard_ip: "10.0.3.1"
+    wireguard_subnet: "10.0.3.0/24"
+    wireguard_port: 9182
+    wireguard_interface: "dgw"
+    gateway_workers: 0
+    gateway_log_level: "info"
+
+  tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - gateway_domain is defined and gateway_domain | length > 0
+        fail_msg: "Required variable: gateway_domain"
+
+    - name: Check dstack repository exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}/Cargo.toml"
+      register: dstack_repo
+
+    - name: Fail if dstack repository not found
+      ansible.builtin.fail:
+        msg: "dstack repository not found at {{ dstack_repo_path }}. Run Phase 2.3 first."
+      when: not dstack_repo.stat.exists
+
+    - name: Build dstack-gateway
+      ansible.builtin.shell:
+        cmd: |
+          source $HOME/.cargo/env
+          cargo build --release -p dstack-gateway
+        chdir: "{{ dstack_repo_path }}"
+        executable: /bin/bash
+      register: gateway_build
+      changed_when: "'Compiling' in gateway_build.stderr"
+
+    - name: Display gateway build result
+      ansible.builtin.debug:
+        msg: "Gateway build completed in {{ gateway_build.delta | default('unknown') }}"
+
+    - name: Build dstack-certbot
+      ansible.builtin.shell:
+        cmd: |
+          source $HOME/.cargo/env
+          cargo build --release -p dstack-certbot
+        chdir: "{{ dstack_repo_path }}"
+        executable: /bin/bash
+      register: certbot_build
+      changed_when: "'Compiling' in certbot_build.stderr"
+      failed_when: false  # certbot may not exist in all versions
+
+    - name: Install gateway binary
+      ansible.builtin.copy:
+        src: "{{ dstack_repo_path }}/target/release/dstack-gateway"
+        dest: /usr/local/bin/dstack-gateway
+        remote_src: yes
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Install certbot binary (if built)
+      ansible.builtin.copy:
+        src: "{{ dstack_repo_path }}/target/release/dstack-certbot"
+        dest: /usr/local/bin/dstack-certbot
+        remote_src: yes
+        mode: '0755'
+        owner: root
+        group: root
+      when: certbot_build.rc == 0
+      failed_when: false
+
+    - name: Verify gateway installation
+      ansible.builtin.command:
+        cmd: /usr/local/bin/dstack-gateway --version
+      register: gateway_version
+      changed_when: false
+      failed_when: false
+
+    - name: Display gateway version
+      ansible.builtin.debug:
+        msg: "Gateway version: {{ gateway_version.stdout | default('unable to determine') }}"
+
+    - name: Install WireGuard tools
+      ansible.builtin.apt:
+        name: wireguard-tools
+        state: present
+        update_cache: yes
+
+    - name: Create WireGuard keys directory
+      ansible.builtin.file:
+        path: "{{ wireguard_dir }}"
+        state: directory
+        mode: '0700'
+        owner: root
+        group: root
+
+    - name: Check if WireGuard keys exist
+      ansible.builtin.stat:
+        path: "{{ wireguard_dir }}/privatekey"
+      register: wg_keys
+
+    - name: Generate WireGuard keys
+      ansible.builtin.shell:
+        cmd: wg genkey | tee privatekey | wg pubkey > publickey
+        chdir: "{{ wireguard_dir }}"
+      when: not wg_keys.stat.exists
+
+    - name: Secure WireGuard private key
+      ansible.builtin.file:
+        path: "{{ wireguard_dir }}/privatekey"
+        mode: '0600'
+        owner: root
+        group: root
+
+    - name: Read WireGuard private key
+      ansible.builtin.slurp:
+        src: "{{ wireguard_dir }}/privatekey"
+      register: wg_private_key
+
+    - name: Create WireGuard interface configuration
+      ansible.builtin.copy:
+        content: |
+          [Interface]
+          PrivateKey = {{ wg_private_key.content | b64decode | trim }}
+          Address = {{ wireguard_ip }}/24
+          ListenPort = {{ wireguard_port }}
+        dest: "/etc/wireguard/{{ wireguard_interface }}.conf"
+        mode: '0600'
+        owner: root
+        group: root
+
+    - name: Check if WireGuard interface is up
+      ansible.builtin.command:
+        cmd: ip link show {{ wireguard_interface }}
+      register: wg_interface
+      changed_when: false
+      failed_when: false
+
+    - name: Start WireGuard interface
+      ansible.builtin.command:
+        cmd: wg-quick up {{ wireguard_interface }}
+      when: wg_interface.rc != 0
+
+    - name: Enable WireGuard on boot
+      ansible.builtin.systemd:
+        name: "wg-quick@{{ wireguard_interface }}"
+        enabled: yes
+
+    - name: Create gateway configuration directory
+      ansible.builtin.file:
+        path: "{{ gateway_config_dir }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Create gateway configuration file
+      ansible.builtin.copy:
+        content: |
+          # dstack Gateway Configuration
+          # Generated by Ansible
+
+          [server]
+          public_domain = "{{ gateway_domain }}"
+          http_port = 80
+          https_port = 443
+          rpc_port = 9070
+          workers = {{ gateway_workers }}
+          log_level = "{{ gateway_log_level }}"
+
+          [tls]
+          cert_path = "{{ certs_dir }}/fullchain.pem"
+          key_path = "{{ certs_dir }}/privkey.pem"
+
+          [wireguard]
+          interface = "{{ wireguard_interface }}"
+          listen_port = {{ wireguard_port }}
+          ip = "{{ wireguard_ip }}"
+          subnet = "{{ wireguard_subnet }}"
+
+          [kms]
+          url = "{{ kms_url }}"
+          mtls = false
+
+          [routing]
+          default_http_port = 80
+          default_https_port = 443
+          enable_grpc = true
+
+          [limits]
+          max_connections_per_cvm = 1000
+          connection_timeout = 30
+          request_timeout = 300
+        dest: "{{ gateway_config_dir }}/gateway.toml"
+        mode: '0644'
+        owner: root
+        group: root
+
+    - name: Verify certificates exist
+      ansible.builtin.stat:
+        path: "{{ certs_dir }}/fullchain.pem"
+      register: cert_file
+
+    - name: Warn if certificates missing
+      ansible.builtin.debug:
+        msg: "WARNING: SSL certificates not found at {{ certs_dir }}. Run setup-gateway-ssl.yml first."
+      when: not cert_file.stat.exists
+
+    - name: Check port availability
+      ansible.builtin.shell:
+        cmd: "ss -tlnp | grep -E ':{{ item }}' || true"
+      loop:
+        - 80
+        - 443
+        - 9070
+      register: port_check
+      changed_when: false
+
+    - name: Display port status
+      ansible.builtin.debug:
+        msg: "Port {{ item.item }}: {{ 'IN USE' if item.stdout else 'AVAILABLE' }}"
+      loop: "{{ port_check.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg:
+          - "Gateway build and configuration complete!"
+          - "Binary: /usr/local/bin/dstack-gateway"
+          - "Config: {{ gateway_config_dir }}/gateway.toml"
+          - "Domain: {{ gateway_domain }}"
+          - "WireGuard: {{ wireguard_interface }} ({{ wireguard_ip }})"
+          - "Certificates: {{ cert_file.stat.exists | ternary('Found', 'MISSING - run setup-gateway-ssl.yml') }}"

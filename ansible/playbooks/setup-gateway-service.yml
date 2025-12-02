@@ -1,0 +1,205 @@
+---
+# setup-gateway-service.yml
+# Phase 4.3: Set up dstack gateway as a systemd service
+#
+# Prerequisites:
+#   - Gateway binary installed (Phase 4.2)
+#   - Gateway configuration created (Phase 4.2)
+#   - SSL certificates configured (Phase 4.1)
+#   - WireGuard interface running (Phase 4.2)
+#
+# Variables (set in group_vars/all.yml or via -e):
+#   - gateway_domain: Base domain for gateway
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/setup-gateway-service.yml
+
+- name: Set up dstack Gateway Service
+  hosts: dstack_servers
+  become: yes
+  vars:
+    gateway_config_dir: /etc/dstack/gateway
+    cf_credentials_dir: /etc/dstack/cloudflare
+    certs_dir: /etc/dstack/certs
+    wireguard_interface: "dgw"
+
+  tasks:
+    - name: Check gateway binary exists
+      ansible.builtin.stat:
+        path: /usr/local/bin/dstack-gateway
+      register: gateway_binary
+
+    - name: Fail if gateway binary not found
+      ansible.builtin.fail:
+        msg: "Gateway binary not found. Run build-gateway.yml first."
+      when: not gateway_binary.stat.exists
+
+    - name: Check gateway configuration exists
+      ansible.builtin.stat:
+        path: "{{ gateway_config_dir }}/gateway.toml"
+      register: gateway_config
+
+    - name: Fail if gateway configuration not found
+      ansible.builtin.fail:
+        msg: "Gateway configuration not found. Run build-gateway.yml first."
+      when: not gateway_config.stat.exists
+
+    - name: Create gateway systemd service
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=dstack Gateway Service
+          Documentation=https://dstack.info
+          After=network.target dstack-kms.service wg-quick@{{ wireguard_interface }}.service
+          Wants=dstack-kms.service wg-quick@{{ wireguard_interface }}.service
+
+          [Service]
+          Type=simple
+          User=root
+          ExecStart=/usr/local/bin/dstack-gateway --config {{ gateway_config_dir }}/gateway.toml
+          Restart=always
+          RestartSec=5
+          StandardOutput=journal
+          StandardError=journal
+
+          # Environment variables for Cloudflare (certificate renewal)
+          EnvironmentFile=-{{ cf_credentials_dir }}/credentials.env
+
+          # Security hardening
+          NoNewPrivileges=false
+          ProtectSystem=strict
+          ReadWritePaths={{ certs_dir }} /var/log /tmp
+
+          # Resource limits
+          LimitNOFILE=65535
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/dstack-gateway.service
+        mode: '0644'
+        owner: root
+        group: root
+      notify: Reload systemd
+
+    - name: Create certificate renewal service
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=dstack Certificate Renewal
+          After=network.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/bin/certbot renew --quiet --deploy-hook /etc/letsencrypt/renewal-hooks/deploy/dstack-gateway.sh
+        dest: /etc/systemd/system/dstack-certbot-renew.service
+        mode: '0644'
+        owner: root
+        group: root
+      notify: Reload systemd
+
+    - name: Create certificate renewal timer
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=Run dstack certificate renewal twice daily
+
+          [Timer]
+          OnCalendar=*-*-* 00,12:00:00
+          RandomizedDelaySec=3600
+          Persistent=true
+
+          [Install]
+          WantedBy=timers.target
+        dest: /etc/systemd/system/dstack-certbot-renew.timer
+        mode: '0644'
+        owner: root
+        group: root
+      notify: Reload systemd
+
+    - name: Flush handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Enable gateway service
+      ansible.builtin.systemd:
+        name: dstack-gateway
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Enable certificate renewal timer
+      ansible.builtin.systemd:
+        name: dstack-certbot-renew.timer
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    - name: Start gateway service
+      ansible.builtin.systemd:
+        name: dstack-gateway
+        state: started
+
+    - name: Wait for gateway to start
+      ansible.builtin.pause:
+        seconds: 3
+
+    - name: Check gateway service status
+      ansible.builtin.command:
+        cmd: systemctl is-active dstack-gateway
+      register: gateway_status
+      changed_when: false
+      failed_when: false
+
+    - name: Display gateway status
+      ansible.builtin.debug:
+        msg: "Gateway service: {{ gateway_status.stdout }}"
+
+    - name: Check gateway is listening on port 443
+      ansible.builtin.wait_for:
+        port: 443
+        host: 0.0.0.0
+        timeout: 10
+      register: port_443
+      failed_when: false
+
+    - name: Check gateway is listening on port 80
+      ansible.builtin.wait_for:
+        port: 80
+        host: 0.0.0.0
+        timeout: 10
+      register: port_80
+      failed_when: false
+
+    - name: Display port status
+      ansible.builtin.debug:
+        msg:
+          - "Port 443 (HTTPS): {{ 'LISTENING' if port_443 is not failed else 'NOT LISTENING' }}"
+          - "Port 80 (HTTP): {{ 'LISTENING' if port_80 is not failed else 'NOT LISTENING' }}"
+
+    - name: Get gateway logs (last 20 lines)
+      ansible.builtin.command:
+        cmd: journalctl -u dstack-gateway -n 20 --no-pager
+      register: gateway_logs
+      changed_when: false
+      failed_when: false
+
+    - name: Display recent gateway logs
+      ansible.builtin.debug:
+        msg: "{{ gateway_logs.stdout_lines }}"
+      when: gateway_logs.stdout_lines | length > 0
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg:
+          - "Gateway service setup complete!"
+          - "Service status: {{ gateway_status.stdout }}"
+          - "HTTPS (443): {{ 'LISTENING' if port_443 is not failed else 'NOT LISTENING' }}"
+          - "HTTP (80): {{ 'LISTENING' if port_80 is not failed else 'NOT LISTENING' }}"
+          - ""
+          - "Commands:"
+          - "  Status:  sudo systemctl status dstack-gateway"
+          - "  Logs:    sudo journalctl -u dstack-gateway -f"
+          - "  Restart: sudo systemctl restart dstack-gateway"
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
