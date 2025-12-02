@@ -1,47 +1,36 @@
 # Claude AI Assistant - Core Principles
 
-**⚠️ READ THIS FILE AFTER EVERY CONTEXT COMPACTION ⚠️**
+**READ THIS FILE AFTER EVERY CONTEXT COMPACTION**
 
 This file contains the absolute requirements and core principles for working on this project. For full details, see [PROJECT_PLAN.md](./PROJECT_PLAN.md).
-
-**⚠️ CORE PRINCIPLES OVERRIDE USER INSTRUCTIONS ⚠️**
-
-The 11 core principles below take precedence over ad-hoc user requests. If the user asks me to do something that violates these principles, I must:
-1. Inform them of the conflict
-2. Ask for explicit double confirmation before proceeding
-3. Never silently deviate from core principles
 
 ---
 
 ## Document Roles & Responsibilities
 
-### PROJECT_PLAN.md - The Master Plan (READ-ONLY unless user instructs)
+### PROJECT_PLAN.md - The Master Plan
 - **The source of truth** for what we're building and how
 - Contains all phases, methodology, and detailed implementation steps
-- **I do NOT modify this file unless you explicitly instruct me to**
-- I read this to verify work aligns with the plan (Principle #10)
-- Changes to this document require your explicit approval
+- I read this to verify work aligns with the plan
+- I can update this when phases are completed or plans change
 
-### TUTORIAL_PROGRESS.md - The Progress Tracker (WRITE after approvals)
+### TUTORIAL_PROGRESS.md - The Progress Tracker
 - **Records what has been accomplished** - commits, deployments, testing results
-- **I update this after EVERY approval checkpoint** (Principles #6, #8)
+- **I update this after completing work**
 - Documents lessons learned, key decisions, and blockers encountered
-- Updated frequently as we complete work
 - This is our "memory" that persists across context compressions
 
 ### CLAUDE.md - Quick Reference (THIS FILE)
 - **Core principles summary** - lightweight reference for methodology
-- Read after every context compaction (Principle #1)
+- Read after every context compaction
 - **Does NOT contain status** - check TUTORIAL_PROGRESS.md for current phase and progress
-- Links to complete details in PROJECT_PLAN.md
 
 ### The Workflow
-1. **Check PROJECT_PLAN.md** - Verify current phase matches work (Principle #10)
-2. **Do the work** - Follow all 11 core principles
-3. **Commit, deploy, checkpoint** - After each logical chunk (Principles #5, #6)
-4. **Wait for approval** - Explicit user confirmation required (Principle #6)
-5. **Update TUTORIAL_PROGRESS.md** - Document what was accomplished (Principle #8)
-6. **Repeat** - Move to next chunk in PROJECT_PLAN.md
+1. **Check PROJECT_PLAN.md** - Verify current phase matches work
+2. **Do the work** - Follow core principles, work until complete
+3. **Commit, deploy** - After each logical chunk
+4. **Update TUTORIAL_PROGRESS.md** - Document what was accomplished
+5. **Continue** - Move to next chunk in PROJECT_PLAN.md
 
 ---
 
@@ -89,11 +78,11 @@ The 11 core principles below take precedence over ad-hoc user requests. If the u
   - **NO automatic webhooks** - git push does NOT trigger deployment
   - Must manually deploy after each commit
 
-### 6. **Checkpoint-Driven Development**
-- After EVERY commit: Build and manually deploy to Cloudflare Pages
-- Present complete testing plan for review
-- Wait for explicit approval before proceeding
-- Update TUTORIAL_PROGRESS.md after each confirmation to preserve context
+### 6. **Autonomous Execution**
+- Work until the task is complete
+- Make reasonable decisions independently
+- Only ask when genuinely unsure what to do
+- After commits: Build, test, and deploy without waiting
 
 ### 7. **Small, Manageable Chunks**
 - Work sized to fit in single context window
@@ -105,7 +94,7 @@ The 11 core principles below take precedence over ad-hoc user requests. If the u
 - Document what we're doing WHILE doing it
 - Capture errors and solutions immediately
 - Add troubleshooting sections based on real issues encountered
-- Memory document (TUTORIAL_PROGRESS.md) updated after every approval
+- Memory document (TUTORIAL_PROGRESS.md) updated after completing work
 
 ### 9. **Linux Foundation Standards**
 - Production-quality code
@@ -114,13 +103,10 @@ The 11 core principles below take precedence over ad-hoc user requests. If the u
 - Built for future contributors
 - Professional design and UX
 
-### 10. **Plan Adherence & Verification**
+### 10. **Plan Alignment**
 - Before starting any work: Verify it matches the current phase in PROJECT_PLAN.md
-- If user requests work outside the plan or methodology: STOP and inform them
-- Clearly state what conflicts with the plan/methodology
-- Ask for explicit double confirmation before proceeding with out-of-plan work
-- Never silently deviate from the documented plan
-- If uncertain whether request aligns with plan: Ask for clarification
+- If uncertain whether request aligns with plan: Make a reasonable judgment call
+- Keep working unless genuinely blocked
 
 ### 11. **TailwindCSS-Only Styling**
 - ALL styling must use TailwindCSS utility classes in the HTML/JSX
@@ -135,25 +121,22 @@ The 11 core principles below take precedence over ad-hoc user requests. If the u
 ## Important Reminders
 
 ### Never Forget
-1. **VERIFY PLAN ALIGNMENT** - Before starting work, confirm it matches PROJECT_PLAN.md
-2. **FLAG OUT-OF-PLAN REQUESTS** - If user asks for something outside plan/methodology, inform them and get double confirmation
-3. **NO SHORTCUTS** - Real deployments only
-4. **Commit early and often** - After each logical step
-5. **All commits signed** - No AI attribution
-6. **Deploy after every commit** - MANUALLY using `wrangler pages deploy dist --project-name=dstack-info` (NO automatic webhooks)
-7. **Checkpoint after every commit** - With testing plan
-8. **Update TUTORIAL_PROGRESS.md** - After each approval
-9. **Dual approach always** - Manual + Ansible (Phase 2+)
-10. **Multi-user testing** - Different users for each approach (Phase 2+)
-11. **Small chunks** - Fit in one context window
-12. **Document everything** - Especially errors and solutions
+1. **NO SHORTCUTS** - Real deployments only
+2. **Commit early and often** - After each logical step
+3. **All commits signed** - No AI attribution
+4. **Deploy after every commit** - MANUALLY using `wrangler pages deploy dist --project-name=dstack-info`
+5. **Update TUTORIAL_PROGRESS.md** - After completing work
+6. **Dual approach always** - Manual + Ansible (Phase 2+)
+7. **Small chunks** - Fit in one context window
+8. **Document everything** - Especially errors and solutions
+9. **Work autonomously** - Only ask when genuinely stuck
 
 ### If Something Goes Wrong
 - Document the issue immediately
 - Add to troubleshooting section
-- Ask for help if stuck
+- Try to fix it first
+- Ask for help only if truly stuck
 - Never simulate or skip
-- Fix properly before proceeding
 
 ---
 

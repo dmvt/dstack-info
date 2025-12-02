@@ -1,8 +1,8 @@
 # dstack Installation Tutorial Project - Complete Plan
 
 **Project Start Date:** 2025-10-31
-**Status:** Phase 1.1 - TDX Enablement Complete, Ansible Verification In Progress
-**Last Updated:** 2025-11-01
+**Status:** Phase 5 - First Application Deployment In Progress
+**Last Updated:** 2025-12-02
 
 ---
 
@@ -43,7 +43,6 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 - Interactive web platform (Astro + TailwindCSS)
 - UI deployment dashboard
 - 30+ git commits (all signed, deployed to Cloudflare Pages)
-- 30+ review checkpoints with testing plans
 
 ---
 
@@ -93,11 +92,11 @@ Create an exhaustive, production-quality installation tutorial system for dstack
   - **NO automatic webhooks** - git push does NOT trigger deployment
   - Must manually deploy after each commit
 
-#### 6. **Checkpoint-Driven Development**
-- After EVERY commit: Build and manually deploy to Cloudflare Pages
-- Present complete testing plan for review
-- Wait for explicit approval before proceeding
-- Update TUTORIAL_PROGRESS.md after each confirmation to preserve context
+#### 6. **Autonomous Execution**
+- Work until the task is complete
+- Make reasonable decisions independently
+- Only ask when genuinely unsure what to do
+- After commits: Build, test, and deploy without waiting
 
 #### 7. **Small, Manageable Chunks**
 - Work sized to fit in single context window
@@ -109,7 +108,7 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 - Document what we're doing WHILE doing it
 - Capture errors and solutions immediately
 - Add troubleshooting sections based on real issues encountered
-- Memory document (TUTORIAL_PROGRESS.md) updated after every approval
+- Memory document (TUTORIAL_PROGRESS.md) updated after completing work
 
 #### 9. **Linux Foundation Standards**
 - Production-quality code
@@ -118,13 +117,10 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 - Built for future contributors
 - Professional design and UX
 
-#### 10. **Plan Adherence & Verification**
+#### 10. **Plan Alignment**
 - Before starting any work: Verify it matches the current phase in PROJECT_PLAN.md
-- If user requests work outside the plan or methodology: STOP and inform them
-- Clearly state what conflicts with the plan/methodology
-- Ask for explicit double confirmation before proceeding with out-of-plan work
-- Never silently deviate from the documented plan
-- If uncertain whether request aligns with plan: Ask for clarification
+- If uncertain whether request aligns with plan: Make a reasonable judgment call
+- Keep working unless genuinely blocked
 
 #### 11. **TailwindCSS-Only Styling**
 - ALL styling must use TailwindCSS utility classes in the HTML/JSX
@@ -150,9 +146,8 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 4. **Document in Tutorial** - Add Ansible verification playbook usage to `tdx-status-verification.md`
 5. **Git Commit** - Commit Ansible playbook + updated tutorial (signed)
 6. **Deploy** - Build and deploy to Cloudflare Pages (manual: `wrangler pages deploy dist`)
-7. **Checkpoint** - Present testing plan (syntax check, ansible-lint, test on TDX system)
-8. **User Approval** - Confirm playbook works correctly
-9. **Update Memory** - Add progress to TUTORIAL_PROGRESS.md
+7. **Test** - Run syntax check, ansible-lint, test on TDX system
+8. **Update Memory** - Add progress to TUTORIAL_PROGRESS.md
 
 **Why Phase 1 is Different:**
 - BIOS configuration requires physical/IPMI access (cannot be automated)
@@ -190,10 +185,8 @@ Create an exhaustive, production-quality installation tutorial system for dstack
 11. **Create Validation Widget** - Build interactive validation component (if applicable)
 12. **Git Commit** - Commit tutorial + Ansible + widget (signed)
 13. **Deploy** - Build: `npm run build`, Deploy: `wrangler pages deploy dist --project-name=dstack-info`
-14. **Checkpoint** - Present testing plan for user verification
-15. **User Approval** - User confirms or requests fixes
-16. **Update Memory** - Add progress to TUTORIAL_PROGRESS.md after approval
-17. **Proceed** - Move to next section
+14. **Update Memory** - Add progress to TUTORIAL_PROGRESS.md
+15. **Proceed** - Move to next section
 
 **Key Principle: Rebuild-Based Validation**
 - Single TDX server (173.231.234.133) requires OS reinstalls for testing
@@ -254,8 +247,7 @@ Phase N Testing Cycle:
 ├─────────────────────────────────────────────────────────┤
 │ 10. Update tutorial with both approaches               │
 │ 11. Git commit (signed), deploy to Cloudflare          │
-│ 12. Checkpoint with user verification                  │
-│ 13. Update TUTORIAL_PROGRESS.md                        │
+│ 12. Update TUTORIAL_PROGRESS.md                        │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -309,7 +301,7 @@ Phase N Testing Cycle:
 ### Framework: Astro + TailwindCSS (From Scratch)
 
 **Decision Date:** 2025-10-31
-**Status:** Proposed (awaiting approval)
+**Status:** Approved and implemented
 
 #### Why Astro?
 - Content-first framework, perfect for tutorial-heavy site
@@ -381,12 +373,11 @@ Phase N Testing Cycle:
 **Total: ~21 days (3 weeks)**
 
 #### 0.1 Framework & Tooling Decision
-**Status:** Awaiting approval on Astro + TailwindCSS
+**Status:** Complete
 
 **Deliverable:** ARCHITECTURE_DECISION.md
 **Git Commit:** Not yet
-**Checkpoint:** Present decision, await approval
-
+**Next:** Proceed to implementation
 ---
 
 #### 0.2 Project Setup & Configuration
@@ -406,7 +397,7 @@ Phase N Testing Cycle:
 2. Add TailwindCSS with custom dstack theme config
 3. Configure Cloudflare Pages (wrangler.toml or pages config)
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Clone repository on fresh machine
 - [ ] Run `npm install` successfully
 - [ ] Run `npm run dev` - verify dev server starts
@@ -415,8 +406,7 @@ Phase N Testing Cycle:
 - [ ] Visit deployed URL - verify skeleton site loads
 - [ ] Check TailwindCSS working (add test component with utilities)
 
-**Checkpoint:** Show deployed skeleton site, share URL, await confirmation
-**Update:** Add Phase 0.2 completion to TUTORIAL_PROGRESS.md
+**Verify:** deployed skeleton site, share URL**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.2 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -462,7 +452,7 @@ Build reusable Astro components with comprehensive testing using Vitest + Contai
 **Git Commits:**
 1. Add Vitest testing infrastructure
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Dependencies installed successfully
 - [ ] Vitest config created and valid
 - [ ] Test scripts work: `npm test`
@@ -470,8 +460,8 @@ Build reusable Astro components with comprehensive testing using Vitest + Contai
 - [ ] Test UI accessible: `npm run test:ui`
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Show Vitest setup working with sample test
-**Update:** Add Phase 0.3.0 completion to TUTORIAL_PROGRESS.md
+**Verify:** Vitest setup working with sample test
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.3.0 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -486,15 +476,15 @@ Build reusable Astro components with comprehensive testing using Vitest + Contai
 **Git Commits:**
 1. Add CodeBlock component with tests
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Component renders correctly
 - [ ] Copy button appears and functions
 - [ ] Tests pass: `npm test`
 - [ ] Demo page shows CodeBlock examples
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Show CodeBlock working with passing tests
-**Update:** Add Phase 0.3.1 completion to TUTORIAL_PROGRESS.md
+**Verify:** CodeBlock working with passing tests
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.3.1 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -509,15 +499,15 @@ Build reusable Astro components with comprehensive testing using Vitest + Contai
 **Git Commits:**
 1. Add StepCard and ProgressTracker with tests
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] StepCard renders with different states
 - [ ] ProgressTracker calculates progress correctly
 - [ ] Tests pass: `npm test`
 - [ ] Demo page shows examples
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Show step components working with tests
-**Update:** Add Phase 0.3.2 completion to TUTORIAL_PROGRESS.md
+**Verify:** step components working with tests
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.3.2 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -533,7 +523,7 @@ Build reusable Astro components with comprehensive testing using Vitest + Contai
 **Git Commits:**
 1. Add validation, output, and collapsible components with tests
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] ValidationIndicator shows checked/unchecked states
 - [ ] CommandOutput displays terminal-style content
 - [ ] CollapsibleSection expands/collapses
@@ -541,8 +531,8 @@ Build reusable Astro components with comprehensive testing using Vitest + Contai
 - [ ] Demo page shows examples
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Show utility components working with tests
-**Update:** Add Phase 0.3.3 completion to TUTORIAL_PROGRESS.md
+**Verify:** utility components working with tests
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.3.3 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -556,15 +546,15 @@ Build reusable Astro components with comprehensive testing using Vitest + Contai
 **Git Commits:**
 1. Add NavigationButtons with tests
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] NavigationButtons render with correct links
 - [ ] Disabled states work correctly
 - [ ] Tests pass: `npm test`
 - [ ] Demo page shows examples
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Show navigation component working with tests
-**Update:** Add Phase 0.3.4 completion to TUTORIAL_PROGRESS.md
+**Verify:** navigation component working with tests
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.3.4 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -579,15 +569,15 @@ Build reusable Astro components with comprehensive testing using Vitest + Contai
 **Git Commits:**
 1. Add comprehensive demo page and component docs
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Demo page shows all components
 - [ ] All interactive features work
 - [ ] Documentation complete
 - [ ] Test coverage >80%
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Show complete component library with docs
-**Update:** Add Phase 0.3.5 completion to TUTORIAL_PROGRESS.md
+**Verify:** complete component library with docs
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.3.5 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -629,7 +619,7 @@ src/
 4. Add tutorial navigation and search
 5. Create sample tutorial for testing
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Create sample tutorial content
 - [ ] Verify tutorial renders correctly
 - [ ] Test progress tracking (complete steps, refresh page)
@@ -638,8 +628,7 @@ src/
 - [ ] Test search functionality
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Show working tutorial with sample content, await confirmation
-**Update:** Add Phase 0.4 completion to TUTORIAL_PROGRESS.md
+**Verify:** working tutorial with sample content**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.4 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -671,7 +660,7 @@ src/
 5. Add responsive design improvements
 6. Performance optimization
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Visual comparison: new vs old homepage
 - [ ] Verify all links work
 - [ ] Test all CTAs (Get Started, GitHub, etc.)
@@ -681,8 +670,7 @@ src/
 - [ ] Test on multiple browsers
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Side-by-side comparison of old and new homepage, await confirmation
-**Update:** Add Phase 0.5 completion to TUTORIAL_PROGRESS.md
+**Verify:** Side-by-side comparison of old and new homepage looks correct**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.5 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -765,7 +753,7 @@ src/
 **Testing:** All 62+ E2E tests passing (42 existing + 20+ new)
 
 **Total Git Commits:** 6
-**Total Testing Checkpoints:** 6 (one per commit)
+**Total Commits:** 6 (one per feature)
 
 **Files Created:**
 - `src/utils/markdown.ts`
@@ -781,15 +769,14 @@ src/
 - `src/__tests__/TutorialSidebar.test.ts`
 - `src/pages/index.astro`
 
-**Testing Plan for Each Checkpoint:**
+**Testing Plan:**
 - [ ] Unit tests passing (266 total: 251 + 15 new)
 - [ ] E2E tests passing (62 total: 42 + 20 new)
 - [ ] Build succeeds (14 pages)
 - [ ] Deploy to Cloudflare Pages
 - [ ] Manual testing of new features
 
-**Checkpoint:** After each commit, show feature working, await confirmation
-**Update:** Add Phase 0.4.5 completion to TUTORIAL_PROGRESS.md
+**Verify:** After each commit, verify feature works**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.4.5 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -825,7 +812,7 @@ Add comprehensive E2E browser testing to complement Vitest unit tests. This phas
 **Git Commits:**
 1. Add Playwright testing infrastructure
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Playwright installed successfully
 - [ ] Config created and valid
 - [ ] E2E scripts work: `npm run e2e`
@@ -833,8 +820,8 @@ Add comprehensive E2E browser testing to complement Vitest unit tests. This phas
 - [ ] Test UI accessible: `npm run e2e:ui`
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Show Playwright setup with passing sample test
-**Update:** Add Phase 0.6.0 completion to TUTORIAL_PROGRESS.md
+**Verify:** Playwright setup with passing sample test
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.6.0 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -851,7 +838,7 @@ Add comprehensive E2E browser testing to complement Vitest unit tests. This phas
 **Git Commits:**
 1. Add E2E tests for interactive components
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Copy button test passes (clicks, verifies clipboard)
 - [ ] Progress tracking test passes (saves, persists)
 - [ ] Collapsible sections test passes
@@ -859,8 +846,8 @@ Add comprehensive E2E browser testing to complement Vitest unit tests. This phas
 - [ ] Tests pass in all browsers (Chromium, Firefox, WebKit)
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Show E2E tests passing in multiple browsers
-**Update:** Add Phase 0.6.1 completion to TUTORIAL_PROGRESS.md
+**Verify:** E2E tests passing in multiple browsers
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.6.1 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -876,7 +863,7 @@ Add comprehensive E2E browser testing to complement Vitest unit tests. This phas
 **Git Commits:**
 1. Add user journey E2E tests
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Homepage navigation test passes
 - [ ] Tutorial flow test passes
 - [ ] State persistence across pages works
@@ -884,8 +871,8 @@ Add comprehensive E2E browser testing to complement Vitest unit tests. This phas
 - [ ] Test report generated
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Show complete user journey tests passing
-**Update:** Add Phase 0.6.2 completion to TUTORIAL_PROGRESS.md
+**Verify:** complete user journey tests passing
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.6.2 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -900,15 +887,15 @@ Add comprehensive E2E browser testing to complement Vitest unit tests. This phas
 **Git Commits:**
 1. Add E2E testing documentation
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Documentation complete and accurate
 - [ ] Examples work correctly
 - [ ] All tests still passing
 - [ ] Test coverage report available
 - [ ] Deploy and verify on Cloudflare Pages
 
-**Checkpoint:** Show complete E2E testing setup with docs
-**Update:** Add Phase 0.6.3 completion to TUTORIAL_PROGRESS.md
+**Verify:** complete E2E testing setup with docs
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 0.6.3 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -990,7 +977,7 @@ ansible/
 2. Add TDX verification playbook with comprehensive checks
 3. Update `tdx-status-verification.md` with Ansible playbook documentation
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 
 **Ansible Best Practices Testing:**
 - [ ] **Syntax check:** `ansible-playbook --syntax-check playbooks/verify-tdx.yml`
@@ -1022,14 +1009,14 @@ ansible/
 
 **Tutorial Section:** "Host Setup: Part 5 - TDX Status Verification" (updated with Ansible playbook)
 
-**Checkpoint:**
+**Deliverables:**
 - Share Ansible playbook code
 - Share test results (syntax check, ansible-lint, functional test)
 - Demo playbook running on TDX server
 - Show updated tutorial with Ansible documentation
-- Await confirmation to proceed to Phase 1.2
+- Proceed to Phase 1.2
 
-**Update:** Add Phase 1.1 Ansible completion to TUTORIAL_PROGRESS.md
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 1.1 Ansible completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -1076,7 +1063,7 @@ ansible/
 3. Add tutorial content for DNS setup
 4. Update group_vars with domain configuration
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Manual DNS configuration in Cloudflare complete
 - [ ] A record created and verified
 - [ ] Wildcard DNS configured
@@ -1091,13 +1078,13 @@ ansible/
 
 **Tutorial Section:** "Prerequisites: Domain and DNS Configuration"
 
-**Checkpoint:**
+**Deliverables:**
 - Share domain name configured
 - Demo DNS resolution working
 - Show interactive DNS checker widget
-- Await confirmation
+- Continue to next phase
 
-**Update:** Add Phase 1.2 completion and domain info to TUTORIAL_PROGRESS.md
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 1.2 completion and domain info to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -1145,7 +1132,7 @@ ansible/
 3. Add tutorial content for blockchain setup
 4. Update group_vars with blockchain configuration
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Wallet created and backed up securely
 - [ ] Wallet address documented
 - [ ] Testnet ETH received (minimum 0.1 ETH)
@@ -1158,13 +1145,13 @@ ansible/
 
 **Tutorial Section:** "Prerequisites: Blockchain Setup"
 
-**Checkpoint:**
+**Deliverables:**
 - Share wallet address (testnet, safe to share)
 - Demo wallet balance widget
 - Show RPC connectivity
-- Await confirmation
+- Continue to next phase
 
-**Update:** Add Phase 1.3 completion and blockchain info to TUTORIAL_PROGRESS.md
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 1.3 completion and blockchain info to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -1242,7 +1229,7 @@ ansible/
 3. Add tutorial content for host preparation
 4. Update playbooks to use role
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Create user1 on server
 - [ ] User1: Manually run all commands from tutorial
 - [ ] Verify all dependencies installed for user1
@@ -1255,13 +1242,13 @@ ansible/
 
 **Tutorial Section:** "Step 1: Prepare the Host System"
 
-**Checkpoint:**
+**Deliverables:**
 - Share test results from user1 (manual) and user2 (Ansible)
 - Show all dependencies installed
 - Demonstrate commands work for both users
-- Await confirmation
+- Continue to next phase
 
-**Update:** Add Phase 2.1 completion to TUTORIAL_PROGRESS.md
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 2.1 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -1314,7 +1301,7 @@ rustup component add clippy rustfmt
 3. Add tutorial content for Rust setup
 4. Update role main.yml to include rust tasks
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Create user3 on server
 - [ ] User3: Manual Rust installation from tutorial
 - [ ] Verify: `rustc --version` works for user3
@@ -1330,12 +1317,12 @@ rustup component add clippy rustfmt
 
 **Tutorial Section:** "Step 2: Install Rust Toolchain"
 
-**Checkpoint:**
+**Deliverables:**
 - Share Rust versions from user3 and user4
 - Demo test program compilation
-- Await confirmation
+- Continue to next phase
 
-**Update:** Add Phase 2.2 completion to TUTORIAL_PROGRESS.md
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 2.2 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -1391,7 +1378,7 @@ sudo cp target/release/vmm /usr/local/bin/dstack-vmm
 3. Add tutorial content for building VMM
 4. Update role defaults with repo path
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Create user5 on server
 - [ ] User5: Manual clone and build (document build time)
 - [ ] Verify binary exists: `ls ~/dstack/vmm/target/release/vmm`
@@ -1406,12 +1393,12 @@ sudo cp target/release/vmm /usr/local/bin/dstack-vmm
 
 **Tutorial Section:** "Step 3: Build dstack-vmm"
 
-**Checkpoint:**
+**Deliverables:**
 - Share build times and binary info
 - Compare manual vs Ansible results
-- Await confirmation
+- Continue to next phase
 
-**Update:** Add Phase 2.3 completion to TUTORIAL_PROGRESS.md
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 2.3 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -1479,7 +1466,7 @@ Add to `ansible/roles/dstack-host/tasks/configure-vmm.yml`:
 3. Add config validation widget
 4. Add tutorial content for VMM configuration
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Create user7 on server
 - [ ] User7: Manual config file creation from tutorial
 - [ ] Verify file exists: `/etc/dstack/vmm.toml`
@@ -1494,12 +1481,12 @@ Add to `ansible/roles/dstack-host/tasks/configure-vmm.yml`:
 
 **Tutorial Section:** "Step 4: Configure dstack-vmm"
 
-**Checkpoint:**
+**Deliverables:**
 - Share config file contents
 - Demo config validation
-- Await confirmation
+- Continue to next phase
 
-**Update:** Add Phase 2.4 completion to TUTORIAL_PROGRESS.md
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 2.4 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -1588,7 +1575,7 @@ Add to `ansible/roles/dstack-host/tasks/vmm-service.yml`:
 3. Add service status widget
 4. Add tutorial content for VMM service
 
-**Testing Plan for Checkpoint:**
+**Testing Plan:**
 - [ ] Create user9 on server
 - [ ] User9: Manual service setup from tutorial
 - [ ] Verify service file: `/etc/systemd/system/dstack-vmm.service`
@@ -1605,13 +1592,13 @@ Add to `ansible/roles/dstack-host/tasks/vmm-service.yml`:
 
 **Tutorial Section:** "Step 5: Run dstack-vmm as a Service"
 
-**Checkpoint:**
+**Deliverables:**
 - Share service status output
 - Share API health check response
 - Share logs showing healthy startup
-- Await confirmation
+- Continue to next phase
 
-**Update:** Add Phase 2.5 completion to TUTORIAL_PROGRESS.md
+**Progress:** Update TUTORIAL_PROGRESS.md with Phase 2.5 completion to TUTORIAL_PROGRESS.md
 
 ---
 
@@ -1624,7 +1611,7 @@ Similar detailed breakdowns for:
 - 3.4 KMS Bootstrap
 - 3.5 KMS Service Setup
 
-*(Each following same pattern: manual + Ansible + testing + checkpoint)*
+*(Each following same pattern: manual + Ansible + testing + deploy)*
 
 ---
 
@@ -1657,7 +1644,7 @@ For each of the 14 dstack-examples:
 4. Write tutorial section
 5. Create interactive verification widget
 6. Git commit + deploy
-7. Checkpoint with testing plan
+7. Run tests and deploy
 
 **Examples:**
 1. ConfigID-based attestation
@@ -1674,7 +1661,7 @@ For each of the 14 dstack-examples:
 12. private-docker-image-deployment
 13. (additional examples as found)
 
-**Checkpoints:** After every 2-3 examples
+**Progress:** Update TUTORIAL_PROGRESS.md after every 2-3 examples
 
 ---
 
@@ -1705,8 +1692,7 @@ For each of the 14 dstack-examples:
 - [ ] Test error handling
 - [ ] Tutorial deployed
 
-**Checkpoint:** Demo working dashboard, await confirmation
-
+**Verify:** Demo working dashboard, test all features
 ---
 
 ### Phase 8: Final Integration & Polish (Week 14)
@@ -1736,8 +1722,7 @@ For each of the 14 dstack-examples:
 - DNS verification
 - Announce launch
 
-**Checkpoint:** Final comprehensive review, await approval
-
+**Final:** Comprehensive review and testing complete
 ---
 
 ## Deliverables Summary
@@ -1798,18 +1783,11 @@ For each of the 14 dstack-examples:
 - ✅ Create PROJECT_PLAN.md (this document)
 
 ### In Progress
-- 🔄 Phase 0.1: Framework & Tooling Decision (awaiting approval)
-
-### Blocked
-- ⏸️ All other phases awaiting framework approval
+- 🔄 Phase 5: First Application Deployment
 
 ### Next Steps
-1. Get approval on Astro + TailwindCSS decision
-2. Proceed to Phase 0.2: Project Setup & Configuration
-3. Build component library (Phase 0.3)
-4. Create tutorial platform (Phase 0.4)
-5. Migrate homepage (Phase 0.5)
-6. Begin server verification (Phase 1.1)
+1. Complete Phase 5 tutorials and playbooks
+2. Proceed to Phase 6: Example Deployments
 
 ---
 
@@ -1828,25 +1806,22 @@ For each of the 14 dstack-examples:
 ## Important Reminders
 
 ### Never Forget
-1. **VERIFY PLAN ALIGNMENT** - Before starting work, confirm it matches PROJECT_PLAN.md
-2. **FLAG OUT-OF-PLAN REQUESTS** - If user asks for something outside plan/methodology, inform them and get double confirmation
-3. **NO SHORTCUTS** - Real deployments only
-4. **Commit early and often** - After each logical step
-5. **All commits signed** - No AI attribution
-6. **Deploy after every commit** - MANUALLY using `wrangler pages deploy dist --project-name=dstack-info` (NO automatic webhooks)
-7. **Checkpoint after every commit** - With testing plan
-8. **Update TUTORIAL_PROGRESS.md** - After each approval
-9. **Dual approach always** - Manual + Ansible (Phase 1+)
-10. **Multi-user testing** - Different users for each approach (Phase 1+)
-11. **Small chunks** - Fit in one context window
-12. **Document everything** - Especially errors and solutions
+1. **NO SHORTCUTS** - Real deployments only
+2. **Commit early and often** - After each logical step
+3. **All commits signed** - No AI attribution
+4. **Deploy after every commit** - MANUALLY using `wrangler pages deploy dist --project-name=dstack-info`
+5. **Update TUTORIAL_PROGRESS.md** - After completing work
+6. **Dual approach always** - Manual + Ansible (Phase 2+)
+7. **Small chunks** - Fit in one context window
+8. **Document everything** - Especially errors and solutions
+9. **Work autonomously** - Only ask when genuinely stuck
 
 ### If Something Goes Wrong
 - Document the issue immediately
 - Add to troubleshooting section
-- Ask for help if stuck
+- Try to fix it first
+- Ask for help only if truly stuck
 - Never simulate or skip
-- Fix properly before proceeding
 
 ---
 
