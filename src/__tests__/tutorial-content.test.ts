@@ -246,7 +246,7 @@ describe('Tutorial Content Validation', () => {
     });
   });
 
-  it.skip('should not have circular prerequisite dependencies', () => {
+  it('should not have circular prerequisite dependencies', () => {
     const files = getTutorialFiles();
     const graph = new Map<string, string[]>();
 
@@ -284,7 +284,7 @@ describe('Tutorial Content Validation', () => {
     });
   });
 
-  it.skip('should have valid prerequisite ordering within sections', () => {
+  it('should have valid prerequisite ordering within sections', () => {
     const files = getTutorialFiles();
     const tutorialsBySlug = new Map<string, ParsedFrontmatter>();
 
