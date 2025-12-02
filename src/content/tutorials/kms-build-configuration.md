@@ -5,7 +5,8 @@ section: "KMS Deployment"
 stepNumber: 3
 totalSteps: 5
 lastUpdated: 2025-11-20
-prerequisites: ["contract-deployment"]
+prerequisites:
+  - contract-deployment
 tags:
   - dstack
   - kms
@@ -518,7 +519,7 @@ else
 fi
 
 # Validate TOML
-if python3 -c "import tomllib; tomllib.load(open('/etc/kms/kms.toml', 'rb'))" 2>/dev/null; then
+if python3 -c "import tomllib; tomllib.load(open('/etc/kms/kms.toml", "rb'))" 2>/dev/null; then
     echo "✓ kms.toml syntax valid"
 else
     echo "✗ kms.toml syntax invalid"

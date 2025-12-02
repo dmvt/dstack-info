@@ -5,7 +5,8 @@ section: "dstack Installation"
 stepNumber: 4
 totalSteps: 5
 lastUpdated: 2025-11-19
-prerequisites: ["clone-build-dstack-vmm"]
+prerequisites:
+  - clone-build-dstack-vmm
 tags:
   - dstack
   - vmm

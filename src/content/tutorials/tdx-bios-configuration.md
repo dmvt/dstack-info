@@ -5,8 +5,7 @@ section: "Host Setup"
 stepNumber: 5
 totalSteps: 5
 prerequisites:
-    - "Completed Part 4: TDX Status Verification"
-    - "BIOS/IPMI access to your server"
+  - tdx-status-verification
 tags:
     - "tdx"
     - "bios"

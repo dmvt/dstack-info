@@ -5,7 +5,9 @@ section: "KMS Deployment"
 stepNumber: 2
 totalSteps: 5
 lastUpdated: 2025-11-20
-prerequisites: ["smart-contract-compilation", "blockchain-setup"]
+prerequisites:
+  - smart-contract-compilation
+  - blockchain-setup
 tags:
   - dstack
   - kms

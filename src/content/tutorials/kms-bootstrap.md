@@ -5,7 +5,8 @@ section: "KMS Deployment"
 stepNumber: 4
 totalSteps: 5
 lastUpdated: 2025-11-20
-prerequisites: ["kms-build-configuration"]
+prerequisites:
+  - kms-build-configuration
 tags:
   - dstack
   - kms
@@ -526,9 +527,7 @@ echo "KMS bootstrap verified successfully!"
 
 ## Next Steps
 
-With KMS bootstrapped, proceed to setup the service:
-
-- [KMS Service Setup](/tutorial/kms-service-setup) - Configure systemd services for KMS and auth-eth
+With KMS bootstrapped, the next step is to configure systemd services for KMS and auth-eth (tutorial coming soon).
 
 ## Additional Resources
 

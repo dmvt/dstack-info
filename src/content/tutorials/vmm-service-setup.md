@@ -5,7 +5,8 @@ section: "dstack Installation"
 stepNumber: 5
 totalSteps: 5
 lastUpdated: 2025-11-19
-prerequisites: ["vmm-configuration"]
+prerequisites:
+  - vmm-configuration
 tags:
   - dstack
   - vmm
@@ -426,7 +427,7 @@ echo "VMM service setup verified successfully!"
 
 With VMM running as a service, proceed to deploy the Key Management Service:
 
-- [KMS Deployment](/tutorial/kms-deployment) - Deploy the Key Management Service
+- [Smart Contract Compilation](/tutorial/smart-contract-compilation) - Start the KMS deployment process
 
 ## Additional Resources
 

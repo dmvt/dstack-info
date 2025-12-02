@@ -5,8 +5,7 @@ section: "Host Setup"
 stepNumber: 4
 totalSteps: 5
 prerequisites:
-    - "Completed Part 3: TDX Kernel Installation"
-    - "Server rebooted successfully"
+  - tdx-kernel-installation
 tags:
     - "tdx"
     - "verification"

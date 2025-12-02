@@ -5,7 +5,7 @@ section: "Host Setup"
 stepNumber: 3
 totalSteps: 5
 prerequisites:
-    - "Completed Part 2: TDX Software Setup"
+  - tdx-software-setup
 tags:
     - "tdx"
     - "kernel"

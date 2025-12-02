@@ -5,19 +5,17 @@ section: "Host Setup"
 stepNumber: null
 totalSteps: null
 isAppendix: true
-prerequisites:
-  - "Completed Part 6: TDX Troubleshooting & Next Steps"
-  - "TDX fully enabled and verified on at least one server"
-  - "Familiarity with Ansible basics (optional but helpful)"
-tags:
-  - "ansible"
-  - "automation"
-  - "tdx"
-  - "verification"
-  - "infrastructure-as-code"
-difficulty: "intermediate"
-estimatedTime: "20 minutes"
 lastUpdated: 2025-11-01
+prerequisites:
+  - tdx-troubleshooting-next-steps
+tags:
+  - ansible
+  - automation
+  - tdx
+  - verification
+  - infrastructure-as-code
+difficulty: intermediate
+estimatedTime: 20 minutes
 ---
 
 # Ansible TDX Automation Setup

@@ -5,9 +5,7 @@ section: "Prerequisites"
 stepNumber: 2
 totalSteps: 2
 lastUpdated: 2025-11-02
-prerequisites:
-    - "Foundry (cast) installed OR MetaMask browser extension"
-    - "Basic understanding of Ethereum and wallets"
+
 tags:
     - blockchain
     - ethereum

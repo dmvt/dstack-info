@@ -5,9 +5,7 @@ section: "Host Setup"
 stepNumber: 1
 totalSteps: 5
 lastUpdated: 2025-10-31
-prerequisites:
-  - "Ubuntu 24.04 LTS (Noble) server installation"
-  - "Physical or IPMI access to check hardware specs"
+
 tags:
   - "tdx"
   - "hardware"

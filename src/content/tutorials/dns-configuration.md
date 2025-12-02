@@ -5,9 +5,7 @@ section: "Prerequisites"
 stepNumber: 1
 totalSteps: 2
 lastUpdated: 2025-11-01
-prerequisites:
-  - "Domain registered with registrar"
-  - "Cloudflare account (free tier works)"
+
 tags:
   - dns
   - cloudflare

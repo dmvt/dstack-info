@@ -6,10 +6,9 @@ stepNumber: 1
 totalSteps: 5
 lastUpdated: 2025-11-18
 prerequisites:
-  - "TDX-enabled host (completed TDX Enablement tutorials)"
-  - "DNS configured (completed DNS Configuration tutorial)"
-  - "Blockchain wallet funded (completed Blockchain Setup tutorial)"
-  - "SSH access to the server as ubuntu user with passwordless sudo"
+  - tdx-troubleshooting-next-steps
+  - dns-configuration
+  - blockchain-setup
 tags:
   - host-setup
   - dependencies
@@ -287,4 +286,4 @@ The grub configuration is managed by OpenMetal's infrastructure and doesn't need
 
 With the system dependencies installed, proceed to:
 
-**[Install Rust Toolchain](/tutorial/install-rust-toolchain)** - Install Rust and Cargo for building dstack components
+**[Install Rust Toolchain](/tutorial/rust-toolchain-installation)** - Install Rust and Cargo for building dstack components

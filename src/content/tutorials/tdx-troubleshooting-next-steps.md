@@ -6,8 +6,7 @@ stepNumber: null
 totalSteps: null
 isAppendix: true
 prerequisites:
-  - "Completed Part 5: TDX BIOS Configuration"
-  - "TDX hardware features enabled in BIOS"
+  - tdx-bios-configuration
 tags:
   - "tdx"
   - "troubleshooting"

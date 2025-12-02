@@ -5,9 +5,7 @@ section: "Host Setup"
 stepNumber: 2
 totalSteps: 5
 prerequisites:
-    - "Completed Part 1: TDX Hardware Verification"
-    - "Ubuntu user with passwordless sudo access"
-    - "Network connectivity for package downloads"
+  - tdx-hardware-verification
 tags:
     - "tdx"
     - "software"

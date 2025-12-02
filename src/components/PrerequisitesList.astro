@@ -1,0 +1,55 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  prerequisites: string[];
+  allTutorials: CollectionEntry<'tutorials'>[];
+}
+
+const { prerequisites, allTutorials } = Astro.props;
+
+// Map prerequisite slugs to tutorial entries
+const prerequisiteTutorials = prerequisites
+  .map(slug => allTutorials.find(t => t.slug === slug))
+  .filter((t): t is CollectionEntry<'tutorials'> => t !== undefined);
+
+if (prerequisiteTutorials.length === 0) {
+  return null;
+}
+---
+
+<div class="mb-8 p-6 bg-bg-card border border-border-default rounded-lg">
+  <h2 class="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
+    <i class="fa-solid fa-list-check text-lime-green"></i>
+    Prerequisites
+  </h2>
+  <p class="text-text-secondary mb-4">
+    Complete these tutorials before starting this one:
+  </p>
+  <ul class="space-y-2">
+    {prerequisiteTutorials.map(tutorial => (
+      <li>
+        <a
+          href={`/tutorial/${tutorial.slug}`}
+          class="flex items-start gap-3 p-3 rounded-lg border border-border-default hover:border-lime-green hover:bg-bg-space transition-all group"
+        >
+          <i class="fa-solid fa-arrow-right text-lime-green mt-1 group-hover:translate-x-1 transition-transform"></i>
+          <div class="flex-1">
+            <div class="font-semibold text-text-primary group-hover:text-lime-green transition-colors">
+              {tutorial.data.title}
+            </div>
+            <div class="text-sm text-text-secondary mt-1">
+              {tutorial.data.description}
+            </div>
+            {tutorial.data.estimatedTime && (
+              <div class="text-xs text-text-tertiary mt-1 flex items-center gap-1">
+                <i class="fa-solid fa-clock"></i>
+                {tutorial.data.estimatedTime}
+              </div>
+            )}
+          </div>
+        </a>
+      </li>
+    ))}
+  </ul>
+</div>

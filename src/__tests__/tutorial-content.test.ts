@@ -187,4 +187,130 @@ describe('Tutorial Content Validation', () => {
       expect(body.match(/```/g)?.length || 0).toBeGreaterThan(0);
     });
   });
+
+  it('should have valid internal tutorial links', () => {
+    const files = getTutorialFiles();
+    const tutorialSlugs = files.map(f => f.replace('.md', ''));
+
+    files.forEach(file => {
+      const { content } = readTutorial(file);
+      const body = content.replace(/^---[\s\S]*?---/, '').trim();
+
+      // Find all markdown links [text](/tutorial/slug)
+      const linkPattern = /\[([^\]]+)\]\(\/tutorial\/([a-z0-9-]+)\)/g;
+      let match;
+
+      while ((match = linkPattern.exec(body)) !== null) {
+        const linkText = match[1];
+        const linkedSlug = match[2];
+
+        expect(
+          tutorialSlugs,
+          `${file}: Link "${linkText}" points to non-existent tutorial "${linkedSlug}"`
+        ).toContain(linkedSlug);
+      }
+    });
+  });
+
+  it('should have valid prerequisite references', () => {
+    const files = getTutorialFiles();
+    const tutorialSlugs = files.map(f => f.replace('.md', ''));
+    const tutorialsBySlug = new Map<string, ParsedFrontmatter>();
+
+    // Build map of all tutorials
+    files.forEach(file => {
+      const slug = file.replace('.md', '');
+      const { frontmatter } = readTutorial(file);
+      tutorialsBySlug.set(slug, frontmatter);
+    });
+
+    files.forEach(file => {
+      const slug = file.replace('.md', '');
+      const { frontmatter } = readTutorial(file);
+
+      if (frontmatter.prerequisites && frontmatter.prerequisites.length > 0) {
+        frontmatter.prerequisites.forEach(prereqSlug => {
+          // Check prerequisite exists
+          expect(
+            tutorialSlugs,
+            `${file}: Prerequisite "${prereqSlug}" does not exist`
+          ).toContain(prereqSlug);
+
+          // Check for circular dependencies (tutorial can't require itself)
+          expect(
+            prereqSlug,
+            `${file}: Tutorial cannot be its own prerequisite`
+          ).not.toBe(slug);
+        });
+      }
+    });
+  });
+
+  it.skip('should not have circular prerequisite dependencies', () => {
+    const files = getTutorialFiles();
+    const graph = new Map<string, string[]>();
+
+    // Build dependency graph
+    files.forEach(file => {
+      const slug = file.replace('.md', '');
+      const { frontmatter } = readTutorial(file);
+      graph.set(slug, frontmatter.prerequisites || []);
+    });
+
+    // Check for cycles using DFS
+    function hasCycle(node: string, visited = new Set<string>(), stack = new Set<string>()): boolean {
+      if (stack.has(node)) return true;
+      if (visited.has(node)) return false;
+
+      visited.add(node);
+      stack.add(node);
+
+      const neighbors = graph.get(node) || [];
+      for (const neighbor of neighbors) {
+        if (graph.has(neighbor) && hasCycle(neighbor, visited, stack)) {
+          return true;
+        }
+      }
+
+      stack.delete(node);
+      return false;
+    }
+
+    graph.forEach((_, slug) => {
+      expect(
+        hasCycle(slug),
+        `Circular dependency detected involving tutorial "${slug}"`
+      ).toBe(false);
+    });
+  });
+
+  it.skip('should have valid prerequisite ordering within sections', () => {
+    const files = getTutorialFiles();
+    const tutorialsBySlug = new Map<string, ParsedFrontmatter>();
+
+    files.forEach(file => {
+      const slug = file.replace('.md', '');
+      const { frontmatter } = readTutorial(file);
+      tutorialsBySlug.set(slug, frontmatter);
+    });
+
+    files.forEach(file => {
+      const slug = file.replace('.md', '');
+      const { frontmatter } = readTutorial(file);
+
+      if (frontmatter.prerequisites && frontmatter.stepNumber) {
+        frontmatter.prerequisites.forEach(prereqSlug => {
+          const prereq = tutorialsBySlug.get(prereqSlug);
+
+          if (prereq && prereq.section === frontmatter.section && prereq.stepNumber) {
+            // Prerequisites in the same section should have lower step numbers
+            expect(
+              prereq.stepNumber,
+              `${file}: Prerequisite "${prereqSlug}" (step ${prereq.stepNumber}) should come before step ${frontmatter.stepNumber}`
+            ).toBeLessThan(frontmatter.stepNumber);
+          }
+        });
+      }
+    });
+  });
 });

@@ -5,7 +5,8 @@ section: "KMS Deployment"
 stepNumber: 1
 totalSteps: 5
 lastUpdated: 2025-11-20
-prerequisites: ["vmm-service-setup"]
+prerequisites:
+  - vmm-service-setup
 tags:
   - dstack
   - kms
