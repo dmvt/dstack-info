@@ -1,0 +1,145 @@
+---
+# Ansible playbook to verify KMS smart contracts compilation
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-contracts.yml
+#
+# This playbook verifies:
+# - Contract artifacts exist and are valid JSON
+# - TypeScript types were generated
+# - All expected contracts are present
+# - ABI files contain contract definitions
+
+- name: Verify KMS Smart Contracts Compilation
+  hosts: dstack_servers
+  become: false
+  vars:
+    contract_dir: "{{ ansible_env.HOME }}/dstack/kms/auth-eth"
+    expected_contracts:
+      - DstackKms
+      - DstackApp
+      - IAppAuth
+      - IAppAuthBasicManagement
+
+  tasks:
+    - name: Check contract directory exists
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}"
+      register: contract_dir_check
+
+    - name: Fail if contract directory not found
+      ansible.builtin.fail:
+        msg: |
+          Contract directory not found at {{ contract_dir }}
+
+          Clone the dstack repository first:
+            git clone https://github.com/Dstack-TEE/dstack.git ~/dstack
+      when: not contract_dir_check.stat.exists
+
+    - name: Check artifacts directory exists
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}/artifacts/contracts"
+      register: artifacts_dir
+
+    - name: Fail if artifacts directory not found
+      ansible.builtin.fail:
+        msg: |
+          Artifacts directory not found.
+
+          Compile contracts first:
+            cd {{ contract_dir }}
+            npx hardhat compile
+
+          Or run the compilation playbook:
+            ansible-playbook playbooks/compile-kms-contracts.yml
+      when: not artifacts_dir.stat.exists
+
+    - name: Check each contract artifact exists
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}/artifacts/contracts/{{ item }}.sol/{{ item }}.json"
+      register: contract_artifacts
+      loop: "{{ expected_contracts }}"
+
+    - name: List missing contracts
+      ansible.builtin.set_fact:
+        missing_contracts: "{{ contract_artifacts.results | selectattr('stat.exists', 'equalto', false) | map(attribute='item') | list }}"
+
+    - name: Fail if contracts are missing
+      ansible.builtin.fail:
+        msg: |
+          Missing contract artifacts: {{ missing_contracts | join(', ') }}
+
+          Compile contracts:
+            cd {{ contract_dir }}
+            npx hardhat compile
+      when: missing_contracts | length > 0
+
+    - name: Validate DstackKms artifact is valid JSON
+      ansible.builtin.shell: |
+        jq -e '.abi' {{ contract_dir }}/artifacts/contracts/DstackKms.sol/DstackKms.json > /dev/null
+      register: kms_json_check
+      changed_when: false
+      failed_when: kms_json_check.rc != 0
+
+    - name: Validate DstackApp artifact is valid JSON
+      ansible.builtin.shell: |
+        jq -e '.abi' {{ contract_dir }}/artifacts/contracts/DstackApp.sol/DstackApp.json > /dev/null
+      register: app_json_check
+      changed_when: false
+      failed_when: app_json_check.rc != 0
+
+    - name: Check TypeScript types directory exists
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}/typechain-types"
+      register: types_dir
+
+    - name: Check TypeScript types for DstackKms
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}/typechain-types/contracts/DstackKms.sol/DstackKms.ts"
+      register: kms_types
+      when: types_dir.stat.exists
+
+    - name: Check TypeScript types for DstackApp
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}/typechain-types/contracts/DstackApp.sol/DstackApp.ts"
+      register: app_types
+      when: types_dir.stat.exists
+
+    - name: Get contract bytecode size
+      ansible.builtin.shell: |
+        jq -r '.bytecode' {{ contract_dir }}/artifacts/contracts/{{ item }}.sol/{{ item }}.json | wc -c
+      register: bytecode_sizes
+      loop:
+        - DstackKms
+        - DstackApp
+      changed_when: false
+
+    - name: Check bytecode is not empty
+      ansible.builtin.fail:
+        msg: "Contract {{ item.item }} has empty or invalid bytecode"
+      when: item.stdout | int < 10
+      loop: "{{ bytecode_sizes.results }}"
+
+    - name: Display verification summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "Contract Verification Passed!"
+          - "============================================"
+          - ""
+          - "Contract directory: {{ contract_dir }}"
+          - "Artifacts directory: {{ contract_dir }}/artifacts/"
+          - ""
+          - "Verified contracts:"
+          - "  ✓ DstackKms.sol"
+          - "  ✓ DstackApp.sol"
+          - "  ✓ IAppAuth.sol"
+          - "  ✓ IAppAuthBasicManagement.sol"
+          - ""
+          - "TypeScript types: {{ 'Generated' if types_dir.stat.exists else 'Not found' }}"
+          - "  - DstackKms.ts: {{ 'Found' if (kms_types.stat.exists | default(false)) else 'Not found' }}"
+          - "  - DstackApp.ts: {{ 'Found' if (app_types.stat.exists | default(false)) else 'Not found' }}"
+          - ""
+          - "Contract bytecode sizes:"
+          - "  - DstackKms: {{ bytecode_sizes.results[0].stdout | int }} bytes"
+          - "  - DstackApp: {{ bytecode_sizes.results[1].stdout | int }} bytes"
+          - ""
+          - "All contract artifacts are valid and ready for deployment!"
