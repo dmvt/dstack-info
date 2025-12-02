@@ -82,7 +82,7 @@
     - name: Build KMS in release mode
       ansible.builtin.shell: |
         source {{ cargo_bin }}/../env
-        cargo build --release -p kms
+        cargo build --release -p dstack-kms
       args:
         chdir: "{{ dstack_repo_path }}"
         executable: /bin/bash
@@ -91,7 +91,7 @@
 
     - name: Check KMS binary exists
       ansible.builtin.stat:
-        path: "{{ dstack_repo_path }}/target/release/kms"
+        path: "{{ dstack_repo_path }}/target/release/dstack-kms"
       register: kms_binary
 
     - name: Fail if KMS binary not built
@@ -101,12 +101,12 @@
 
           Try building manually:
             cd {{ dstack_repo_path }}
-            cargo build --release -p kms
+            cargo build --release -p dstack-kms
       when: not kms_binary.stat.exists
 
     - name: Install KMS binary to system path
       ansible.builtin.copy:
-        src: "{{ dstack_repo_path }}/target/release/kms"
+        src: "{{ dstack_repo_path }}/target/release/dstack-kms"
         dest: "{{ kms_install_path }}"
         mode: '0755'
         remote_src: true
@@ -298,11 +298,9 @@
           - "  Build: {{ dstack_repo_path }}/kms/auth-eth/dist/"
           - "  Config: {{ kms_config_dir }}/auth-eth.env"
           - ""
-          - "{% if alchemy_api_key is not defined or not alchemy_api_key %}"
           - "NOTE: Edit {{ kms_config_dir }}/auth-eth.env to add:"
-          - "  - Alchemy API key"
-          - "  - KMS contract address"
-          - "{% endif %}"
+          - "  - Alchemy API key (for Sepolia RPC)"
+          - "  - KMS contract address (after deployment)"
           - ""
           - "Next steps:"
           - "  - Bootstrap KMS to generate root keys"
