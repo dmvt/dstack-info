@@ -36,6 +36,18 @@ Before starting, ensure you have:
 - SSH access to your TDX-enabled server
 - Internet connectivity for downloading Rust components
 
+## Connect to Your Server
+
+Connect to your TDX server via SSH as the `ubuntu` user:
+
+```bash
+ssh ubuntu@YOUR_SERVER_IP
+```
+
+All commands in this tutorial should be run as the `ubuntu` user (not root). Rust will be installed in your home directory at `~/.cargo` and `~/.rustup`.
+
+---
+
 ## Step 1: Install rustup
 
 rustup is the official Rust toolchain installer that manages Rust versions and components.
