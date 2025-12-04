@@ -59,9 +59,29 @@ sudo mkdir -p /etc/dstack
 
 This directory will hold all dstack configuration files.
 
-## Step 2: Create VMM Configuration File
+## Step 2: Check Server Resources
 
-Create the VMM configuration file with production-ready defaults:
+Before creating the configuration, check your server's available resources:
+
+```bash
+# Check CPU cores
+nproc
+
+# Check total memory in MB
+free -m | awk '/^Mem:/{print $2}'
+```
+
+Use these values to determine appropriate resource limits. Reserve some resources for the host OS:
+- **vCPUs**: Reserve 4 cores for the host OS
+- **Memory**: Reserve 16GB for the host OS
+
+For example, on a 128-core, 1TB RAM server:
+- Max allocable vCPUs: 128 - 4 = **124**
+- Max allocable memory: 1,007,000 - 16,000 = **991,000 MB**
+
+## Step 3: Create VMM Configuration File
+
+Create the VMM configuration file. **Adjust the resource limits** based on your server's resources (see Step 2):
 
 ```bash
 sudo tee /etc/dstack/vmm.toml > /dev/null <<'EOF'
@@ -150,7 +170,7 @@ port = 3443
 EOF
 ```
 
-## Step 3: Create Runtime Directories
+## Step 4: Create Runtime Directories
 
 Create directories for runtime files:
 
@@ -168,7 +188,7 @@ sudo chmod 755 /var/log/dstack
 sudo chmod 755 /var/lib/dstack
 ```
 
-## Step 4: Verify Configuration
+## Step 5: Verify Configuration
 
 Verify the configuration file exists and is readable:
 
@@ -211,7 +231,7 @@ sudo pkill -f dstack-vmm
 
 ### Networking Modes
 
-The VMM supports two networking modes:
+The VMM supports several networking modes:
 
 **User Mode (default):**
 ```toml
@@ -233,6 +253,15 @@ mode = "passt"
 - Better performance
 - Requires passt binary installed (`sudo apt install passt`)
 - Recommended for production
+
+**Host Mode:**
+```toml
+[cvm.networking]
+mode = "host"
+```
+- Uses host networking directly
+- No isolation between CVM and host network
+- Best performance, but least isolation
 
 ### Adjusting Resource Limits
 
@@ -275,7 +304,7 @@ allow_attach_all = true
 
 ## Ansible Automation
 
-You can automate the configuration using Ansible.
+You can automate the configuration using Ansible. The playbook **automatically detects** your server's resources and configures VMM with appropriate limits.
 
 ### Run the Ansible playbook
 
@@ -285,39 +314,88 @@ ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml
 ```
 
 The playbook will:
-1. Create /etc/dstack directory
-2. Create vmm.toml configuration file
-3. Create runtime directories
-4. Set appropriate permissions
+1. **Detect server resources** - CPU count and total memory
+2. **Calculate optimal limits** - Reserve resources for host OS, allocate rest to CVMs
+3. Create /etc/dstack directory
+4. Create vmm.toml configuration file with server-appropriate settings
+5. Create runtime directories
+6. Set appropriate permissions
+
+### Automatic Resource Detection
+
+The playbook detects your server's resources and calculates appropriate limits:
+
+- **vCPUs for CVMs**: Total vCPUs minus 4 (reserved for host OS)
+- **Memory for CVMs**: Total RAM minus 16GB (reserved for host OS)
+- **VMM Workers**: 1 worker per 8 vCPUs (minimum 4, maximum 32)
+
+**Example output on a 128-core, 1TB RAM server:**
+
+```
+Server Resources (detected):
+  - Total vCPUs: 128
+  - Total Memory: 1007.3GB
+
+CVM Resource Limits (configured):
+  - Max Allocable vCPUs: 124
+  - Max Allocable Memory: 991.3GB
+  - VMM Workers: 16
+
+Host OS Reservations:
+  - Reserved vCPUs: 4
+  - Reserved Memory: 16.0GB
+```
 
 ### Customizing with command-line variables
 
-The playbook accepts configurable variables via `-e` flags:
+You can override the auto-detected values using `-e` flags:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `vmm_workers` | Number of worker threads | 8 |
+| `vmm_workers` | Number of worker threads | Auto (1 per 8 vCPUs) |
 | `vmm_log_level` | Log level (debug, info, warn, error) | info |
-| `cvm_max_vcpu` | Maximum vCPUs per CVM | 16 |
-| `cvm_max_memory_mb` | Maximum memory per CVM in MB | 65536 |
+| `cvm_max_vcpu` | Maximum vCPUs for all CVMs | Auto (total - 4) |
+| `cvm_max_memory_mb` | Maximum memory for all CVMs in MB | Auto (total - 16GB) |
 | `vmm_kms_url` | KMS service URL | http://127.0.0.1:8081 |
 | `cvm_cid_start` | Starting CID for CVMs | 1000 |
 | `cvm_cid_pool_size` | Number of CIDs in pool | 1000 |
+| `host_reserved_vcpu` | vCPUs reserved for host OS | 4 |
+| `host_reserved_mem_mb` | Memory reserved for host OS (MB) | 16384 |
+| `cvm_network_mode` | Networking mode: user, passt, or host | user |
+| `gateway_base_domain` | Base domain for gateway | localhost |
 
 **Examples:**
 
 ```bash
-# Custom resource limits for a high-capacity server
+# Use auto-detection (RECOMMENDED for most cases)
+ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml
+
+# Use passt networking mode (recommended for production)
+ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+  -e "cvm_network_mode=passt"
+
+# Configure with custom gateway domain
+ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+  -e "gateway_base_domain=hosted.dstack.info"
+
+# Override with specific limits
 ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
   -e "cvm_max_vcpu=32" -e "cvm_max_memory_mb=131072"
+
+# Reserve more resources for host OS (busy servers)
+ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+  -e "host_reserved_vcpu=8" -e "host_reserved_mem_mb=32768"
 
 # Enable debug logging for troubleshooting
 ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
   -e "vmm_log_level=debug"
 
-# Development configuration with minimal resources
+# Production setup with passt, custom domain, and more host resources
 ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
-  -e "vmm_workers=4" -e "cvm_max_vcpu=4" -e "cvm_max_memory_mb=8192"
+  -e "cvm_network_mode=passt" \
+  -e "gateway_base_domain=hosted.dstack.info" \
+  -e "host_reserved_vcpu=8" \
+  -e "host_reserved_mem_mb=32768"
 ```
 
 ### Verify with Ansible
