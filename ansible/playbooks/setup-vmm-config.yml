@@ -5,76 +5,82 @@
 # This playbook AUTO-DETECTS server resources and configures VMM appropriately.
 # It reserves resources for the host OS and allocates the rest to CVMs.
 #
-# Configurable variables (pass with -e to override auto-detection):
-#   vmm_workers        - Number of worker threads (default: auto-detected, 1 per 8 vCPUs)
+# PRODUCTION SETUP (recommended):
+#   ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+#     -e "cvm_network_mode=passt" \
+#     -e "gateway_base_domain=hosted.dstack.info" \
+#     -e "auth_enabled=true"
+#
+# Configurable variables (pass with -e to override):
+#
+#   PRODUCTION SETTINGS:
+#   auth_enabled       - Enable API authentication (default: false, ENABLE for production)
+#   auth_token         - Auth token (auto-generated if auth_enabled and not provided)
+#   cvm_network_mode   - Networking mode: user, passt, host (default: user, use passt for production)
+#   gateway_base_domain - Base domain for gateway (default: localhost)
+#
+#   RESOURCE SETTINGS (auto-detected):
+#   vmm_workers        - Number of worker threads (default: auto, 1 per 8 vCPUs)
+#   cvm_max_vcpu       - Max vCPUs for all CVMs (default: auto, total minus 4)
+#   cvm_max_memory_mb  - Max memory for all CVMs in MB (default: auto, total minus 16GB)
+#   host_reserved_vcpu - vCPUs to reserve for host OS (default: 4)
+#   host_reserved_mem_mb - Memory in MB to reserve for host OS (default: 16384)
+#
+#   OTHER SETTINGS:
 #   vmm_log_level      - Log level: debug, info, warn, error (default: info)
-#   cvm_max_vcpu       - Max vCPUs for all CVMs (default: auto - total vCPUs minus 4)
-#   cvm_max_memory_mb  - Max memory for all CVMs in MB (default: auto - total RAM minus 16GB)
 #   vmm_kms_url        - KMS service URL (default: http://127.0.0.1:8081)
 #   cvm_cid_start      - Starting CID for CVMs (default: 1000)
 #   cvm_cid_pool_size  - Number of CIDs in pool (default: 1000)
-#   host_reserved_vcpu - vCPUs to reserve for host OS (default: 4)
-#   host_reserved_mem_mb - Memory in MB to reserve for host OS (default: 16384)
-#   cvm_network_mode   - Networking mode: user, passt, or host (default: user)
-#   gateway_base_domain - Base domain for gateway (default: localhost)
+#   gateway_port       - Gateway port (default: 8082)
+#   gateway_agent_port - Gateway agent port (default: 8090)
 #
 # Examples:
-#   # Auto-detect and configure based on server resources (RECOMMENDED)
-#   ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml
-#
-#   # Override auto-detection with specific limits
+#   # Production setup (recommended)
 #   ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
-#     -e "cvm_max_vcpu=32" -e "cvm_max_memory_mb=131072"
+#     -e "cvm_network_mode=passt" \
+#     -e "gateway_base_domain=hosted.dstack.info" \
+#     -e "auth_enabled=true"
 #
-#   # Reserve more resources for host OS
+#   # Production with custom auth token
 #   ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
-#     -e "host_reserved_vcpu=8" -e "host_reserved_mem_mb=32768"
+#     -e "cvm_network_mode=passt" \
+#     -e "gateway_base_domain=hosted.dstack.info" \
+#     -e "auth_enabled=true" \
+#     -e "auth_token=your-custom-secure-token"
 #
-#   # Enable debug logging
+#   # Development setup (no auth, user networking, debug logging)
 #   ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
 #     -e "vmm_log_level=debug"
 #
-#   # Use passt networking mode (recommended for production)
+#   # Override resource limits
 #   ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
-#     -e "cvm_network_mode=passt"
-#
-#   # Configure with custom gateway domain
-#   ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
-#     -e "gateway_base_domain=hosted.dstack.info"
-#
-# This playbook:
-# - Detects server CPU count and total memory
-# - Calculates appropriate resource limits (reserving resources for host OS)
-# - Creates /etc/dstack directory
-# - Creates vmm.toml configuration file with server-appropriate settings
-# - Creates runtime directories
-# - Sets appropriate permissions
+#     -e "cvm_max_vcpu=32" -e "cvm_max_memory_mb=131072"
 
 - name: Setup VMM Configuration
   hosts: dstack_servers
   become: true
   vars:
-    # Directory paths (generally don't need to change)
+    # Directory paths
     dstack_config_dir: "/etc/dstack"
     dstack_run_dir: "/var/run/dstack"
     dstack_log_dir: "/var/log/dstack"
     dstack_lib_dir: "/var/lib/dstack"
 
-    # Host OS reservations (how much to keep for the host)
+    # Host OS reservations
     host_reserved_vcpu: 4
     host_reserved_mem_mb: 16384
 
-    # VMM Configuration defaults - override with -e flags
+    # VMM Configuration defaults
     vmm_log_level: "info"
     vmm_address: "unix:/var/run/dstack/vmm.sock"
     vmm_kms_url: "http://127.0.0.1:8081"
 
-    # CVM Configuration defaults - will be auto-calculated if not overridden
+    # CVM Configuration defaults
     cvm_cid_start: 1000
     cvm_cid_pool_size: 1000
 
     # Networking configuration
-    # Options: user (default, simple), passt (better performance), host (no isolation)
+    # Options: user (default), passt (production), host (no isolation)
     cvm_network_mode: "user"
     cvm_network_net: "10.0.2.0/24"
     cvm_network_dhcp_start: "10.0.2.10"
@@ -83,6 +89,11 @@
     gateway_base_domain: "localhost"
     gateway_port: 8082
     gateway_agent_port: 8090
+
+    # Authentication configuration
+    # IMPORTANT: Set auth_enabled=true for production!
+    auth_enabled: false
+    # auth_token: ""  # Leave undefined to auto-generate when auth_enabled=true
 
   tasks:
     # =========================================================================
@@ -103,19 +114,35 @@
       ansible.builtin.set_fact:
         total_vcpu: "{{ detected_vcpu.stdout | int }}"
         total_mem_mb: "{{ detected_mem_mb.stdout | int }}"
-        # Calculate allocable resources (total minus host reservation)
         calculated_max_vcpu: "{{ [detected_vcpu.stdout | int - host_reserved_vcpu | int, 1] | max }}"
         calculated_max_mem_mb: "{{ [detected_mem_mb.stdout | int - host_reserved_mem_mb | int, 1024] | max }}"
-        # Calculate workers (1 per 8 vCPUs, minimum 4, maximum 32)
         calculated_workers: "{{ [[detected_vcpu.stdout | int // 8, 4] | max, 32] | min }}"
 
-    - name: Set final resource values (with optional overrides)
+    - name: Set final resource values
       ansible.builtin.set_fact:
         cvm_max_vcpu: "{{ cvm_max_vcpu | default(calculated_max_vcpu) }}"
         cvm_max_memory_mb: "{{ cvm_max_memory_mb | default(calculated_max_mem_mb) }}"
         vmm_workers: "{{ vmm_workers | default(calculated_workers) }}"
         vmm_max_blocking: "{{ vmm_max_blocking | default(64) }}"
 
+    # =========================================================================
+    # AUTHENTICATION TOKEN GENERATION
+    # =========================================================================
+    - name: Generate auth token if auth enabled and no token provided
+      ansible.builtin.shell: |
+        openssl rand -hex 32
+      register: generated_token
+      changed_when: false
+      when: auth_enabled | bool and (auth_token is not defined or auth_token == "")
+
+    - name: Set auth token
+      ansible.builtin.set_fact:
+        final_auth_token: "{{ auth_token | default(generated_token.stdout | default('')) }}"
+      when: auth_enabled | bool
+
+    # =========================================================================
+    # DISPLAY CONFIGURATION
+    # =========================================================================
     - name: Display detected and configured resources
       ansible.builtin.debug:
         msg:
@@ -161,7 +188,7 @@
     - name: Create VMM configuration file
       ansible.builtin.copy:
         dest: "{{ dstack_config_dir }}/vmm.toml"
-        mode: '0644'
+        mode: '0640'
         content: |
           # dstack VMM Configuration
           # Generated by Ansible
@@ -183,7 +210,7 @@
           [cvm]
           qemu_path = ""
           kms_urls = ["{{ vmm_kms_url }}"]
-          gateway_urls = ["http://127.0.0.1:8082"]
+          gateway_urls = ["http://127.0.0.1:{{ gateway_port }}"]
           pccs_url = ""
           docker_registry = ""
           cid_start = {{ cvm_cid_start }}
@@ -228,8 +255,12 @@
           agent_port = {{ gateway_agent_port }}
 
           [auth]
-          enabled = false
+          enabled = {{ auth_enabled | lower }}
+          {% if auth_enabled | bool and final_auth_token is defined and final_auth_token != "" %}
+          tokens = ["{{ final_auth_token }}"]
+          {% else %}
           tokens = []
+          {% endif %}
 
           [supervisor]
           exe = "/usr/local/bin/dstack-supervisor"
@@ -279,5 +310,38 @@
           - "  - Reserved vCPUs: {{ host_reserved_vcpu }}"
           - "  - Reserved Memory: {{ (host_reserved_mem_mb | int / 1024) | round(1) }}GB"
           - "=============================================="
+
+    - name: Display authentication info (when enabled)
+      ansible.builtin.debug:
+        msg:
           - ""
-          - "Next: Run 'ansible-playbook playbooks/verify-vmm-config.yml' to verify"
+          - "=============================================="
+          - "AUTHENTICATION"
+          - "=============================================="
+          - "  - Auth Enabled: {{ auth_enabled }}"
+          - "  - Auth Token: {{ final_auth_token }}"
+          - ""
+          - "IMPORTANT: Save this token securely!"
+          - "You will need it to access the VMM API."
+          - "=============================================="
+      when: auth_enabled | bool and final_auth_token is defined and final_auth_token != ""
+
+    - name: Warn if auth is disabled
+      ansible.builtin.debug:
+        msg:
+          - ""
+          - "⚠️  WARNING: Authentication is DISABLED"
+          - ""
+          - "For production, enable authentication:"
+          - "  ansible-playbook ... -e 'auth_enabled=true'"
+          - ""
+      when: not (auth_enabled | bool)
+
+    - name: Display next steps
+      ansible.builtin.debug:
+        msg:
+          - ""
+          - "Next steps:"
+          - "  1. Verify: ansible-playbook playbooks/verify-vmm-config.yml"
+          - "  2. Setup service: ansible-playbook playbooks/setup-vmm-service.yml"
+          - ""

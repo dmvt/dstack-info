@@ -4,7 +4,7 @@ description: "Configure the dstack Virtual Machine Monitor for your environment"
 section: "dstack Installation"
 stepNumber: 4
 totalSteps: 5
-lastUpdated: 2025-11-19
+lastUpdated: 2025-12-04
 prerequisites:
   - clone-build-dstack-vmm
 tags:
@@ -18,16 +18,7 @@ estimatedTime: "15 minutes"
 
 # VMM Configuration
 
-This tutorial guides you through configuring the dstack Virtual Machine Monitor (VMM). The VMM uses a TOML configuration file to define server settings, VM resource limits, networking, and service endpoints.
-
-## Configuration Overview
-
-The VMM configuration file controls:
-
-- **Server Settings** - Listen address, worker threads, logging
-- **CVM Settings** - VM resource limits, QEMU paths, KMS/Gateway URLs
-- **Networking** - VM network mode and IP settings
-- **Services** - Gateway, authentication, supervisor, key provider
+This tutorial guides you through configuring the dstack Virtual Machine Monitor (VMM) for **production use**. The VMM uses a TOML configuration file to define server settings, VM resource limits, networking, authentication, and service endpoints.
 
 ## Prerequisites
 
@@ -35,33 +26,130 @@ Before starting, ensure you have:
 
 - Completed [Clone & Build dstack-vmm](/tutorial/clone-build-dstack-vmm)
 - SSH access to your TDX-enabled server
-- Root or sudo privileges for creating system directories
+- Root or sudo privileges
+- Your gateway domain configured (e.g., `hosted.dstack.info`)
 
-## Connect to Your Server
+## Quick Start: Production Setup with Ansible
 
-Connect to your TDX server via SSH as the `ubuntu` user:
+For most users, the recommended approach is to use the Ansible playbook which **automatically detects** your server's resources and configures VMM with production-ready settings.
+
+### Step 1: Run the Ansible Playbook
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+  -e "cvm_network_mode=passt" \
+  -e "gateway_base_domain=YOUR_DOMAIN" \
+  -e "auth_enabled=true"
+```
+
+Replace `YOUR_DOMAIN` with your actual gateway domain (e.g., `hosted.dstack.info`).
+
+The playbook will:
+1. **Detect server resources** - CPU count and total memory
+2. **Calculate optimal limits** - Reserve resources for host OS, allocate rest to CVMs
+3. **Generate a secure auth token** - For API authentication
+4. **Configure passt networking** - Better performance for production
+5. **Create all directories** - Config, runtime, logs, data
+6. **Set appropriate permissions**
+
+### Step 2: Note Your Auth Token
+
+The playbook generates a secure authentication token and displays it in the output:
+
+```
+Authentication:
+  - Auth Enabled: true
+  - Auth Token: <your-generated-token>
+
+IMPORTANT: Save this token securely! You will need it to access the VMM API.
+```
+
+**Save this token** - you'll need it to interact with the VMM API.
+
+### Step 3: Verify Configuration
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/verify-vmm-config.yml
+```
+
+---
+
+## Ansible Configuration Options
+
+### Required Production Settings
+
+| Variable | Description | Recommended Value |
+|----------|-------------|-------------------|
+| `cvm_network_mode` | Networking mode | `passt` (production) |
+| `gateway_base_domain` | Your gateway domain | Your domain |
+| `auth_enabled` | Enable API authentication | `true` |
+
+### Auto-Detected Settings
+
+These are automatically calculated based on your server's resources:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `cvm_max_vcpu` | Max vCPUs for all CVMs | Total vCPUs - 4 |
+| `cvm_max_memory_mb` | Max memory for all CVMs (MB) | Total RAM - 16GB |
+| `vmm_workers` | Worker threads | 1 per 8 vCPUs (min 4, max 32) |
+
+### Optional Overrides
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `vmm_log_level` | Log level (debug, info, warn, error) | `info` |
+| `host_reserved_vcpu` | vCPUs reserved for host OS | `4` |
+| `host_reserved_mem_mb` | Memory reserved for host OS (MB) | `16384` |
+| `auth_token` | Custom auth token (auto-generated if not set) | Auto-generated |
+| `vmm_kms_url` | KMS service URL | `http://127.0.0.1:8081` |
+| `cvm_cid_start` | Starting CID for CVMs | `1000` |
+| `cvm_cid_pool_size` | Number of CIDs in pool | `1000` |
+| `gateway_port` | Gateway port | `8082` |
+
+### Example Commands
+
+```bash
+# Production setup (recommended)
+ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+  -e "cvm_network_mode=passt" \
+  -e "gateway_base_domain=hosted.dstack.info" \
+  -e "auth_enabled=true"
+
+# Production with custom auth token
+ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+  -e "cvm_network_mode=passt" \
+  -e "gateway_base_domain=hosted.dstack.info" \
+  -e "auth_enabled=true" \
+  -e "auth_token=your-custom-secure-token"
+
+# Production with more host resources reserved
+ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+  -e "cvm_network_mode=passt" \
+  -e "gateway_base_domain=hosted.dstack.info" \
+  -e "auth_enabled=true" \
+  -e "host_reserved_vcpu=8" \
+  -e "host_reserved_mem_mb=32768"
+
+# Development setup (no auth, user networking)
+ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
+  -e "vmm_log_level=debug"
+```
+
+---
+
+## Manual Configuration
+
+If you prefer to configure VMM manually, follow these steps.
+
+### Step 1: Connect to Your Server
 
 ```bash
 ssh ubuntu@YOUR_SERVER_IP
 ```
 
-This tutorial uses `sudo` for commands that require root privileges.
-
----
-
-## Step 1: Create Configuration Directory
-
-Create the dstack configuration directory:
-
-```bash
-sudo mkdir -p /etc/dstack
-```
-
-This directory will hold all dstack configuration files.
-
-## Step 2: Check Server Resources
-
-Before creating the configuration, check your server's available resources:
+### Step 2: Check Server Resources
 
 ```bash
 # Check CPU cores
@@ -71,25 +159,42 @@ nproc
 free -m | awk '/^Mem:/{print $2}'
 ```
 
-Use these values to determine appropriate resource limits. Reserve some resources for the host OS:
-- **vCPUs**: Reserve 4 cores for the host OS
-- **Memory**: Reserve 16GB for the host OS
+Calculate your resource limits:
+- **Max vCPUs**: Total cores - 4 (reserve for host)
+- **Max Memory**: Total MB - 16384 (reserve 16GB for host)
+- **Workers**: Total cores / 8 (minimum 4, maximum 32)
 
 For example, on a 128-core, 1TB RAM server:
-- Max allocable vCPUs: 128 - 4 = **124**
-- Max allocable memory: 1,007,000 - 16,000 = **991,000 MB**
+- Max vCPUs: 128 - 4 = **124**
+- Max Memory: 1,007,000 - 16,384 = **990,616 MB**
+- Workers: 128 / 8 = **16**
 
-## Step 3: Create VMM Configuration File
+### Step 3: Generate an Auth Token
 
-Create the VMM configuration file. **Adjust the resource limits** based on your server's resources (see Step 2):
+```bash
+# Generate a secure random token
+AUTH_TOKEN=$(openssl rand -hex 32)
+echo "Your auth token: $AUTH_TOKEN"
+echo "Save this token securely!"
+```
+
+### Step 4: Create Configuration Directory
+
+```bash
+sudo mkdir -p /etc/dstack
+```
+
+### Step 5: Create VMM Configuration File
+
+Replace the placeholder values with your actual settings:
 
 ```bash
 sudo tee /etc/dstack/vmm.toml > /dev/null <<'EOF'
-# dstack VMM Configuration
+# dstack VMM Configuration - Production
 # See: https://dstack.info/tutorial/vmm-configuration
 
 # Server settings
-workers = 8
+workers = 16                                    # Adjust based on your CPU count
 max_blocking = 64
 ident = "dstack VMM"
 temp_dir = "/tmp"
@@ -109,8 +214,8 @@ pccs_url = ""
 docker_registry = ""
 cid_start = 1000
 cid_pool_size = 1000
-max_allocable_vcpu = 16
-max_allocable_memory_in_mb = 65536
+max_allocable_vcpu = 124                        # Adjust: total cores - 4
+max_allocable_memory_in_mb = 990616             # Adjust: total MB - 16384
 qmp_socket = false
 user = ""
 use_mrconfigid = true
@@ -118,10 +223,7 @@ qemu_pci_hole64_size = 0
 qemu_hotplug_off = false
 
 [cvm.networking]
-mode = "user"
-net = "10.0.2.0/24"
-dhcp_start = "10.0.2.10"
-restrict = false
+mode = "passt"                                  # Production: use passt
 
 [cvm.port_mapping]
 enabled = false
@@ -142,13 +244,13 @@ include = []
 allow_attach_all = false
 
 [gateway]
-base_domain = "localhost"
+base_domain = "hosted.dstack.info"              # Your gateway domain
 port = 8082
 agent_port = 8090
 
 [auth]
-enabled = false
-tokens = []
+enabled = true                                  # Production: enable auth
+tokens = ["YOUR_AUTH_TOKEN_HERE"]               # Replace with your token
 
 [supervisor]
 exe = "/usr/local/bin/dstack-supervisor"
@@ -170,70 +272,53 @@ port = 3443
 EOF
 ```
 
-## Step 4: Create Runtime Directories
+**Important:** Replace `YOUR_AUTH_TOKEN_HERE` with the token you generated in Step 3.
 
-Create directories for runtime files:
+### Step 6: Create Runtime Directories
 
 ```bash
 sudo mkdir -p /var/run/dstack
 sudo mkdir -p /var/log/dstack
 sudo mkdir -p /var/lib/dstack
+sudo chmod 755 /var/run/dstack /var/log/dstack /var/lib/dstack
 ```
 
-Set appropriate permissions:
+### Step 7: Install passt (Required for Production)
 
 ```bash
-sudo chmod 755 /var/run/dstack
-sudo chmod 755 /var/log/dstack
-sudo chmod 755 /var/lib/dstack
+sudo apt update
+sudo apt install -y passt
 ```
 
-## Step 5: Verify Configuration
-
-Verify the configuration file exists and is readable:
+### Step 8: Verify Configuration
 
 ```bash
+# Check config file exists
 cat /etc/dstack/vmm.toml
+
+# Verify TOML syntax
+python3 -c "import tomllib; tomllib.load(open('/etc/dstack/vmm.toml', 'rb'))"
 ```
 
-Check configuration syntax by attempting to start VMM briefly (it will fail without KMS, but validates config):
-
-```bash
-sudo dstack-vmm --config /etc/dstack/vmm.toml serve &
-sleep 2
-sudo pkill -f dstack-vmm
-```
-
-**Note:** VMM must run as root because it manages TDX virtual machines and needs access to system resources.
+---
 
 ## Configuration Reference
 
-### Server Settings
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `workers` | Number of worker threads | 8 |
-| `max_blocking` | Maximum blocking threads | 64 |
-| `log_level` | Logging level (debug, info, warn, error) | info |
-| `address` | Listen address (unix socket or TCP) | unix:/var/run/dstack/vmm.sock |
-| `kms_url` | Key Management Service URL | http://127.0.0.1:8081 |
-
-### CVM Settings
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `max_allocable_vcpu` | Maximum vCPUs across all VMs | 16 |
-| `max_allocable_memory_in_mb` | Maximum memory in MB | 65536 |
-| `cid_start` | Starting CID for VMs | 1000 |
-| `cid_pool_size` | Number of available CIDs | 1000 |
-| `kms_urls` | KMS URLs for VMs | ["http://127.0.0.1:8081"] |
-| `gateway_urls` | Gateway URLs for VMs | ["http://127.0.0.1:8082"] |
-
 ### Networking Modes
 
-The VMM supports several networking modes:
+| Mode | Performance | Isolation | Setup | Recommended For |
+|------|-------------|-----------|-------|-----------------|
+| `passt` | Best | Good | Requires passt package | **Production** |
+| `user` | Good | Good | None | Development/Testing |
+| `host` | Best | None | None | Special cases only |
 
-**User Mode (default):**
+**Passt Mode (Production):**
+```toml
+[cvm.networking]
+mode = "passt"
+```
+
+**User Mode (Development):**
 ```toml
 [cvm.networking]
 mode = "user"
@@ -241,320 +326,123 @@ net = "10.0.2.0/24"
 dhcp_start = "10.0.2.10"
 restrict = false
 ```
-- Simple setup, no special privileges required
-- Uses QEMU's built-in user networking
-- Good for development and testing
 
-**Passt Mode:**
-```toml
-[cvm.networking]
-mode = "passt"
-```
-- Better performance
-- Requires passt binary installed (`sudo apt install passt`)
-- Recommended for production
+### Authentication
 
-**Host Mode:**
-```toml
-[cvm.networking]
-mode = "host"
-```
-- Uses host networking directly
-- No isolation between CVM and host network
-- Best performance, but least isolation
-
-### Adjusting Resource Limits
-
-First, check your server's available resources:
-
-```bash
-# Check CPU cores
-nproc
-
-# Check total memory in MB
-free -m | awk '/^Mem:/{print $2}'
-```
-
-Then adjust the settings, reserving some resources for the host OS:
+For production, always enable authentication:
 
 ```toml
-[cvm]
-# Example: Server with 32 cores and 128GB RAM
-# Reserve ~4 cores and ~16GB for the host
-max_allocable_vcpu = 28
-max_allocable_memory_in_mb = 110000
+[auth]
+enabled = true
+tokens = ["your-secure-token-here"]
 ```
 
-**Recommended reservations:**
-- **vCPUs:** Reserve 2-4 cores for the host OS
-- **Memory:** Reserve 8-16GB for the host OS
+You can specify multiple tokens for different clients:
 
-### Enabling GPU Passthrough
+```toml
+[auth]
+enabled = true
+tokens = [
+    "token-for-admin",
+    "token-for-ci-cd",
+    "token-for-monitoring"
+]
+```
 
-To enable GPU passthrough for AI workloads:
+### GPU Passthrough
+
+To enable GPU passthrough for AI/ML workloads:
 
 ```toml
 [cvm.gpu]
 enabled = true
-listing = ["10de:2335"]  # NVIDIA GPU product IDs
+listing = ["10de:2335"]          # NVIDIA GPU product IDs
 allow_attach_all = true
 ```
 
-**Note:** GPU passthrough requires IOMMU enabled in BIOS and proper VFIO setup.
+**Requirements:**
+- IOMMU enabled in BIOS
+- VFIO driver configured
+- GPU not in use by host
 
-## Ansible Automation
-
-You can automate the configuration using Ansible. The playbook **automatically detects** your server's resources and configures VMM with appropriate limits.
-
-### Run the Ansible playbook
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml
-```
-
-The playbook will:
-1. **Detect server resources** - CPU count and total memory
-2. **Calculate optimal limits** - Reserve resources for host OS, allocate rest to CVMs
-3. Create /etc/dstack directory
-4. Create vmm.toml configuration file with server-appropriate settings
-5. Create runtime directories
-6. Set appropriate permissions
-
-### Automatic Resource Detection
-
-The playbook detects your server's resources and calculates appropriate limits:
-
-- **vCPUs for CVMs**: Total vCPUs minus 4 (reserved for host OS)
-- **Memory for CVMs**: Total RAM minus 16GB (reserved for host OS)
-- **VMM Workers**: 1 worker per 8 vCPUs (minimum 4, maximum 32)
-
-**Example output on a 128-core, 1TB RAM server:**
-
-```
-Server Resources (detected):
-  - Total vCPUs: 128
-  - Total Memory: 1007.3GB
-
-CVM Resource Limits (configured):
-  - Max Allocable vCPUs: 124
-  - Max Allocable Memory: 991.3GB
-  - VMM Workers: 16
-
-Host OS Reservations:
-  - Reserved vCPUs: 4
-  - Reserved Memory: 16.0GB
-```
-
-### Customizing with command-line variables
-
-You can override the auto-detected values using `-e` flags:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `vmm_workers` | Number of worker threads | Auto (1 per 8 vCPUs) |
-| `vmm_log_level` | Log level (debug, info, warn, error) | info |
-| `cvm_max_vcpu` | Maximum vCPUs for all CVMs | Auto (total - 4) |
-| `cvm_max_memory_mb` | Maximum memory for all CVMs in MB | Auto (total - 16GB) |
-| `vmm_kms_url` | KMS service URL | http://127.0.0.1:8081 |
-| `cvm_cid_start` | Starting CID for CVMs | 1000 |
-| `cvm_cid_pool_size` | Number of CIDs in pool | 1000 |
-| `host_reserved_vcpu` | vCPUs reserved for host OS | 4 |
-| `host_reserved_mem_mb` | Memory reserved for host OS (MB) | 16384 |
-| `cvm_network_mode` | Networking mode: user, passt, or host | user |
-| `gateway_base_domain` | Base domain for gateway | localhost |
-
-**Examples:**
-
-```bash
-# Use auto-detection (RECOMMENDED for most cases)
-ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml
-
-# Use passt networking mode (recommended for production)
-ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
-  -e "cvm_network_mode=passt"
-
-# Configure with custom gateway domain
-ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
-  -e "gateway_base_domain=hosted.dstack.info"
-
-# Override with specific limits
-ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
-  -e "cvm_max_vcpu=32" -e "cvm_max_memory_mb=131072"
-
-# Reserve more resources for host OS (busy servers)
-ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
-  -e "host_reserved_vcpu=8" -e "host_reserved_mem_mb=32768"
-
-# Enable debug logging for troubleshooting
-ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
-  -e "vmm_log_level=debug"
-
-# Production setup with passt, custom domain, and more host resources
-ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml \
-  -e "cvm_network_mode=passt" \
-  -e "gateway_base_domain=hosted.dstack.info" \
-  -e "host_reserved_vcpu=8" \
-  -e "host_reserved_mem_mb=32768"
-```
-
-### Verify with Ansible
-
-After running the setup playbook, verify the configuration:
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/verify-vmm-config.yml
-```
-
-The verification playbook checks:
-- Configuration file exists and is readable
-- All runtime directories exist
-- Configuration values are valid
-
-## Customization Examples
-
-### Development Configuration
-
-For a development environment with reduced resources:
-
-```toml
-workers = 4
-log_level = "debug"
-
-[cvm]
-max_allocable_vcpu = 4
-max_allocable_memory_in_mb = 8192
-```
-
-### Production Configuration
-
-For a production server with maximum resources:
-
-```toml
-workers = 16
-log_level = "info"
-
-[cvm]
-max_allocable_vcpu = 48
-max_allocable_memory_in_mb = 200000
-
-[auth]
-enabled = true
-tokens = ["your-secret-token-here"]
-```
-
-### Custom Domain Configuration
-
-When using a custom domain for the gateway:
-
-```toml
-[gateway]
-base_domain = "dstack.yourdomain.com"
-port = 8082
-agent_port = 8090
-```
+---
 
 ## Troubleshooting
 
 ### Configuration file not found
 
-If VMM reports configuration not found:
-
 ```bash
-# Check file exists
 ls -la /etc/dstack/vmm.toml
-
-# Check permissions
-stat /etc/dstack/vmm.toml
 ```
 
 ### TOML syntax errors
 
-If VMM fails to parse configuration:
-
 ```bash
-# Validate TOML syntax
-cat /etc/dstack/vmm.toml | python3 -c "import toml, sys; toml.load(sys.stdin)"
-
-# Or install toml-cli
-pip install toml-cli
-toml-cli /etc/dstack/vmm.toml
+python3 -c "import tomllib; tomllib.load(open('/etc/dstack/vmm.toml', 'rb'))"
 ```
 
 ### Permission denied on socket
 
-If VMM cannot create socket file:
+```bash
+sudo ls -la /var/run/dstack/
+sudo chmod 755 /var/run/dstack
+```
+
+### Passt not found
 
 ```bash
-# Check directory permissions
-ls -la /var/run/dstack/
-
-# Fix ownership
-sudo chown $USER:$USER /var/run/dstack/
+sudo apt update && sudo apt install -y passt
+which passt
 ```
 
 ### Resource limit errors
 
-If VMs fail to start due to resource limits:
+Check current usage and adjust limits:
 
 ```bash
-# Check current resource usage
 ps aux --sort=-%mem | head
-
-# Adjust limits in vmm.toml
-# Reduce max_allocable_vcpu or max_allocable_memory_in_mb
+# Then reduce max_allocable_vcpu or max_allocable_memory_in_mb
 ```
+
+---
 
 ## Verification Checklist
 
-Before proceeding, verify you have:
+Before proceeding, verify:
 
-- [ ] Created /etc/dstack directory
-- [ ] Created /etc/dstack/vmm.toml configuration file
-- [ ] Created /var/run/dstack directory
-- [ ] Created /var/log/dstack directory
-- [ ] Created /var/lib/dstack directory
-- [ ] Set appropriate permissions on all directories
-- [ ] Reviewed and adjusted resource limits for your server
+- [ ] Configuration file exists at `/etc/dstack/vmm.toml`
+- [ ] Runtime directories created (`/var/run/dstack`, `/var/log/dstack`, `/var/lib/dstack`)
+- [ ] Resource limits appropriate for your server
+- [ ] Networking mode set to `passt` for production
+- [ ] Authentication enabled with secure token
+- [ ] Gateway domain configured correctly
+- [ ] passt package installed (for production)
 
-### Quick verification script
-
-Run this script to verify your configuration:
+### Quick Verification Script
 
 ```bash
 #!/bin/bash
 echo "Checking VMM configuration..."
 
 # Check config file
-if [ -f "/etc/dstack/vmm.toml" ]; then
-    echo "✓ Configuration file exists"
-else
-    echo "✗ Configuration file not found"
-    exit 1
-fi
+[ -f "/etc/dstack/vmm.toml" ] && echo "✓ Config file exists" || echo "✗ Config file missing"
 
 # Check directories
 for dir in /var/run/dstack /var/log/dstack /var/lib/dstack; do
-    if [ -d "$dir" ]; then
-        echo "✓ Directory exists: $dir"
-    else
-        echo "✗ Directory not found: $dir"
-        exit 1
-    fi
+    [ -d "$dir" ] && echo "✓ Directory: $dir" || echo "✗ Missing: $dir"
 done
 
-# Check config is readable
-if cat /etc/dstack/vmm.toml > /dev/null 2>&1; then
-    echo "✓ Configuration file is readable"
-else
-    echo "✗ Configuration file is not readable"
-    exit 1
-fi
+# Check passt
+which passt > /dev/null && echo "✓ passt installed" || echo "✗ passt not installed"
 
-echo ""
-echo "VMM configuration verified successfully!"
+# Check auth enabled
+grep -q 'enabled = true' /etc/dstack/vmm.toml && echo "✓ Auth enabled" || echo "⚠ Auth disabled"
+
+# Check network mode
+grep -q 'mode = "passt"' /etc/dstack/vmm.toml && echo "✓ Passt networking" || echo "⚠ Not using passt"
 ```
+
+---
 
 ## Next Steps
 
@@ -566,4 +454,4 @@ With VMM configured, proceed to set up the systemd service:
 
 - [dstack GitHub Repository](https://github.com/Dstack-TEE/dstack)
 - [TOML Specification](https://toml.io/en/)
-- [QEMU Documentation](https://www.qemu.org/docs/master/)
+- [passt Documentation](https://passt.top/)
