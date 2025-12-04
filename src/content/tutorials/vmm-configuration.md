@@ -37,6 +37,18 @@ Before starting, ensure you have:
 - SSH access to your TDX-enabled server
 - Root or sudo privileges for creating system directories
 
+## Connect to Your Server
+
+Connect to your TDX server via SSH as the `ubuntu` user:
+
+```bash
+ssh ubuntu@YOUR_SERVER_IP
+```
+
+This tutorial uses `sudo` for commands that require root privileges.
+
+---
+
 ## Step 1: Create Configuration Directory
 
 Create the dstack configuration directory:
@@ -164,13 +176,15 @@ Verify the configuration file exists and is readable:
 cat /etc/dstack/vmm.toml
 ```
 
-Check configuration syntax by attempting to start VMM (it will fail without KMS, but validates config):
+Check configuration syntax by attempting to start VMM briefly (it will fail without KMS, but validates config):
 
 ```bash
-dstack-vmm --config /etc/dstack/vmm.toml serve &
+sudo dstack-vmm --config /etc/dstack/vmm.toml serve &
 sleep 2
-pkill -f dstack-vmm
+sudo pkill -f dstack-vmm
 ```
+
+**Note:** VMM must run as root because it manages TDX virtual machines and needs access to system resources.
 
 ## Configuration Reference
 
