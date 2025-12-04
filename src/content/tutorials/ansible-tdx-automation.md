@@ -212,14 +212,6 @@ ansible-playbook --syntax-check playbooks/verify-tdx.yml
 playbook: playbooks/verify-tdx.yml
 ```
 
-### Dry Run (Check Mode)
-
-Test what the playbook would do without making changes:
-
-```bash
-ansible-playbook --check playbooks/verify-tdx.yml -i inventory/hosts.yml
-```
-
 ### Run Verification
 
 Execute the full verification:
@@ -411,15 +403,7 @@ ansible-lint playbooks/verify-tdx.yml
 
 ## Best Practices
 
-### 1. Test Before Production
-
-Always run with `--check` first:
-
-```bash
-ansible-playbook --check playbooks/verify-tdx.yml -i inventory/hosts.yml
-```
-
-### 2. Version Control Your Inventory
+### 1. Version Control Your Inventory
 
 Create a git repository for your inventory (separate from dstack-info):
 
@@ -434,7 +418,7 @@ git commit -m "Initial TDX inventory"
 
 **Security:** Never commit sensitive data. Use Ansible Vault for secrets.
 
-### 3. Use Ansible Vault for Sensitive Data
+### 2. Use Ansible Vault for Sensitive Data
 
 If you need to store sensitive variables:
 
@@ -443,7 +427,7 @@ ansible-vault create group_vars/all.yml
 # Enter password when prompted
 ```
 
-### 4. Verify Idempotence
+### 3. Verify Idempotence
 
 Run the playbook twice to ensure it's idempotent:
 
