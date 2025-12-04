@@ -12,7 +12,9 @@
   hosts: dstack_servers
   become: false
   vars:
-    dstack_repo_path: "{{ ansible_env.HOME }}/dstack"
+    # dstack is cloned to the connecting user's home directory
+    user_home: "/home/{{ ansible_user }}"
+    dstack_repo_path: "{{ user_home }}/dstack"
     vmm_install_path: "/usr/local/bin/dstack-vmm"
 
   tasks:

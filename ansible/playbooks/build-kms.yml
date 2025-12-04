@@ -35,13 +35,18 @@
   hosts: dstack_servers
   become: false
   vars:
-    dstack_repo_path: "{{ ansible_env.HOME }}/dstack"
-    cargo_bin: "{{ ansible_env.HOME }}/.cargo/bin"
+    # Use the connecting user's home directory
+    user_home: "/home/{{ ansible_user }}"
+    dstack_repo_path: "{{ user_home }}/dstack"
+    cargo_bin: "{{ user_home }}/.cargo/bin"
     kms_install_path: "/usr/local/bin/dstack-kms"
     kms_config_dir: "/etc/kms"
     kms_certs_dir: "/etc/kms/certs"
     kms_run_dir: "/var/run/kms"
     kms_log_dir: "/var/log/kms"
+  environment:
+    RUSTUP_HOME: "{{ user_home }}/.rustup"
+    CARGO_HOME: "{{ user_home }}/.cargo"
 
     # Default configuration values
     kms_workers: 8

@@ -12,12 +12,17 @@
   hosts: dstack_servers
   become: false  # Clone and build as user, not root (Rust is installed for user)
   vars:
+    # Use the connecting user's home directory
+    user_home: "/home/{{ ansible_user }}"
     dstack_repo_url: "https://github.com/Dstack-TEE/dstack.git"
-    dstack_repo_path: "{{ ansible_env.HOME }}/dstack"
+    dstack_repo_path: "{{ user_home }}/dstack"
     dstack_version: "v0.5.5"  # Use specific release tag for stability
-    cargo_bin: "{{ ansible_env.HOME }}/.cargo/bin"
+    cargo_bin: "{{ user_home }}/.cargo/bin"
     vmm_install_path: "/usr/local/bin/dstack-vmm"
     supervisor_install_path: "/usr/local/bin/dstack-supervisor"
+  environment:
+    RUSTUP_HOME: "{{ user_home }}/.rustup"
+    CARGO_HOME: "{{ user_home }}/.cargo"
 
   tasks:
     - name: Clone or update dstack repository

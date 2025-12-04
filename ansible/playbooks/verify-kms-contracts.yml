@@ -12,7 +12,9 @@
   hosts: dstack_servers
   become: false
   vars:
-    contract_dir: "{{ ansible_env.HOME }}/dstack/kms/auth-eth"
+    # Use the connecting user's home directory
+    user_home: "/home/{{ ansible_user }}"
+    contract_dir: "{{ user_home }}/dstack/kms/auth-eth"
     expected_contracts:
       - DstackKms
       - DstackApp

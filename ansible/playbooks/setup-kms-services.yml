@@ -13,10 +13,12 @@
   hosts: dstack_servers
   become: true
   vars:
+    # dstack is cloned to the connecting user's home directory
+    user_home: "/home/{{ ansible_user }}"
     kms_binary: "/usr/local/bin/dstack-kms"
     kms_config: "/etc/kms/kms.toml"
     auth_eth_env: "/etc/kms/auth-eth.env"
-    auth_eth_dir: "{{ ansible_env.HOME }}/dstack/kms/auth-eth"
+    auth_eth_dir: "{{ user_home }}/dstack/kms/auth-eth"
     node_binary: "/usr/bin/node"
 
   tasks:
