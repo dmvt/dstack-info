@@ -6,7 +6,7 @@ stepNumber: 1
 totalSteps: 5
 lastUpdated: 2025-11-18
 prerequisites:
-  - tdx-troubleshooting-next-steps
+  - tdx-bios-configuration
   - dns-configuration
   - blockchain-setup
 tags:
