@@ -7,7 +7,7 @@ totalSteps: null
 isAppendix: true
 lastUpdated: 2025-11-01
 prerequisites:
-  - tdx-troubleshooting-next-steps
+  - tdx-bios-configuration
 tags:
   - ansible
   - automation

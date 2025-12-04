@@ -5,8 +5,6 @@ section: "Host Setup"
 stepNumber: null
 totalSteps: null
 isAppendix: true
-prerequisites:
-  - tdx-bios-configuration
 tags:
   - "tdx"
   - "troubleshooting"
