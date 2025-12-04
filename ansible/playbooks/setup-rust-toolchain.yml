@@ -17,6 +17,9 @@
     # Rust is installed per-user, use the connecting user's home directory
     user_home: "/home/{{ ansible_user }}"
     cargo_bin: "{{ user_home }}/.cargo/bin"
+  environment:
+    RUSTUP_HOME: "{{ user_home }}/.rustup"
+    CARGO_HOME: "{{ user_home }}/.cargo"
 
   tasks:
     - name: Check if rustup is already installed

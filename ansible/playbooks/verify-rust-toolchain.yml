@@ -15,6 +15,9 @@
     # Rust is installed per-user, use the connecting user's home directory
     user_home: "/home/{{ ansible_user }}"
     cargo_bin: "{{ user_home }}/.cargo/bin"
+  environment:
+    RUSTUP_HOME: "{{ user_home }}/.rustup"
+    CARGO_HOME: "{{ user_home }}/.cargo"
 
   tasks:
     - name: Check rustup exists
@@ -35,11 +38,7 @@
       when: not rustup_check.stat.exists
 
     - name: Get rustup version
-      ansible.builtin.shell: |
-        source {{ cargo_bin }}/../env
-        rustup --version
-      args:
-        executable: /bin/bash
+      ansible.builtin.command: "{{ cargo_bin }}/rustup --version"
       register: rustup_version
       changed_when: false
 
@@ -59,11 +58,7 @@
       when: not rustc_check.stat.exists
 
     - name: Get rustc version
-      ansible.builtin.shell: |
-        source {{ cargo_bin }}/../env
-        rustc --version
-      args:
-        executable: /bin/bash
+      ansible.builtin.command: "{{ cargo_bin }}/rustc --version"
       register: rustc_version
       changed_when: false
 
@@ -83,49 +78,30 @@
       when: not cargo_check.stat.exists
 
     - name: Get cargo version
-      ansible.builtin.shell: |
-        source {{ cargo_bin }}/../env
-        cargo --version
-      args:
-        executable: /bin/bash
+      ansible.builtin.command: "{{ cargo_bin }}/cargo --version"
       register: cargo_version
       changed_when: false
 
     - name: Check clippy is installed
-      ansible.builtin.shell: |
-        source {{ cargo_bin }}/../env
-        rustup component list --installed | grep clippy
-      args:
-        executable: /bin/bash
+      ansible.builtin.shell: "{{ cargo_bin }}/rustup component list --installed | grep clippy"
       register: clippy_check
       changed_when: false
       failed_when: false
 
     - name: Check rustfmt is installed
-      ansible.builtin.shell: |
-        source {{ cargo_bin }}/../env
-        rustup component list --installed | grep rustfmt
-      args:
-        executable: /bin/bash
+      ansible.builtin.shell: "{{ cargo_bin }}/rustup component list --installed | grep rustfmt"
       register: rustfmt_check
       changed_when: false
       failed_when: false
 
     - name: Get default toolchain
-      ansible.builtin.shell: |
-        source {{ cargo_bin }}/../env
-        rustup default
-      args:
-        executable: /bin/bash
+      ansible.builtin.command: "{{ cargo_bin }}/rustup default"
       register: default_toolchain
       changed_when: false
 
     - name: Test compilation
       ansible.builtin.shell: |
-        source {{ cargo_bin }}/../env
-        echo 'fn main() { println!("Rust works!"); }' | rustc - -o /tmp/rust_test && /tmp/rust_test
-      args:
-        executable: /bin/bash
+        echo 'fn main() { println!("Rust works!"); }' | {{ cargo_bin }}/rustc - -o /tmp/rust_test && /tmp/rust_test
       register: test_compile
       changed_when: false
 
