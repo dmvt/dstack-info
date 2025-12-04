@@ -208,7 +208,3 @@
           - ""
           - "View on Etherscan:"
           - "  https://sepolia.etherscan.io/address/{{ kms_contract_address }}"
-          - ""
-          - "Next steps:"
-          - "  - Build and configure KMS service"
-          - "  - See: https://dstack.info/tutorial/kms-build-configuration"

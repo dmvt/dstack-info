@@ -150,7 +150,3 @@
           - "  - {{ dstack_lib_dir }}"
           - ""
           - "✓ All checks passed!"
-          - ""
-          - "Next steps:"
-          - "  - Create systemd service for VMM"
-          - "  - See: https://dstack.info/tutorial/vmm-service-setup"

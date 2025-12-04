@@ -111,7 +111,3 @@
           - "  - DstackApp.sol"
           - "  - IAppAuth.sol"
           - "  - IAppAuthBasicManagement.sol"
-          - ""
-          - "Next steps:"
-          - "  - Deploy contracts to Sepolia testnet"
-          - "  - See: https://dstack.info/tutorial/contract-deployment"

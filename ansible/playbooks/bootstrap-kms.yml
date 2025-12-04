@@ -266,8 +266,4 @@
           - "K256 Public Key (first 64 chars):"
           - "  {{ bootstrap_info.k256_pubkey[:64] }}..."
           - ""
-          - "Next steps:"
-          - "  - Setup KMS and auth-eth systemd services"
-          - "  - See: https://dstack.info/tutorial/kms-service-setup"
-          - ""
           - "⚠️  IMPORTANT: Backup {{ kms_certs_dir }}/ securely!"

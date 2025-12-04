@@ -301,7 +301,3 @@
           - "NOTE: Edit {{ kms_config_dir }}/auth-eth.env to add:"
           - "  - Alchemy API key (for Sepolia RPC)"
           - "  - KMS contract address (after deployment)"
-          - ""
-          - "Next steps:"
-          - "  - Bootstrap KMS to generate root keys"
-          - "  - See: https://dstack.info/tutorial/kms-bootstrap"

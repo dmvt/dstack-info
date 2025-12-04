@@ -137,7 +137,3 @@
           - "VMM Version: {{ vmm_version.stdout | default('(version info not available)') }}"
           - ""
           - "✓ All checks passed!"
-          - ""
-          - "Next steps:"
-          - "  - Configure VMM service"
-          - "  - See: https://dstack.info/tutorial/vmm-configuration"

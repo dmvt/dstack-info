@@ -131,7 +131,3 @@
           - "Recent errors: {{ 'None' if recent_errors.stdout == '' else 'Found (see above)' }}"
           - ""
           - "✓ All checks passed!"
-          - ""
-          - "Next steps:"
-          - "  - Deploy KMS service"
-          - "  - See: https://dstack.info/tutorial/kms-deployment"

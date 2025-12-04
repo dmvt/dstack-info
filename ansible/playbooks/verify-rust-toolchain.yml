@@ -128,7 +128,3 @@
           - "Test compilation: {{ test_compile.stdout }}"
           - ""
           - "✓ All checks passed!"
-          - ""
-          - "Next steps:"
-          - "  - Clone and build dstack-vmm"
-          - "  - See: https://dstack.info/tutorial/clone-build-dstack-vmm"

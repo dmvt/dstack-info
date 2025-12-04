@@ -140,10 +140,6 @@
           - "  - Status: sudo systemctl status dstack-vmm"
           - "  - Logs: sudo journalctl -u dstack-vmm -f"
           - "  - Restart: sudo systemctl restart dstack-vmm"
-          - ""
-          - "Next steps:"
-          - "  - Run verify-vmm-service.yml to verify setup"
-          - "  - Deploy KMS service"
 
   handlers:
     - name: Reload systemd

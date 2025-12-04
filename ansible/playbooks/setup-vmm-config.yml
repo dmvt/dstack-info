@@ -171,7 +171,3 @@
           - "Resource limits:"
           - "  - Max vCPUs: {{ cvm_max_vcpu }}"
           - "  - Max Memory: {{ cvm_max_memory_mb }}MB"
-          - ""
-          - "Next steps:"
-          - "  - Run verify-vmm-config.yml to verify configuration"
-          - "  - Create systemd service for VMM"

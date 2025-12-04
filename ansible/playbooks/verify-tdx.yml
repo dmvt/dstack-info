@@ -192,12 +192,6 @@
           TME: {{ 'Enabled' if (tme_status.rc == 0 and tme_enabled) else 'Unknown' }}
 
           Your system is ready for TDX-based confidential computing!
-
-          Next steps:
-          - Proceed to Phase 1.2: Domain & DNS Setup
-          - Or continue with Phase 2: dstack VMM Installation
-
-          See: https://dstack.info/
           ═══════════════════════════════════════════════════════════
       when:
         - tdx_enabled
