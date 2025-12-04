@@ -43,6 +43,18 @@ Before starting, ensure you have:
 - At least 2GB free disk space for build artifacts
 - Internet connectivity for downloading dependencies
 
+## Connect to Your Server
+
+Connect to your TDX server via SSH as the `ubuntu` user:
+
+```bash
+ssh ubuntu@YOUR_SERVER_IP
+```
+
+All build commands in this tutorial should be run as the `ubuntu` user. Rust and the source code are in the ubuntu user's home directory. Only the final installation step (copying to `/usr/local/bin`) requires `sudo`.
+
+---
+
 ## Step 1: Clone the dstack Repository
 
 The dstack source code is hosted on GitHub. Clone it to your home directory.
