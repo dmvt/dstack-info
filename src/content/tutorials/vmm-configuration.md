@@ -236,14 +236,29 @@ mode = "passt"
 
 ### Adjusting Resource Limits
 
-Adjust these settings based on your server capabilities:
+First, check your server's available resources:
+
+```bash
+# Check CPU cores
+nproc
+
+# Check total memory in MB
+free -m | awk '/^Mem:/{print $2}'
+```
+
+Then adjust the settings, reserving some resources for the host OS:
 
 ```toml
 [cvm]
-# For a server with 32 cores and 128GB RAM
-max_allocable_vcpu = 28  # Reserve some for host
-max_allocable_memory_in_mb = 110000  # ~107GB for VMs
+# Example: Server with 32 cores and 128GB RAM
+# Reserve ~4 cores and ~16GB for the host
+max_allocable_vcpu = 28
+max_allocable_memory_in_mb = 110000
 ```
+
+**Recommended reservations:**
+- **vCPUs:** Reserve 2-4 cores for the host OS
+- **Memory:** Reserve 8-16GB for the host OS
 
 ### Enabling GPU Passthrough
 
