@@ -174,29 +174,6 @@ cat /var/run/reboot-required 2>/dev/null || echo "No reboot required"
 
 ---
 
-## Verification Checklist
-
-Before proceeding, verify:
-
-- [ ] System packages updated
-- [ ] build-essential installed (gcc, make)
-- [ ] git installed
-- [ ] Development libraries installed (libssl-dev)
-- [ ] Utility tools installed (curl, xorriso, lz4)
-
-### Quick Verification Script
-
-```bash
-echo "=== Dependency Check ===" && \
-gcc --version | head -1 && \
-make --version | head -1 && \
-git --version && \
-curl --version | head -1 && \
-echo "=== All dependencies installed ==="
-```
-
----
-
 ## Next Steps
 
 With system dependencies installed, proceed to:

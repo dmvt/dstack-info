@@ -406,44 +406,6 @@ ps aux --sort=-%mem | head
 
 ---
 
-## Verification Checklist
-
-Before proceeding, verify:
-
-- [ ] Configuration file exists at `/etc/dstack/vmm.toml`
-- [ ] Runtime directories created (`/var/run/dstack`, `/var/log/dstack`, `/var/lib/dstack`)
-- [ ] Resource limits appropriate for your server
-- [ ] Networking mode set to `passt` for production
-- [ ] Authentication enabled with secure token
-- [ ] Gateway domain configured correctly
-- [ ] passt package installed (for production)
-
-### Quick Verification Script
-
-```bash
-#!/bin/bash
-echo "Checking VMM configuration..."
-
-# Check config file
-[ -f "/etc/dstack/vmm.toml" ] && echo "✓ Config file exists" || echo "✗ Config file missing"
-
-# Check directories
-for dir in /var/run/dstack /var/log/dstack /var/lib/dstack; do
-    [ -d "$dir" ] && echo "✓ Directory: $dir" || echo "✗ Missing: $dir"
-done
-
-# Check passt
-which passt > /dev/null && echo "✓ passt installed" || echo "✗ passt not installed"
-
-# Check auth enabled
-grep -q 'enabled = true' /etc/dstack/vmm.toml && echo "✓ Auth enabled" || echo "⚠ Auth disabled"
-
-# Check network mode
-grep -q 'mode = "passt"' /etc/dstack/vmm.toml && echo "✓ Passt networking" || echo "⚠ Not using passt"
-```
-
----
-
 ## Next Steps
 
 With VMM configured, proceed to set up the systemd service:

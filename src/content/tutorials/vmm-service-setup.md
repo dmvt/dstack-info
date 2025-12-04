@@ -241,30 +241,6 @@ sudo chmod 755 /var/run/dstack /var/log/dstack /var/lib/dstack
 
 ---
 
-## Verification Checklist
-
-Before proceeding, verify:
-
-- [ ] Service file exists at /etc/systemd/system/dstack-vmm.service
-- [ ] Service is enabled for boot
-- [ ] Service is running (active)
-- [ ] Socket file exists at /var/run/dstack/vmm.sock
-- [ ] No errors in recent logs
-
-### Quick Verification Script
-
-```bash
-#!/bin/bash
-echo "Checking VMM service..."
-
-[ -f "/etc/systemd/system/dstack-vmm.service" ] && echo "✓ Service file exists" || echo "✗ Service file missing"
-systemctl is-enabled dstack-vmm &>/dev/null && echo "✓ Service enabled" || echo "✗ Service not enabled"
-systemctl is-active dstack-vmm &>/dev/null && echo "✓ Service running" || echo "✗ Service not running"
-[ -S "/var/run/dstack/vmm.sock" ] && echo "✓ Socket exists" || echo "✗ Socket missing"
-```
-
----
-
 ## Next Steps
 
 With VMM running as a service, proceed to deploy the Key Management Service:

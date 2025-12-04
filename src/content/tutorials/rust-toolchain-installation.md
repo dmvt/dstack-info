@@ -171,32 +171,6 @@ rustup update stable
 
 ---
 
-## Verification Checklist
-
-Before proceeding, verify:
-
-- [ ] rustup installed and in PATH
-- [ ] rustc version 1.70.0 or higher
-- [ ] cargo version matching rustc
-- [ ] clippy component installed
-- [ ] rustfmt component installed
-- [ ] Test compilation succeeds
-
-### Quick Verification Script
-
-```bash
-#!/bin/bash
-echo "Checking Rust installation..."
-
-command -v rustup &>/dev/null && echo "✓ rustup: $(rustup --version | head -1)" || echo "✗ rustup not found"
-command -v rustc &>/dev/null && echo "✓ rustc: $(rustc --version)" || echo "✗ rustc not found"
-command -v cargo &>/dev/null && echo "✓ cargo: $(cargo --version)" || echo "✗ cargo not found"
-rustup component list --installed | grep -q clippy && echo "✓ clippy installed" || echo "✗ clippy missing"
-rustup component list --installed | grep -q rustfmt && echo "✓ rustfmt installed" || echo "✗ rustfmt missing"
-```
-
----
-
 ## Next Steps
 
 With Rust installed, proceed to:

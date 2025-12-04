@@ -216,30 +216,6 @@ cargo build --release
 
 ---
 
-## Verification Checklist
-
-Before proceeding, verify:
-
-- [ ] Repository cloned at ~/dstack
-- [ ] Checked out a stable release tag
-- [ ] dstack-vmm binary built successfully
-- [ ] dstack-supervisor binary built successfully
-- [ ] Both binaries installed to /usr/local/bin
-- [ ] `dstack-vmm --version` works
-
-### Quick Verification Script
-
-```bash
-#!/bin/bash
-echo "Checking dstack-vmm installation..."
-
-[ -d ~/dstack ] && echo "✓ Repository exists" || echo "✗ Repository missing"
-command -v dstack-vmm &>/dev/null && echo "✓ dstack-vmm: $(dstack-vmm --version 2>/dev/null || echo 'installed')" || echo "✗ dstack-vmm not found"
-command -v dstack-supervisor &>/dev/null && echo "✓ dstack-supervisor installed" || echo "✗ dstack-supervisor not found"
-```
-
----
-
 ## Next Steps
 
 With dstack-vmm built, proceed to:
