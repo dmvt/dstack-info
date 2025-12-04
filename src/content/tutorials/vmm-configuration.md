@@ -214,13 +214,24 @@ sudo pkill -f dstack-vmm
 The VMM supports two networking modes:
 
 **User Mode (default):**
+```toml
+[cvm.networking]
+mode = "user"
+net = "10.0.2.0/24"
+dhcp_start = "10.0.2.10"
+restrict = false
+```
 - Simple setup, no special privileges required
 - Uses QEMU's built-in user networking
 - Good for development and testing
 
 **Passt Mode:**
+```toml
+[cvm.networking]
+mode = "passt"
+```
 - Better performance
-- Requires passt binary installed
+- Requires passt binary installed (`sudo apt install passt`)
 - Recommended for production
 
 ### Adjusting Resource Limits
