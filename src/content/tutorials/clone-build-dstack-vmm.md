@@ -171,7 +171,7 @@ Expected output (typically 10-15MB):
 
 ## Step 4: Verify the Build
 
-After compilation completes, verify both binaries were created successfully.
+After compilation completes, verify the VMM binary was created successfully.
 
 ### Check VMM binary exists
 
@@ -182,17 +182,6 @@ ls -lh ~/dstack/target/release/dstack-vmm
 Expected output shows the binary (typically 15-25MB):
 ```
 -rwxrwxr-x 1 ubuntu ubuntu 19M Nov 19 10:30 /home/ubuntu/dstack/target/release/dstack-vmm
-```
-
-### Check supervisor binary exists
-
-```bash
-ls -lh ~/dstack/target/release/supervisor
-```
-
-Expected output (typically 10-15MB):
-```
--rwxrwxr-x 1 ubuntu ubuntu 11M Nov 19 10:35 /home/ubuntu/dstack/target/release/supervisor
 ```
 
 **Note:** Both binaries are in the workspace root `target/` directory because dstack uses a Cargo workspace.
