@@ -4,7 +4,7 @@ description: "Update the host system and install required build dependencies for
 section: "dstack Installation"
 stepNumber: 1
 totalSteps: 5
-lastUpdated: 2025-11-18
+lastUpdated: 2025-12-04
 prerequisites:
   - tdx-bios-configuration
   - dns-configuration
@@ -20,38 +20,84 @@ estimatedTime: 10-15 minutes
 
 # System Baseline & Dependencies
 
-Before building dstack components, we need to prepare the host system with updated packages and required build dependencies. This tutorial covers both manual installation and Ansible automation.
+Before building dstack components, you need to prepare the host system with updated packages and required build dependencies.
 
-## What You'll Install
+## Prerequisites
 
-- **System updates** - Latest security patches and package updates
-- **Build tools** - gcc, make, and related compilation tools
-- **Development libraries** - Required for building dstack from source
-- **Utility tools** - git, curl, and other essential utilities
+Before starting, ensure you have:
+
+- Completed [TDX BIOS Configuration](/tutorial/tdx-bios-configuration)
+- SSH access to your TDX-enabled server
+- Root or sudo privileges
+
+## Quick Start: Setup with Ansible
+
+For most users, the recommended approach is to use the Ansible playbook which installs all dependencies automatically.
+
+### Step 1: Run the Ansible Playbook
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/setup-host-dependencies.yml
+```
+
+The playbook will:
+1. **Update system packages** - Latest security patches
+2. **Install build tools** - gcc, make, and compilation tools
+3. **Install development libraries** - Required for building dstack
+4. **Install utility tools** - git, curl, and other essentials
+5. **Verify all installations**
+
+### Step 2: Verify Installation
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/verify-host-dependencies.yml
+```
+
+Or run a quick check directly on the server:
+
+```bash
+ssh ubuntu@YOUR_SERVER_IP "gcc --version && make --version && git --version"
+```
+
+---
+
+## What Gets Installed
+
+| Package | Purpose |
+|---------|---------|
+| `build-essential` | GCC compiler, make, and essential build tools |
+| `chrpath` | Modify rpath in ELF binaries |
+| `diffstat` | Produce histogram of diff output |
+| `lz4` | Fast compression algorithm |
+| `wireguard-tools` | WireGuard VPN utilities for secure networking |
+| `xorriso` | ISO 9660 filesystem tool for guest images |
+| `git` | Version control for cloning dstack repository |
+| `curl` | HTTP client for downloading files |
+| `pkg-config` | Helper tool for compiling applications |
+| `libssl-dev` | SSL development libraries |
 
 ---
 
 ## Manual Installation
 
-Connect to your server via SSH:
+If you prefer to install dependencies manually, follow these steps.
+
+### Step 1: Connect to Your Server
 
 ```bash
-ssh ubuntu@173.231.234.133
+ssh ubuntu@YOUR_SERVER_IP
 ```
 
-### Step 1: Update System Packages
-
-First, update the package index and upgrade all installed packages:
+### Step 2: Update System Packages
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 ```
 
-This may take a few minutes depending on how many packages need updating. If prompted about kernel updates or service restarts, accept the defaults.
+This may take a few minutes. If prompted about kernel updates or service restarts, accept the defaults.
 
-### Step 2: Install Build Dependencies
-
-Install the required build tools and libraries:
+### Step 3: Install Build Dependencies
 
 ```bash
 sudo apt install -y \
@@ -67,24 +113,7 @@ sudo apt install -y \
   libssl-dev
 ```
 
-**Package descriptions:**
-
-| Package | Purpose |
-|---------|---------|
-| `build-essential` | GCC compiler, make, and essential build tools |
-| `chrpath` | Modify rpath in ELF binaries |
-| `diffstat` | Produce histogram of diff output |
-| `lz4` | Fast compression algorithm |
-| `wireguard-tools` | WireGuard VPN utilities for secure networking |
-| `xorriso` | ISO 9660 filesystem tool for guest images |
-| `git` | Version control for cloning dstack repository |
-| `curl` | HTTP client for downloading files |
-| `pkg-config` | Helper tool for compiling applications |
-| `libssl-dev` | SSL development libraries |
-
-### Step 3: Verify Installations
-
-Confirm that the essential tools are installed and accessible:
+### Step 4: Verify Installations
 
 ```bash
 # Check compiler
@@ -96,117 +125,17 @@ make --version
 # Check git
 git --version
 
-# Check curl
-curl --version
-```
-
-You should see version output for each command. Example output:
-
-```
-gcc (Ubuntu 13.2.0-23ubuntu4) 13.2.0
-GNU Make 4.3
-git version 2.43.0
-curl 8.5.0 (x86_64-pc-linux-gnu)
-```
-
-### Step 4: Verify Additional Tools
-
-Check the specialized tools:
-
-```bash
-# Check wireguard
+# Check additional tools
 wg --version
-
-# Check xorriso
 xorriso --version
-
-# Check lz4
 lz4 --version
 ```
-
----
-
-## Ansible Automation
-
-For automated deployment, use the Ansible playbook to install all dependencies.
-
-### Prerequisites
-
-Ensure you have:
-- Ansible installed on your local machine
-- SSH access to the target server
-- Inventory configured (see [Appendix B: Ansible TDX Automation](/tutorial/ansible-tdx-automation))
-
-### Run the Playbook
-
-From the dstack-info repository on your local machine:
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook playbooks/setup-host-dependencies.yml -i inventory/hosts.yml
-```
-
-### What the Playbook Does
-
-1. Updates apt package cache
-2. Upgrades all system packages
-3. Installs all required build dependencies
-4. Verifies critical tools are available
-
-### Expected Output
-
-```
-PLAY [Setup Host System Dependencies] ******************************************
-
-TASK [Update apt cache] ********************************************************
-ok: [dstack-host]
-
-TASK [Upgrade all packages] ****************************************************
-changed: [dstack-host]
-
-TASK [Install build dependencies] **********************************************
-changed: [dstack-host]
-
-TASK [Verify gcc installation] *************************************************
-ok: [dstack-host]
-
-TASK [Verify make installation] ************************************************
-ok: [dstack-host]
-
-TASK [Verify git installation] *************************************************
-ok: [dstack-host]
-
-PLAY RECAP *********************************************************************
-dstack-host                : ok=6    changed=2    unreachable=0    failed=0
-```
-
----
-
-## Verify Installation
-
-Run this script to confirm all dependencies are installed:
-
-```bash
-echo "=== Dependency Check ===" && \
-gcc --version | head -1 && \
-make --version | head -1 && \
-git --version && \
-curl --version | head -1 && \
-wg --version && \
-xorriso --version 2>&1 | head -1 && \
-lz4 --version && \
-echo "=== All dependencies installed ==="
-```
-
-If all commands succeed, you're ready to proceed.
 
 ---
 
 ## Troubleshooting
 
 ### Package Installation Fails
-
-If apt fails to install packages:
 
 ```bash
 # Fix broken packages
@@ -218,72 +147,58 @@ sudo apt update
 sudo apt install -y build-essential
 ```
 
-### Permission Denied
-
-If you get permission errors:
-
-```bash
-# Ensure you're using sudo
-sudo apt install -y build-essential
-
-# Or check your sudo access
-sudo -l
-```
-
-### Network Issues
-
-If package downloads fail:
-
-```bash
-# Check network connectivity
-ping -c 3 archive.ubuntu.com
-
-# Try a different mirror (edit /etc/apt/sources.list if needed)
-```
-
-### Kernel Upgrade Prompts
-
-If prompted about kernel upgrades during `apt upgrade`:
-
-1. Select "Keep the local version currently installed" if unsure
-2. Or accept the maintainer's version for latest updates
-3. A reboot may be required after kernel updates
-
-```bash
-# Check if reboot is required
-cat /var/run/reboot-required 2>/dev/null || echo "No reboot required"
-
-# Reboot if needed
-sudo reboot
-```
-
 ### OpenMetal Grub Error
 
 On OpenMetal servers, you may see this error during package installation:
 
 ```
 grub-install: error: diskfilter writes are not supported.
-dpkg: error processing package grub-pc (--configure):
 ```
 
-This occurs because OpenMetal uses a disk configuration (ZFS or RAID) that grub-pc cannot write to directly. **The error does not affect dstack installation** - your packages are still installed correctly.
-
-To prevent this error from blocking future apt operations:
+**This error does not affect dstack installation** - your packages are still installed correctly. To prevent this from blocking future apt operations:
 
 ```bash
-# Hold the problematic packages
 sudo apt-mark hold grub-pc grub-efi-amd64-signed
-
-# Verify packages are held
-apt-mark showhold
 ```
 
-The grub configuration is managed by OpenMetal's infrastructure and doesn't need manual intervention.
+### Kernel Upgrade Prompts
+
+If prompted about kernel upgrades during `apt upgrade`:
+1. Select "Keep the local version currently installed" if unsure
+2. A reboot may be required after kernel updates
+
+```bash
+# Check if reboot is required
+cat /var/run/reboot-required 2>/dev/null || echo "No reboot required"
+```
+
+---
+
+## Verification Checklist
+
+Before proceeding, verify:
+
+- [ ] System packages updated
+- [ ] build-essential installed (gcc, make)
+- [ ] git installed
+- [ ] Development libraries installed (libssl-dev)
+- [ ] Utility tools installed (curl, xorriso, lz4)
+
+### Quick Verification Script
+
+```bash
+echo "=== Dependency Check ===" && \
+gcc --version | head -1 && \
+make --version | head -1 && \
+git --version && \
+curl --version | head -1 && \
+echo "=== All dependencies installed ==="
+```
 
 ---
 
 ## Next Steps
 
-With the system dependencies installed, proceed to:
+With system dependencies installed, proceed to:
 
-**[Install Rust Toolchain](/tutorial/rust-toolchain-installation)** - Install Rust and Cargo for building dstack components
+- [Rust Toolchain Installation](/tutorial/rust-toolchain-installation) - Install Rust and Cargo for building dstack components

@@ -4,7 +4,7 @@ description: "Install and configure the Rust programming language toolchain for 
 section: "dstack Installation"
 stepNumber: 2
 totalSteps: 5
-lastUpdated: 2025-11-19
+lastUpdated: 2025-12-04
 prerequisites:
   - system-baseline-dependencies
 tags:
@@ -18,15 +18,7 @@ estimatedTime: "10 minutes"
 
 # Rust Toolchain Installation
 
-This tutorial guides you through installing the Rust programming language toolchain, which is required for building dstack components. Rust provides memory safety and performance critical for TEE applications.
-
-## What You'll Install
-
-- **rustup** - Rust toolchain installer and version manager
-- **rustc** - Rust compiler
-- **cargo** - Rust package manager and build tool
-- **clippy** - Rust linter for catching common mistakes
-- **rustfmt** - Rust code formatter
+This tutorial guides you through installing the Rust programming language toolchain, which is required for building dstack components.
 
 ## Prerequisites
 
@@ -34,25 +26,64 @@ Before starting, ensure you have:
 
 - Completed [System Baseline & Dependencies](/tutorial/system-baseline-dependencies)
 - SSH access to your TDX-enabled server
-- Internet connectivity for downloading Rust components
 
-## Connect to Your Server
+## Quick Start: Setup with Ansible
 
-Connect to your TDX server via SSH as the `ubuntu` user:
+For most users, the recommended approach is to use the Ansible playbook which installs and configures Rust automatically.
+
+### Step 1: Run the Ansible Playbook
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/setup-rust-toolchain.yml
+```
+
+The playbook will:
+1. **Install rustup** - Rust toolchain installer
+2. **Install stable toolchain** - Latest stable Rust compiler
+3. **Add components** - clippy (linter) and rustfmt (formatter)
+4. **Configure PATH** - Ensure cargo is accessible
+5. **Verify installation** - Test compilation works
+
+### Step 2: Verify Installation
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/verify-rust-toolchain.yml
+```
+
+Or check directly on the server:
+
+```bash
+ssh ubuntu@YOUR_SERVER_IP "source ~/.cargo/env && rustc --version && cargo --version"
+```
+
+---
+
+## What Gets Installed
+
+| Component | Purpose |
+|-----------|---------|
+| `rustup` | Rust toolchain installer and version manager |
+| `rustc` | Rust compiler |
+| `cargo` | Rust package manager and build tool |
+| `clippy` | Rust linter for catching common mistakes |
+| `rustfmt` | Rust code formatter |
+
+---
+
+## Manual Installation
+
+If you prefer to install Rust manually, follow these steps.
+
+### Step 1: Connect to Your Server
 
 ```bash
 ssh ubuntu@YOUR_SERVER_IP
 ```
 
-All commands in this tutorial should be run as the `ubuntu` user (not root). Rust will be installed in your home directory at `~/.cargo` and `~/.rustup`.
+All commands should be run as the `ubuntu` user (not root). Rust will be installed in your home directory at `~/.cargo` and `~/.rustup`.
 
----
-
-## Step 1: Install rustup
-
-rustup is the official Rust toolchain installer that manages Rust versions and components.
-
-### Install rustup with default settings
+### Step 2: Install rustup
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -63,151 +94,42 @@ The `-y` flag accepts default options:
 - Adds cargo to your PATH
 - Sets up shell configuration
 
-### Source the environment
-
-After installation, load the Rust environment into your current shell:
+### Step 3: Load the Environment
 
 ```bash
 source $HOME/.cargo/env
 ```
 
-This command adds `~/.cargo/bin` to your PATH, making `rustc`, `cargo`, and other tools available.
+### Step 4: Install Additional Components
 
-## Step 2: Verify Installation
+```bash
+rustup component add clippy rustfmt
+```
 
-Confirm that Rust is properly installed by checking the versions:
-
-### Check Rust compiler version
+### Step 5: Verify Installation
 
 ```bash
 rustc --version
-```
-
-Expected output (version may vary):
-```
-rustc 1.82.0 (f6e511eec 2024-10-15)
-```
-
-### Check Cargo version
-
-```bash
 cargo --version
-```
-
-Expected output:
-```
-cargo 1.82.0 (8f40fc59f 2024-08-21)
-```
-
-### Check rustup version
-
-```bash
 rustup --version
 ```
 
-Expected output:
+Expected output (versions may vary):
 ```
+rustc 1.82.0 (f6e511eec 2024-10-15)
+cargo 1.82.0 (8f40fc59f 2024-08-21)
 rustup 1.27.1 (54dd3d00f 2024-04-24)
 ```
 
-## Step 3: Install Additional Components
-
-Install recommended Rust development tools:
-
-### Install clippy (linter)
+### Step 6: Test Compilation
 
 ```bash
-rustup component add clippy
+cargo new --bin rust-test && cd rust-test && cargo run && cd ~ && rm -rf rust-test
 ```
 
-Clippy helps catch common mistakes and suggests improvements to your Rust code.
+You should see "Hello, world!" printed.
 
-### Install rustfmt (formatter)
-
-```bash
-rustup component add rustfmt
-```
-
-rustfmt automatically formats Rust code to follow style guidelines.
-
-### Verify components are installed
-
-```bash
-rustup component list --installed
-```
-
-You should see output including:
-```
-cargo-x86_64-unknown-linux-gnu
-clippy-x86_64-unknown-linux-gnu
-rust-docs-x86_64-unknown-linux-gnu
-rust-std-x86_64-unknown-linux-gnu
-rustc-x86_64-unknown-linux-gnu
-rustfmt-x86_64-unknown-linux-gnu
-```
-
-## Step 4: Test the Installation
-
-Verify everything works by creating and running a simple test program:
-
-### Create a test project
-
-```bash
-cargo new --bin rust-test && cd rust-test
-```
-
-### Build and run the test
-
-```bash
-cargo run
-```
-
-Expected output:
-```
-   Compiling rust-test v0.1.0 (/home/ubuntu/rust-test)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in X.XXs
-     Running `target/debug/rust-test`
-Hello, world!
-```
-
-### Clean up the test project
-
-```bash
-cd ~ && rm -rf rust-test
-```
-
-## Ansible Automation
-
-You can also install Rust using Ansible for automated deployments.
-
-### Run the Ansible playbook
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/setup-rust-toolchain.yml
-```
-
-The playbook will:
-1. Install rustup if not present
-2. Install the stable Rust toolchain
-3. Add clippy and rustfmt components
-4. Verify the installation
-
-### Verify with Ansible
-
-After running the setup playbook, verify the installation:
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/verify-rust-toolchain.yml
-```
-
-The verification playbook checks:
-- rustup is installed and working
-- Rust compiler (rustc) is available
-- Cargo package manager is available
-- clippy and rustfmt components are installed
-- Test compilation succeeds
+---
 
 ## Troubleshooting
 
@@ -216,9 +138,6 @@ The verification playbook checks:
 If `rustup` is not found after installation:
 
 ```bash
-# Check if cargo bin exists
-ls ~/.cargo/bin/
-
 # Manually add to PATH
 export PATH="$HOME/.cargo/bin:$PATH"
 
@@ -229,111 +148,58 @@ source ~/.bashrc
 
 ### Permission denied errors
 
-If you encounter permission errors:
-
 ```bash
 # Ensure cargo directory is owned by your user
 sudo chown -R $USER:$USER ~/.cargo ~/.rustup
 ```
 
-### Slow compilation
-
-Rust compilation can be resource-intensive. If builds are slow:
-
-```bash
-# Check available memory
-free -h
-
-# Use fewer parallel jobs if memory is limited
-cargo build -j 2
-```
-
 ### Network timeout during installation
 
-If rustup installation times out:
-
 ```bash
-# Use a different mirror (if available)
-export RUSTUP_DIST_SERVER=https://mirrors.ustc.edu.cn/rust-static
-
-# Retry installation
+# Increase timeout and retry
+export CARGO_HTTP_TIMEOUT=300
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 ### Updating Rust
 
-To update to the latest stable Rust version:
+To update to the latest stable version:
 
 ```bash
 rustup update stable
 ```
 
+---
+
 ## Verification Checklist
 
-Before proceeding, verify you have:
+Before proceeding, verify:
 
 - [ ] rustup installed and in PATH
 - [ ] rustc version 1.70.0 or higher
 - [ ] cargo version matching rustc
 - [ ] clippy component installed
 - [ ] rustfmt component installed
-- [ ] Successfully compiled and ran a test program
+- [ ] Test compilation succeeds
 
-### Quick verification script
-
-Run this script to verify your Rust installation:
+### Quick Verification Script
 
 ```bash
 #!/bin/bash
 echo "Checking Rust installation..."
 
-# Check rustup
-if command -v rustup &> /dev/null; then
-    echo "✓ rustup: $(rustup --version | head -1)"
-else
-    echo "✗ rustup not found"
-    exit 1
-fi
-
-# Check rustc
-if command -v rustc &> /dev/null; then
-    echo "✓ rustc: $(rustc --version)"
-else
-    echo "✗ rustc not found"
-    exit 1
-fi
-
-# Check cargo
-if command -v cargo &> /dev/null; then
-    echo "✓ cargo: $(cargo --version)"
-else
-    echo "✗ cargo not found"
-    exit 1
-fi
-
-# Check clippy
-if rustup component list --installed | grep -q clippy; then
-    echo "✓ clippy installed"
-else
-    echo "✗ clippy not installed"
-    exit 1
-fi
-
-# Check rustfmt
-if rustup component list --installed | grep -q rustfmt; then
-    echo "✓ rustfmt installed"
-else
-    echo "✗ rustfmt not installed"
-    exit 1
-fi
-
-echo ""
-echo "All Rust components verified successfully!"
+command -v rustup &>/dev/null && echo "✓ rustup: $(rustup --version | head -1)" || echo "✗ rustup not found"
+command -v rustc &>/dev/null && echo "✓ rustc: $(rustc --version)" || echo "✗ rustc not found"
+command -v cargo &>/dev/null && echo "✓ cargo: $(cargo --version)" || echo "✗ cargo not found"
+rustup component list --installed | grep -q clippy && echo "✓ clippy installed" || echo "✗ clippy missing"
+rustup component list --installed | grep -q rustfmt && echo "✓ rustfmt installed" || echo "✗ rustfmt missing"
 ```
+
+---
 
 ## Next Steps
 
-With Rust installed, you're ready to proceed to the next tutorial:
+With Rust installed, proceed to:
 
 - [Clone & Build dstack-vmm](/tutorial/clone-build-dstack-vmm) - Build the dstack virtual machine manager
 
@@ -342,4 +208,3 @@ With Rust installed, you're ready to proceed to the next tutorial:
 - [The Rust Programming Language Book](https://doc.rust-lang.org/book/)
 - [Rust by Example](https://doc.rust-lang.org/rust-by-example/)
 - [rustup Documentation](https://rust-lang.github.io/rustup/)
-- [Cargo Documentation](https://doc.rust-lang.org/cargo/)
