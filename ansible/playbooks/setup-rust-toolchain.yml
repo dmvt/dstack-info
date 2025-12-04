@@ -14,7 +14,9 @@
   become: false  # Rust should be installed as user, not root
   vars:
     rust_version: "stable"
-    cargo_bin: "{{ ansible_env.HOME }}/.cargo/bin"
+    # Rust is installed per-user, use the connecting user's home directory
+    user_home: "/home/{{ ansible_user }}"
+    cargo_bin: "{{ user_home }}/.cargo/bin"
 
   tasks:
     - name: Check if rustup is already installed
