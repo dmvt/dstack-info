@@ -56,10 +56,10 @@
 
     - name: Warn if auth-eth not enabled for boot
       ansible.builtin.debug:
-        msg: |
-          ⚠️  Auth-eth service is not enabled for automatic startup.
-
-          Enable with: sudo systemctl enable dstack-auth-eth
+        msg:
+          - "⚠️  Auth-eth service is not enabled for automatic startup."
+          - ""
+          - "Enable with: sudo systemctl enable dstack-auth-eth"
       when: auth_eth_enabled.status.UnitFileState != 'enabled'
 
     - name: Check KMS service is enabled
@@ -69,10 +69,10 @@
 
     - name: Warn if KMS not enabled for boot
       ansible.builtin.debug:
-        msg: |
-          ⚠️  KMS service is not enabled for automatic startup.
-
-          Enable with: sudo systemctl enable dstack-kms
+        msg:
+          - "⚠️  KMS service is not enabled for automatic startup."
+          - ""
+          - "Enable with: sudo systemctl enable dstack-kms"
       when: kms_enabled.status.UnitFileState != 'enabled'
 
     - name: Check auth-eth service status

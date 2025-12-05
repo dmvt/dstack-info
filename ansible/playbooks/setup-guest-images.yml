@@ -157,16 +157,16 @@
 
     - name: Warn if image not visible
       ansible.builtin.debug:
-        msg: |
-          WARNING: Image dstack-{{ dstack_version }} not visible in VMM API.
-
-          This may be due to:
-          - VMM not configured for correct image path
-          - Image metadata.json is invalid
-          - VMM needs restart
-
-          Check VMM configuration:
-            grep image /etc/dstack/vmm.toml
+        msg:
+          - "WARNING: Image dstack-{{ dstack_version }} not visible in VMM API."
+          - ""
+          - "This may be due to:"
+          - "  - VMM not configured for correct image path"
+          - "  - Image metadata.json is invalid"
+          - "  - VMM needs restart"
+          - ""
+          - "Check VMM configuration:"
+          - "  grep image /etc/dstack/vmm.toml"
       when: api_response.status == 200 and not (image_visible | default(false))
 
     # =========================================================================
