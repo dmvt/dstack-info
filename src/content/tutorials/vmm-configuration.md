@@ -7,6 +7,7 @@ totalSteps: 5
 lastUpdated: 2025-12-04
 prerequisites:
   - clone-build-dstack-vmm
+  - dns-configuration
 tags:
   - dstack
   - vmm
