@@ -217,50 +217,25 @@ https://sepolia.etherscan.io/address/YOUR_ADDRESS
 
 For production use, you should get a dedicated RPC endpoint instead of using the public demo endpoint.
 
-### Option A: Alchemy (Recommended)
+### Public Demo Endpoint (Recommended for Tutorials)
 
-1. Visit: https://www.alchemy.com/
-2. Sign up for free account
-3. Create new app:
-    - Name: "dstack-sepolia"
-    - Chain: Ethereum
-    - Network: Sepolia
-4. Copy your API key (the part after `/v2/` in your RPC URL)
-
-**Store your API key securely:**
-
-```bash
-# Store Alchemy API key
-echo "YOUR_ALCHEMY_API_KEY" > ~/.dstack/secrets/alchemy-api-key
-chmod 600 ~/.dstack/secrets/alchemy-api-key
-```
-
-**Benefits:**
-
--   300M compute units/month free
--   Enhanced APIs
--   Dashboard with analytics
--   Better reliability than public endpoints
-
-### Option B: Infura
-
-1. Visit: https://www.infura.io/
-2. Sign up for free account
-3. Create new project
-4. Select Sepolia endpoint
-5. Copy your RPC URL
-
-### Option C: Public Endpoint (Development Only)
-
-For quick testing, you can use public endpoints:
+For Sepolia testnet, the public demo endpoint works well:
 
 ```
 https://eth-sepolia.g.alchemy.com/v2/demo
-https://rpc.sepolia.org
-https://ethereum-sepolia-rpc.publicnode.com
 ```
 
-⚠️ **Not recommended for production** - rate limited and less reliable
+This endpoint is sufficient for:
+- Deploying contracts
+- Checking balances
+- Running transactions
+
+### Production Endpoints (Optional)
+
+For production mainnet deployments, get a dedicated API key from:
+
+- **Alchemy:** https://www.alchemy.com/ (300M compute units/month free)
+- **Infura:** https://www.infura.io/
 
 ---
 
@@ -269,36 +244,17 @@ https://ethereum-sepolia-rpc.publicnode.com
 ### Test with cast
 
 ```bash
-# Set your RPC URL (using stored API key)
-export RPC_URL="https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)"
-
 # Get latest block number
-cast block-number --rpc-url $RPC_URL
+cast block-number --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
 
 # Get current gas price
-cast gas-price --rpc-url $RPC_URL
+cast gas-price --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
 
 # Get your balance
-cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url $RPC_URL
+cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
 ```
 
 All commands should return values without errors.
-
-### Test with curl
-
-```bash
-curl "https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)" \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc":"2.0",
-    "method":"eth_blockNumber",
-    "params":[],
-    "id":1
-  }'
-```
-
-Expected: JSON response with `"result": "0x..."` (hex block number)
 
 ---
 
@@ -314,13 +270,12 @@ ls -la ~/.dstack/secrets/
 You should have:
 - `sepolia-address` - Your wallet address
 - `sepolia-private-key` - Your wallet private key
-- `alchemy-api-key` - Your Alchemy API key
 
-**Test loading your configuration:**
+**Test your configuration:**
 
 ```bash
 echo "Wallet: $(cat ~/.dstack/secrets/sepolia-address)"
-echo "Balance: $(cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key))"
+echo "Balance: $(cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo)"
 ```
 
 ---
@@ -331,7 +286,6 @@ Before proceeding to KMS deployment, verify:
 
 -   ✅ Wallet created and address saved to `~/.dstack/secrets/sepolia-address`
 -   ✅ Private key stored securely in `~/.dstack/secrets/sepolia-private-key`
--   ✅ Alchemy API key stored in `~/.dstack/secrets/alchemy-api-key`
 -   ✅ Wallet has ≥0.1 testnet ETH
 -   ✅ RPC endpoint tested and working
 -   ✅ Can query balance via cast

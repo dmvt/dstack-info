@@ -49,9 +49,8 @@ ls -la ~/.dstack/secrets/
 You should see:
 - `sepolia-address` - Your wallet address
 - `sepolia-private-key` - Your wallet private key
-- `alchemy-api-key` - Your Alchemy API key
 
-If any are missing, go back to [Blockchain Setup](/tutorial/blockchain-setup) to create them.
+If missing, go back to [Blockchain Setup](/tutorial/blockchain-setup) to create them.
 
 ### Step 2: Run the Deployment Playbook
 
