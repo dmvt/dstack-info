@@ -2161,6 +2161,91 @@ Per PROJECT_PLAN.md methodology (Phase 2+ pattern):
 
 ---
 
+## Phase 3: KMS Deployment - BLOCKER IDENTIFIED
+
+**Date:** 2025-12-05
+**Status:** Blocked - Intel platform registration required
+
+### What Was Accomplished
+
+**Intel PCCS Tutorial Created:**
+- ✅ Created `intel-pccs-setup.md` tutorial in Prerequisites section
+- ✅ Documents Intel API key registration (free)
+- ✅ Covers PCCS configuration with API key
+- ✅ Includes manual and Ansible configuration methods
+- ✅ Comprehensive troubleshooting section added
+
+**Ansible Playbook Created:**
+- ✅ `setup-pccs-apikey.yml` - Configures PCCS with Intel API key
+- ✅ Fixed QCNL config parsing (JavaScript comments break JSON)
+- ✅ Verifies PCCS and QGS services
+
+**Testing Completed:**
+- ✅ Intel API key validated (QE identity endpoint works)
+- ✅ PCCS configured correctly with API key
+- ✅ VMM rebuilt and running
+- ✅ KMS CVM deployed
+
+### Blocker: Platform Not Registered with Intel
+
+**Error:**
+```
+Intel PCS server returns error(404).
+Error: No cache data for this platform.
+```
+
+**Impact:**
+- Intel's Provisioning Certification Service (PCS) returns 404 for PCK certificates
+- This means OpenMetal's Intel Xeon Gold 6530 platform is NOT registered in Intel's database
+- Without PCK certificates, TDX attestation quotes cannot be generated
+- dstack CVMs require TDX attestation at boot time and crash without it
+
+**Root Cause:**
+- Cloud providers must register their hardware with Intel's Provisioning Certification Service
+- OpenMetal has not yet registered their TDX-capable platforms with Intel
+- This is a cloud provider infrastructure issue, not a configuration issue
+
+**CVM Error:**
+```
+Error: Failed to get sealing key
+    0: Failed to get quote
+    1: TDX_ATTEST_ERROR_UNEXPECTED
+```
+
+The KMS CVM deploys but immediately crashes (restarts every 20 seconds) because `dstack-prepare.sh` cannot get a TDX attestation quote.
+
+### Resolution Required
+
+**Contact OpenMetal:**
+- Ask them to register their Intel Xeon Gold 6530 platforms with Intel's Provisioning Certification Service
+- Provide PCK ID retrieval CSV data (`pckid_retrieval.csv`) to assist with registration
+
+**Alternative Options (Not Viable):**
+- Intel sandbox endpoint requires sandbox-specific API key (production key rejected with 401)
+- No mock/bypass mode exists in dstack for TDX attestation at boot time
+
+### Documentation Updated
+
+- ✅ Added comprehensive "No certificate data for this platform (404 Error)" troubleshooting section to `intel-pccs-setup.md`
+- ✅ Documents the root cause, solutions, and impact on dstack
+- ✅ References [Intel DCAP GitHub Issue #365](https://github.com/intel/SGXDataCenterAttestationPrimitives/issues/365)
+
+### Git Commits
+
+1. `34592e9` - Add detailed troubleshooting for Intel PCCS 404 platform registration errors
+
+### Deployment
+
+- ✅ https://35d8efb9.dstack-info.pages.dev
+
+### Next Steps
+
+1. Contact OpenMetal support about Intel platform registration
+2. Once registered, retest KMS CVM deployment
+3. Continue with KMS tutorials once attestation works
+
+---
+
 **End of Progress Document**
 
 This document is updated after every checkpoint approval to preserve context during conversation compression.
