@@ -100,6 +100,70 @@
             npx hardhat compile
       when: not kms_artifact.stat.exists
 
+    - name: Check for existing deployed addresses file
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}/.deployed-addresses"
+      register: deployed_file
+
+    - name: Read existing deployed addresses
+      ansible.builtin.slurp:
+        src: "{{ contract_dir }}/.deployed-addresses"
+      register: deployed_content
+      when: deployed_file.stat.exists
+
+    - name: Parse existing deployed addresses
+      ansible.builtin.set_fact:
+        existing_kms_address: "{{ deployed_content.content | b64decode | regex_search('KMS_CONTRACT_ADDRESS=([0-9a-fA-Fx]+)', '\\1') | first | default('') }}"
+        existing_app_impl_address: "{{ deployed_content.content | b64decode | regex_search('APP_IMPLEMENTATION_ADDRESS=([0-9a-fA-Fx]+)', '\\1') | first | default('') }}"
+      when: deployed_file.stat.exists
+
+    - name: Check if contract exists on chain
+      ansible.builtin.shell: |
+        curl -s -X POST {{ rpc_url }} \
+          -H "Content-Type: application/json" \
+          -d '{"jsonrpc":"2.0","method":"eth_getCode","params":["{{ existing_kms_address }}","latest"],"id":1}' | \
+          jq -r '.result'
+      register: deployed_bytecode
+      changed_when: false
+      when:
+        - deployed_file.stat.exists
+        - existing_kms_address | default('') | length > 0
+
+    - name: Check if deployment should be skipped
+      ansible.builtin.set_fact:
+        skip_deployment: "{{ deployed_bytecode.stdout | default('0x') != '0x' and deployed_bytecode.stdout | default('') | length > 10 }}"
+      when: deployed_file.stat.exists
+
+    - name: Set deployment needed if no previous deployment
+      ansible.builtin.set_fact:
+        skip_deployment: false
+      when: not deployed_file.stat.exists
+
+    - name: Display skip message
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "Contracts Already Deployed - Skipping!"
+          - "============================================"
+          - ""
+          - "Existing deployment found on chain."
+          - "No redeployment necessary."
+          - ""
+          - "Contract Addresses:"
+          - "  DstackKms Proxy: {{ existing_kms_address }}"
+          - "  DstackApp Impl:  {{ existing_app_impl_address | default('N/A') }}"
+          - ""
+          - "View on Etherscan:"
+          - "  https://sepolia.etherscan.io/address/{{ existing_kms_address }}"
+          - ""
+          - "To force redeployment, delete .deployed-addresses:"
+          - "  rm {{ contract_dir }}/.deployed-addresses"
+      when: skip_deployment | default(false)
+
+    - name: End play if skipping deployment
+      ansible.builtin.meta: end_play
+      when: skip_deployment | default(false)
+
     - name: Get wallet address from private key
       ansible.builtin.shell: |
         cd {{ contract_dir }}
