@@ -3,10 +3,10 @@
 # Usage: ansible-playbook -i inventory/hosts.yml playbooks/verify-vmm-config.yml
 #
 # This playbook verifies:
-# - Configuration file exists and is readable
+# - Configuration file exists and has valid TOML syntax
 # - All runtime directories exist
 # - VMM binary is available
-# - Configuration values are valid
+# - Displays all key configuration settings
 
 - name: Verify VMM Configuration
   hosts: dstack_servers
@@ -32,27 +32,7 @@
 
           Run the build playbook first:
             ansible-playbook -i inventory/hosts.yml playbooks/build-dstack-vmm.yml
-
-          Or follow the manual tutorial:
-            https://dstack.info/tutorial/clone-build-dstack-vmm
       when: not vmm_binary_check.stat.exists
-
-    - name: Check configuration directory exists
-      ansible.builtin.stat:
-        path: "{{ dstack_config_dir }}"
-      register: config_dir_check
-
-    - name: Fail if config directory not found
-      ansible.builtin.fail:
-        msg: |
-          Configuration directory not found at {{ dstack_config_dir }}
-
-          Run the setup playbook first:
-            ansible-playbook -i inventory/hosts.yml playbooks/setup-vmm-config.yml
-
-          Or follow the manual tutorial:
-            https://dstack.info/tutorial/vmm-configuration
-      when: not config_dir_check.stat.exists
 
     - name: Check configuration file exists
       ansible.builtin.stat:
@@ -87,66 +67,126 @@
       loop: "{{ runtime_dirs_check.results }}"
       when: not item.stat.exists
 
-    - name: Read configuration file
-      ansible.builtin.slurp:
-        src: "{{ vmm_config_file }}"
-      register: config_content
-
-    - name: Parse configuration (check TOML syntax)
-      ansible.builtin.shell: |
-        python3 -c "import tomllib; tomllib.load(open('{{ vmm_config_file }}', 'rb'))"
-      register: toml_check
-      changed_when: false
-      failed_when: false
-
-    - name: Fail if TOML syntax is invalid
-      ansible.builtin.fail:
-        msg: |
-          VMM configuration has invalid TOML syntax.
-
-          Error: {{ toml_check.stderr }}
-
-          Edit the configuration file and fix the syntax:
-            sudo nano {{ vmm_config_file }}
-      when: toml_check.rc != 0
-
-    - name: Get configuration file info
-      ansible.builtin.command:
-        cmd: "ls -lh {{ vmm_config_file }}"
-      register: config_info
-      changed_when: false
-
-    - name: Extract key configuration values
+    - name: Parse and validate configuration
       ansible.builtin.shell: |
         python3 << 'PYEOF'
         import tomllib
+        import json
+
         with open('{{ vmm_config_file }}', 'rb') as f:
             data = tomllib.load(f)
-        print(f"workers={data.get('workers', 'N/A')}")
-        print(f"log_level={data.get('log_level', 'N/A')}")
-        print(f"max_vcpu={data.get('cvm', {}).get('max_allocable_vcpu', 'N/A')}")
-        print(f"max_mem={data.get('cvm', {}).get('max_allocable_memory_in_mb', 'N/A')}")
-        PYEOF
-      register: config_values
-      changed_when: false
 
-    - name: Display verification summary
+        # Extract all key settings
+        config = {
+            # Server settings
+            'workers': data.get('workers', 'N/A'),
+            'log_level': data.get('log_level', 'N/A'),
+
+            # CVM settings
+            'max_vcpu': data.get('cvm', {}).get('max_allocable_vcpu', 'N/A'),
+            'max_memory_mb': data.get('cvm', {}).get('max_allocable_memory_in_mb', 'N/A'),
+            'cid_start': data.get('cvm', {}).get('cid_start', 'N/A'),
+            'cid_pool_size': data.get('cvm', {}).get('cid_pool_size', 'N/A'),
+
+            # Networking
+            'network_mode': data.get('cvm', {}).get('networking', {}).get('mode', 'N/A'),
+
+            # Gateway
+            'gateway_domain': data.get('gateway', {}).get('base_domain', 'N/A'),
+            'gateway_port': data.get('gateway', {}).get('port', 'N/A'),
+
+            # Auth
+            'auth_enabled': data.get('auth', {}).get('enabled', False),
+            'auth_tokens_count': len(data.get('auth', {}).get('tokens', [])),
+
+            # KMS
+            'kms_url': data.get('kms_url', 'N/A'),
+        }
+
+        print(json.dumps(config))
+        PYEOF
+      register: config_json
+      changed_when: false
+      failed_when: config_json.rc != 0
+
+    - name: Parse configuration JSON
+      ansible.builtin.set_fact:
+        vmm_config: "{{ config_json.stdout | from_json }}"
+
+    - name: Calculate memory in GB
+      ansible.builtin.set_fact:
+        max_memory_gb: "{{ (vmm_config.max_memory_mb | int / 1024) | round(1) }}"
+      when: vmm_config.max_memory_mb != 'N/A'
+
+    - name: Check if passt is installed
+      ansible.builtin.command: which passt
+      register: passt_check
+      changed_when: false
+      failed_when: false
+
+    - name: Display configuration summary
       ansible.builtin.debug:
         msg:
-          - "============================================"
-          - "VMM Configuration Verified!"
-          - "============================================"
+          - "=============================================="
+          - "VMM CONFIGURATION VERIFIED"
+          - "=============================================="
           - ""
-          - "Configuration file: {{ vmm_config_file }}"
-          - "File info: {{ config_info.stdout.split()[-1] }}"
+          - "Server Settings:"
+          - "  Workers:           {{ vmm_config.workers }}"
+          - "  Log Level:         {{ vmm_config.log_level }}"
+          - "  KMS URL:           {{ vmm_config.kms_url }}"
           - ""
-          - "Key settings:"
-          - "{{ config_values.stdout_lines | join('\n') }}"
+          - "CVM Resource Limits:"
+          - "  Max vCPUs:         {{ vmm_config.max_vcpu }}"
+          - "  Max Memory:        {{ max_memory_gb | default('N/A') }}GB ({{ vmm_config.max_memory_mb }}MB)"
+          - "  CID Start:         {{ vmm_config.cid_start }}"
+          - "  CID Pool Size:     {{ vmm_config.cid_pool_size }}"
           - ""
-          - "Directories verified:"
-          - "  - {{ dstack_config_dir }}"
-          - "  - {{ dstack_run_dir }}"
-          - "  - {{ dstack_log_dir }}"
-          - "  - {{ dstack_lib_dir }}"
+          - "Networking:"
+          - "  Mode:              {{ vmm_config.network_mode }}"
+          - "  Passt Installed:   {{ 'Yes' if passt_check.rc == 0 else 'No' }}"
           - ""
-          - "✓ All checks passed!"
+          - "Gateway:"
+          - "  Base Domain:       {{ vmm_config.gateway_domain }}"
+          - "  Port:              {{ vmm_config.gateway_port }}"
+          - ""
+          - "Authentication:"
+          - "  Enabled:           {{ vmm_config.auth_enabled }}"
+          - "  Tokens Configured: {{ vmm_config.auth_tokens_count }}"
+          - ""
+          - "Directories:"
+          - "  Config:            {{ dstack_config_dir }} ✓"
+          - "  Runtime:           {{ dstack_run_dir }} ✓"
+          - "  Logs:              {{ dstack_log_dir }} ✓"
+          - "  Data:              {{ dstack_lib_dir }} ✓"
+          - ""
+          - "=============================================="
+
+    - name: Warn if auth is disabled
+      ansible.builtin.debug:
+        msg:
+          - ""
+          - "⚠️  WARNING: Authentication is DISABLED"
+          - "   For production, re-run setup with:"
+          - "   -e 'auth_enabled=true'"
+          - ""
+      when: not vmm_config.auth_enabled
+
+    - name: Warn if not using passt
+      ansible.builtin.debug:
+        msg:
+          - ""
+          - "⚠️  WARNING: Not using passt networking"
+          - "   For production, re-run setup with:"
+          - "   -e 'cvm_network_mode=passt'"
+          - ""
+      when: vmm_config.network_mode != 'passt'
+
+    - name: Warn if passt not installed but mode is passt
+      ansible.builtin.debug:
+        msg:
+          - ""
+          - "⚠️  WARNING: passt mode configured but passt not installed"
+          - "   Install with: sudo apt install -y passt"
+          - ""
+      when: vmm_config.network_mode == 'passt' and passt_check.rc != 0
