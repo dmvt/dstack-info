@@ -225,7 +225,15 @@ For production use, you should get a dedicated RPC endpoint instead of using the
     - Name: "dstack-sepolia"
     - Chain: Ethereum
     - Network: Sepolia
-4. Copy your RPC URL (looks like: `https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY`)
+4. Copy your API key (the part after `/v2/` in your RPC URL)
+
+**Store your API key securely:**
+
+```bash
+# Store Alchemy API key
+echo "YOUR_ALCHEMY_API_KEY" > ~/.dstack/secrets/alchemy-api-key
+chmod 600 ~/.dstack/secrets/alchemy-api-key
+```
 
 **Benefits:**
 
@@ -261,14 +269,17 @@ https://ethereum-sepolia-rpc.publicnode.com
 ### Test with cast
 
 ```bash
+# Set your RPC URL (using stored API key)
+export RPC_URL="https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)"
+
 # Get latest block number
-cast block-number --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
+cast block-number --rpc-url $RPC_URL
 
 # Get current gas price
-cast gas-price --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
+cast gas-price --rpc-url $RPC_URL
 
 # Get your balance
-cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
+cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url $RPC_URL
 ```
 
 All commands should return values without errors.
@@ -276,7 +287,7 @@ All commands should return values without errors.
 ### Test with curl
 
 ```bash
-curl https://eth-sepolia.g.alchemy.com/v2/demo \
+curl "https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)" \
   -X POST \
   -H "Content-Type: application/json" \
   -d '{
@@ -291,29 +302,25 @@ Expected: JSON response with `"result": "0x..."` (hex block number)
 
 ---
 
-## Step 5: Document Your Configuration
+## Step 5: Verify Your Secrets
 
-Create a configuration file for later use:
+Check that all required secrets are stored:
 
 ```bash
-# Create config file
-cat > ~/.dstack/blockchain-config.sh <<EOF
-# Sepolia Testnet Configuration
-export SEPOLIA_WALLET_ADDRESS="\$(cat \$HOME/.dstack/secrets/sepolia-address)"
-export SEPOLIA_PRIVATE_KEY="\$(cat \$HOME/.dstack/secrets/sepolia-private-key)"
-export SEPOLIA_RPC_URL="https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY"
-export SEPOLIA_CHAIN_ID="11155111"
-EOF
-
-chmod 600 ~/.dstack/blockchain-config.sh
+# List your secrets
+ls -la ~/.dstack/secrets/
 ```
 
-**Load when needed:**
+You should have:
+- `sepolia-address` - Your wallet address
+- `sepolia-private-key` - Your wallet private key
+- `alchemy-api-key` - Your Alchemy API key
+
+**Test loading your configuration:**
 
 ```bash
-source ~/.dstack/blockchain-config.sh
-echo "Wallet: $SEPOLIA_WALLET_ADDRESS"
-echo "Balance: $(cast balance $SEPOLIA_WALLET_ADDRESS --rpc-url $SEPOLIA_RPC_URL)"
+echo "Wallet: $(cat ~/.dstack/secrets/sepolia-address)"
+echo "Balance: $(cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key))"
 ```
 
 ---
@@ -322,12 +329,12 @@ echo "Balance: $(cast balance $SEPOLIA_WALLET_ADDRESS --rpc-url $SEPOLIA_RPC_URL
 
 Before proceeding to KMS deployment, verify:
 
--   ✅ Wallet created and address saved
--   ✅ Private key stored securely
+-   ✅ Wallet created and address saved to `~/.dstack/secrets/sepolia-address`
+-   ✅ Private key stored securely in `~/.dstack/secrets/sepolia-private-key`
+-   ✅ Alchemy API key stored in `~/.dstack/secrets/alchemy-api-key`
 -   ✅ Wallet has ≥0.1 testnet ETH
 -   ✅ RPC endpoint tested and working
--   ✅ Can query balance via cast or MetaMask
--   ✅ Configuration file created
+-   ✅ Can query balance via cast
 
 ---
 

@@ -37,18 +37,21 @@ Before starting, ensure you have:
 
 For most users, the recommended approach is to use the Ansible playbook.
 
-### Step 1: Configure Wallet Credentials
+### Step 1: Verify Wallet Credentials
 
-Create a secrets file with your wallet credentials:
+Your wallet credentials from [Blockchain Setup](/tutorial/blockchain-setup) should already be stored:
 
 ```bash
-mkdir -p ~/.dstack/secrets
-cat > ~/.dstack/secrets/wallet.env << 'EOF'
-PRIVATE_KEY=your_private_key_here
-ALCHEMY_API_KEY=your_alchemy_api_key_here
-EOF
-chmod 600 ~/.dstack/secrets/wallet.env
+# Verify your secrets exist
+ls -la ~/.dstack/secrets/
 ```
+
+You should see:
+- `sepolia-address` - Your wallet address
+- `sepolia-private-key` - Your wallet private key
+- `alchemy-api-key` - Your Alchemy API key
+
+If any are missing, go back to [Blockchain Setup](/tutorial/blockchain-setup) to create them.
 
 ### Step 2: Run the Deployment Playbook
 
