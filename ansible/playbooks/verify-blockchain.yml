@@ -146,31 +146,34 @@
       set_fact:
         balance_sufficient: "{{ (balance_wei | int) >= (min_balance_wei | int) }}"
 
-    - name: Report wallet balance status
+    - name: Report wallet balance status (sufficient)
       debug:
-        msg: |
-          {% if balance_sufficient %}
-          ✓ Wallet has sufficient balance: {{ balance_eth }} ETH
+        msg:
+          - "✓ Wallet has sufficient balance: {{ balance_eth }} ETH"
+          - ""
+          - "Wallet: {{ wallet_address }}"
+          - "Balance: {{ balance_eth }} ETH ({{ balance_wei }} wei)"
+          - "Minimum required: {{ min_balance_eth }} ETH"
+          - "Status: Ready for KMS deployment ✅"
+      when: balance_sufficient
 
-          Wallet: {{ wallet_address }}
-          Balance: {{ balance_eth }} ETH ({{ balance_wei }} wei)
-          Minimum required: {{ min_balance_eth }} ETH
-          Status: Ready for KMS deployment ✅
-          {% else %}
-          ⚠ Wallet balance below minimum requirement
-
-          Wallet: {{ wallet_address }}
-          Balance: {{ balance_eth }} ETH
-          Minimum required: {{ min_balance_eth }} ETH
-          Deficit: {{ (min_balance_eth | float - balance_eth | float) }} ETH
-
-          Get testnet ETH from faucets:
-          1. Alchemy: https://sepoliafaucet.com/
-          2. QuickNode: https://faucet.quicknode.com/ethereum/sepolia
-          3. PoW Faucet: https://sepolia-faucet.pk910.de/
-
-          See: https://dstack.info/tutorial/blockchain-setup#step-2-get-testnet-eth
-          {% endif %}
+    - name: Report wallet balance status (insufficient)
+      debug:
+        msg:
+          - "⚠ Wallet balance below minimum requirement"
+          - ""
+          - "Wallet: {{ wallet_address }}"
+          - "Balance: {{ balance_eth }} ETH"
+          - "Minimum required: {{ min_balance_eth }} ETH"
+          - "Deficit: {{ (min_balance_eth | float - balance_eth | float) }} ETH"
+          - ""
+          - "Get testnet ETH from faucets:"
+          - "  1. Alchemy: https://sepoliafaucet.com/"
+          - "  2. QuickNode: https://faucet.quicknode.com/ethereum/sepolia"
+          - "  3. PoW Faucet: https://sepolia-faucet.pk910.de/"
+          - ""
+          - "See: https://dstack.info/tutorial/blockchain-setup#step-2-get-testnet-eth"
+      when: not balance_sufficient
 
     - name: Warn if balance is insufficient
       debug:
@@ -186,37 +189,53 @@
 
     - name: Report gas price (informational)
       debug:
-        msg: |
-          ℹ Current Sepolia gas price: {{ (gas_price_result.stdout | trim | int / 1000000000) | float }} Gwei
-
-          This affects deployment costs. Typical KMS deployment costs:
-          - Gas limit: ~2,000,000 gas
-          - Estimated cost: ~{{ ((gas_price_result.stdout | trim | int * 2000000) / 1000000000000000000) | float }} ETH
+        msg:
+          - "ℹ Current Sepolia gas price: {{ (gas_price_result.stdout | trim | int / 1000000000) | float }} Gwei"
+          - ""
+          - "This affects deployment costs. Typical KMS deployment costs:"
+          - "  - Gas limit: ~2,000,000 gas"
+          - "  - Estimated cost: ~{{ ((gas_price_result.stdout | trim | int * 2000000) / 1000000000000000000) | float }} ETH"
       when: gas_price_result.rc == 0
 
-    - name: Blockchain verification summary
+    - name: Blockchain verification summary (complete)
       debug:
-        msg: |
-          ═══════════════════════════════════════════════════════════════
-          Blockchain Verification {% if balance_sufficient %}Complete ✅{% else %}Incomplete ⚠{% endif %}
-          ═══════════════════════════════════════════════════════════════
+        msg:
+          - "═══════════════════════════════════════════════════════════════"
+          - "Blockchain Verification Complete ✅"
+          - "═══════════════════════════════════════════════════════════════"
+          - ""
+          - "Network: Sepolia Testnet (Chain ID {{ chain_id_result.stdout }})"
+          - "RPC: {{ rpc_url }}"
+          - "Block: {{ rpc_test.stdout }}"
+          - ""
+          - "Wallet: {{ wallet_address }}"
+          - "Balance: {{ balance_eth }} ETH"
+          - "Status: Ready ✅"
+          - ""
+          - "Next Steps:"
+          - "  1. Proceed to KMS deployment (Phase 3)"
+          - "  2. See: https://dstack.info/tutorial/kms-deployment"
+          - "═══════════════════════════════════════════════════════════════"
+      when: balance_sufficient
 
-          Network: Sepolia Testnet (Chain ID {{ chain_id_result.stdout }})
-          RPC: {{ rpc_url }}
-          Block: {{ rpc_test.stdout }}
-
-          Wallet: {{ wallet_address }}
-          Balance: {{ balance_eth }} ETH
-          Status: {% if balance_sufficient %}Ready ✅{% else %}Needs more ETH ⚠{% endif %}
-
-          {% if balance_sufficient %}
-          Next Steps:
-          1. Proceed to KMS deployment (Phase 3)
-          2. See: https://dstack.info/tutorial/kms-deployment
-          {% else %}
-          Action Required:
-          1. Get more testnet ETH from faucets
-          2. Re-run this verification
-          3. See: https://dstack.info/tutorial/blockchain-setup#step-2-get-testnet-eth
-          {% endif %}
-          ═══════════════════════════════════════════════════════════════
+    - name: Blockchain verification summary (incomplete)
+      debug:
+        msg:
+          - "═══════════════════════════════════════════════════════════════"
+          - "Blockchain Verification Incomplete ⚠"
+          - "═══════════════════════════════════════════════════════════════"
+          - ""
+          - "Network: Sepolia Testnet (Chain ID {{ chain_id_result.stdout }})"
+          - "RPC: {{ rpc_url }}"
+          - "Block: {{ rpc_test.stdout }}"
+          - ""
+          - "Wallet: {{ wallet_address }}"
+          - "Balance: {{ balance_eth }} ETH"
+          - "Status: Needs more ETH ⚠"
+          - ""
+          - "Action Required:"
+          - "  1. Get more testnet ETH from faucets"
+          - "  2. Re-run this verification"
+          - "  3. See: https://dstack.info/tutorial/blockchain-setup#step-2-get-testnet-eth"
+          - "═══════════════════════════════════════════════════════════════"
+      when: not balance_sufficient

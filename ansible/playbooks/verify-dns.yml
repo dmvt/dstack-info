@@ -124,41 +124,52 @@
       failed_when: false
       changed_when: false
 
-    - name: Report CAA record status
+    - name: Report CAA record status (subdomain)
       debug:
-        msg: |
-          {% if caa_subdomain_result.stdout %}
-          ✓ CAA records configured on {{ dstack_subdomain }}.{{ domain }}:
-          {{ caa_subdomain_result.stdout }}
-          {% elif caa_parent_result.stdout %}
-          ✓ CAA records configured on parent domain {{ domain }} (inherited by subdomains):
-          {{ caa_parent_result.stdout }}
-          {% else %}
-          ⚠ No CAA records found (optional but recommended)
+        msg:
+          - "✓ CAA records configured on {{ dstack_subdomain }}.{{ domain }}:"
+          - "{{ caa_subdomain_result.stdout }}"
+      when: caa_subdomain_result.stdout | length > 0
 
-          CAA records restrict certificate issuance to specific authorities.
-          While optional, they improve security.
+    - name: Report CAA record status (parent domain)
+      debug:
+        msg:
+          - "✓ CAA records configured on parent domain {{ domain }} (inherited by subdomains):"
+          - "{{ caa_parent_result.stdout }}"
+      when:
+        - caa_subdomain_result.stdout | length == 0
+        - caa_parent_result.stdout | length > 0
 
-          To add CAA records, see:
-          https://dstack.info/tutorial/dns-configuration#step-2-configure-dns-records
-          {% endif %}
+    - name: Report CAA record status (none found)
+      debug:
+        msg:
+          - "⚠ No CAA records found (optional but recommended)"
+          - ""
+          - "CAA records restrict certificate issuance to specific authorities."
+          - "While optional, they improve security."
+          - ""
+          - "To add CAA records, see:"
+          - "  https://dstack.info/tutorial/dns-configuration#step-2-configure-dns-records"
+      when:
+        - caa_subdomain_result.stdout | length == 0
+        - caa_parent_result.stdout | length == 0
 
     - name: DNS verification summary
       debug:
-        msg: |
-          ═══════════════════════════════════════════════════════════════
-          DNS Verification Complete ✅
-          ═══════════════════════════════════════════════════════════════
-
-          Domain Configuration:
-          • Base domain: {{ dstack_subdomain }}.{{ domain }} → {{ server_ip }}
-          • Wildcard: *.{{ dstack_subdomain }}.{{ domain }} → {{ server_ip }}
-          • Tested subdomains: {{ test_subdomains | join(', ') }}
-          • All resolvers consistent: ✓
-
-          Next Steps:
-          1. Save Cloudflare API token securely (if not already done)
-          2. Proceed to blockchain wallet setup (Phase 1.3)
-
-          See: https://dstack.info/tutorial/blockchain-setup
-          ═══════════════════════════════════════════════════════════════
+        msg:
+          - "═══════════════════════════════════════════════════════════════"
+          - "DNS Verification Complete ✅"
+          - "═══════════════════════════════════════════════════════════════"
+          - ""
+          - "Domain Configuration:"
+          - "  • Base domain: {{ dstack_subdomain }}.{{ domain }} → {{ server_ip }}"
+          - "  • Wildcard: *.{{ dstack_subdomain }}.{{ domain }} → {{ server_ip }}"
+          - "  • Tested subdomains: {{ test_subdomains | join(', ') }}"
+          - "  • All resolvers consistent: ✓"
+          - ""
+          - "Next Steps:"
+          - "  1. Save Cloudflare API token securely (if not already done)"
+          - "  2. Proceed to blockchain wallet setup (Phase 1.3)"
+          - ""
+          - "See: https://dstack.info/tutorial/blockchain-setup"
+          - "═══════════════════════════════════════════════════════════════"

@@ -210,13 +210,13 @@
 
     - name: Warn if balance may be insufficient
       ansible.builtin.debug:
-        msg: |
-          WARNING: Wallet balance ({{ wallet_info.balance }} ETH) may be insufficient.
-          Deployment typically costs ~0.002 ETH on Sepolia.
-
-          Get testnet ETH from:
-          - https://sepoliafaucet.com/
-          - https://sepolia-faucet.pk910.de/
+        msg:
+          - "WARNING: Wallet balance ({{ wallet_info.balance }} ETH) may be insufficient."
+          - "Deployment typically costs ~0.002 ETH on Sepolia."
+          - ""
+          - "Get testnet ETH from:"
+          - "  - https://sepoliafaucet.com/"
+          - "  - https://sepolia-faucet.pk910.de/"
       when: wallet_info.sufficient == 0
 
     - name: Deploy contracts
@@ -297,7 +297,7 @@
           - ""
           - "Contract Addresses:"
           - "  DstackKms Proxy: {{ kms_contract_address }}"
-          - "{% if app_impl_address %}  DstackApp Impl:   {{ app_impl_address }}{% endif %}"
+          - "  DstackApp Impl:  {{ app_impl_address | default('N/A') }}"
           - ""
           - "Addresses saved to: {{ contract_dir }}/.deployed-addresses"
           - ""
