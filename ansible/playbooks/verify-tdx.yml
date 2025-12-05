@@ -158,13 +158,13 @@
 
     - name: Warn if TME not enabled
       debug:
-        msg: |
-          ⚠ TME (Total Memory Encryption) may not be enabled in BIOS.
-
-          While TDX appears enabled, TME is recommended for full functionality.
-
-          See tutorial: TDX BIOS Configuration
-          https://dstack.info/tutorial/tdx-bios-configuration
+        msg:
+          - "⚠ TME (Total Memory Encryption) may not be enabled in BIOS."
+          - ""
+          - "While TDX appears enabled, TME is recommended for full functionality."
+          - ""
+          - "See tutorial: TDX BIOS Configuration"
+          - "https://dstack.info/tutorial/tdx-bios-configuration"
       when:
         - tme_status.rc == 0
         - not tme_enabled
@@ -178,21 +178,20 @@
 
     - name: Final TDX verification summary
       debug:
-        msg: |
-
-          ═══════════════════════════════════════════════════════════
-            ✓ Intel TDX is FULLY ENABLED and VERIFIED
-          ═══════════════════════════════════════════════════════════
-
-          Host: {{ ansible_hostname }}
-          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
-          Kernel: {{ kernel_version.stdout }}
-          CPU: TDX-capable
-          TDX Module: Initialized
-          TME: {{ 'Enabled' if (tme_status.rc == 0 and tme_enabled) else 'Unknown' }}
-
-          Your system is ready for TDX-based confidential computing!
-          ═══════════════════════════════════════════════════════════
+        msg:
+          - "═══════════════════════════════════════════════════════════"
+          - "  ✓ Intel TDX is FULLY ENABLED and VERIFIED"
+          - "═══════════════════════════════════════════════════════════"
+          - ""
+          - "Host: {{ ansible_hostname }}"
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Kernel: {{ kernel_version.stdout }}"
+          - "CPU: TDX-capable"
+          - "TDX Module: Initialized"
+          - "TME: {{ 'Enabled' if (tme_status.rc == 0 and tme_enabled) else 'Unknown' }}"
+          - ""
+          - "Your system is ready for TDX-based confidential computing!"
+          - "═══════════════════════════════════════════════════════════"
       when:
         - tdx_enabled
         - tdx_module_init.rc == 0
