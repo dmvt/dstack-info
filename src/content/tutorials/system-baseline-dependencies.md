@@ -74,6 +74,7 @@ ssh ubuntu@YOUR_SERVER_IP "gcc --version && make --version && git --version"
 | `curl` | HTTP client for downloading files |
 | `pkg-config` | Helper tool for compiling applications |
 | `libssl-dev` | SSL development libraries |
+| `passt` | User-mode networking for CVM network connectivity |
 
 ---
 
@@ -108,7 +109,8 @@ sudo apt install -y \
   git \
   curl \
   pkg-config \
-  libssl-dev
+  libssl-dev \
+  passt
 ```
 
 ### Step 4: Verify Installations
@@ -127,6 +129,7 @@ git --version
 wg --version
 xorriso --version
 lz4 --version
+passt --version
 ```
 
 ---

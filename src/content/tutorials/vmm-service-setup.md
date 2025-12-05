@@ -142,10 +142,18 @@ Expected output:
      Active: active (running) since ...
 ```
 
-### Step 5: Check Socket File
+### Step 5: Verify VMM is Working
+
+Check that the HTTP API is responding:
 
 ```bash
-ls -la /var/run/dstack/vmm.sock
+curl -s http://127.0.0.1:9080/ | head -5
+```
+
+Check that the supervisor socket exists:
+
+```bash
+ls -la /var/run/dstack/supervisor.sock
 ```
 
 ---
@@ -220,7 +228,20 @@ sudo journalctl -u dstack-vmm --since "10 minutes ago" | grep -i error
 free -h
 ```
 
-### Socket file not created
+### HTTP API not responding
+
+```bash
+# Check VMM is listening on port 9080
+sudo ss -tlnp | grep 9080
+
+# Check logs for binding errors
+sudo journalctl -u dstack-vmm -n 50 | grep -i "endpoint\|bind\|error"
+
+# Restart service
+sudo systemctl restart dstack-vmm
+```
+
+### Supervisor socket not created
 
 ```bash
 # Check directory exists

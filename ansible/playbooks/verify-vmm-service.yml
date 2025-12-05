@@ -6,7 +6,8 @@
 # - Service file exists
 # - Service is enabled for boot
 # - Service is running
-# - Socket file exists
+# - HTTP API is responding on port 9080
+# - Supervisor socket exists
 # - No recent errors in logs
 
 - name: Verify VMM Service
@@ -73,24 +74,44 @@
       register: service_pid
       changed_when: false
 
-    - name: Check socket file exists
-      ansible.builtin.stat:
-        path: "{{ dstack_run_dir }}/vmm.sock"
-      register: socket_check
+    - name: Check VMM HTTP API is responding
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:9080/"
+        method: GET
+        status_code: [200, 404]
+        timeout: 5
+      register: vmm_api_check
+      failed_when: false
 
-    - name: Warn if socket not found
+    - name: Warn if VMM API not responding
       ansible.builtin.debug:
         msg:
-          - "WARNING: VMM socket not found at {{ dstack_run_dir }}/vmm.sock"
+          - "WARNING: VMM HTTP API not responding at http://127.0.0.1:9080/"
           - ""
           - "This may indicate:"
           - "  - Service just started (wait a moment)"
           - "  - Configuration error"
-          - "  - Permission issue"
+          - "  - Port binding issue"
           - ""
           - "Check logs:"
           - "  sudo journalctl -u dstack-vmm -n 50"
-      when: not socket_check.stat.exists
+      when: vmm_api_check.failed | default(false)
+
+    - name: Check supervisor socket exists
+      ansible.builtin.stat:
+        path: "{{ dstack_run_dir }}/supervisor.sock"
+      register: supervisor_socket_check
+
+    - name: Warn if supervisor socket not found
+      ansible.builtin.debug:
+        msg:
+          - "WARNING: Supervisor socket not found at {{ dstack_run_dir }}/supervisor.sock"
+          - ""
+          - "The supervisor is required for VM management."
+          - ""
+          - "Check logs:"
+          - "  sudo journalctl -u dstack-vmm -n 50"
+      when: not supervisor_socket_check.stat.exists
 
     - name: Check for recent errors in logs
       ansible.builtin.shell: |
@@ -127,7 +148,8 @@
           - "Status: {{ service_status.status.ActiveState }}"
           - "PID: {{ service_pid.stdout }}"
           - "Started: {{ service_uptime.stdout }}"
-          - "Socket: {{ 'Present' if socket_check.stat.exists else 'Not found' }}"
+          - "HTTP API (9080): {{ 'Responding' if not (vmm_api_check.failed | default(false)) else 'Not responding' }}"
+          - "Supervisor socket: {{ 'Present' if supervisor_socket_check.stat.exists else 'Not found' }}"
           - "Recent errors: {{ 'None' if recent_errors.stdout == '' else 'Found (see above)' }}"
           - ""
-          - "✓ All checks passed!"
+          - "✓ VMM service is running correctly!"

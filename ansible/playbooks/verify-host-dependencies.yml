@@ -20,6 +20,7 @@
       - curl
       - pkg-config
       - libssl-dev
+      - passt
 
   tasks:
     - name: Check gcc is installed
@@ -76,6 +77,12 @@
       changed_when: false
       failed_when: libssl_check.rc != 0
 
+    - name: Check passt is installed
+      ansible.builtin.command: passt --version
+      register: passt_check
+      changed_when: false
+      failed_when: false  # passt --version returns non-zero even on success
+
     - name: Display verification results
       ansible.builtin.debug:
         msg:
@@ -92,6 +99,7 @@
           - "✓ wireguard-tools: installed"
           - "✓ pkg-config: {{ pkgconfig_check.stdout }}"
           - "✓ libssl-dev: installed"
+          - "✓ passt: installed"
           - ""
           - "All build dependencies are installed."
           - "=============================================="

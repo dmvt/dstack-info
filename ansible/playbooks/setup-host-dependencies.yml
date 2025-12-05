@@ -27,6 +27,7 @@
       - curl
       - pkg-config
       - libssl-dev
+      - passt
     # Set to true to upgrade packages (may fail on some systems due to grub issues)
     upgrade_packages: false
 
@@ -89,6 +90,14 @@
       register: wg_version
       changed_when: false
       failed_when: false  # wg --version returns non-zero even on success
+      tags:
+        - verify
+
+    - name: Verify passt installation
+      command: passt --version
+      register: passt_version
+      changed_when: false
+      failed_when: false  # passt --version returns non-zero even on success
       tags:
         - verify
 
