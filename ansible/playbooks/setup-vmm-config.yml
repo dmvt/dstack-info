@@ -336,12 +336,3 @@
           - "  ansible-playbook ... -e 'auth_enabled=true'"
           - ""
       when: not (auth_enabled | bool)
-
-    - name: Display next steps
-      ansible.builtin.debug:
-        msg:
-          - ""
-          - "Next steps:"
-          - "  1. Verify: ansible-playbook playbooks/verify-vmm-config.yml"
-          - "  2. Setup service: ansible-playbook playbooks/setup-vmm-service.yml"
-          - ""
