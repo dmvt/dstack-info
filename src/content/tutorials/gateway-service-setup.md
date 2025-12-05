@@ -4,7 +4,7 @@ description: "Configure dstack gateway to run as a systemd service and register 
 section: "Gateway Deployment"
 stepNumber: 3
 totalSteps: 3
-lastUpdated: 2025-12-02
+lastUpdated: 2025-12-04
 prerequisites:
   - gateway-build-configuration
 tags:
@@ -22,12 +22,6 @@ estimatedTime: "20 minutes"
 
 This tutorial guides you through setting up the dstack gateway as a systemd service and registering it with the Key Management Service (KMS). Running the gateway as a service ensures it starts automatically on boot and integrates with the rest of your dstack deployment.
 
-## What You'll Set Up
-
-- **dstack-gateway.service** - Systemd service for the gateway
-- **Gateway-KMS registration** - Connect gateway to KMS for key operations
-- **Certificate renewal automation** - Automatic certificate management
-
 ## Prerequisites
 
 Before starting, ensure you have:
@@ -39,7 +33,46 @@ Before starting, ensure you have:
 - SSL certificates at /etc/dstack/certs/
 - KMS service running (from Phase 3)
 
-## Step 1: Create Gateway Systemd Service
+## Quick Start: Setup with Ansible
+
+For most users, the recommended approach is to use the Ansible playbook.
+
+### Step 1: Run the Service Setup Playbook
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/setup-gateway-service.yml
+```
+
+The playbook will:
+1. **Create gateway systemd service** (depends on WireGuard and KMS)
+2. **Enable the service** for automatic startup
+3. **Start the gateway** and verify it's running
+4. **Set up certificate renewal timer** for automatic renewal
+
+### Step 2: Verify Gateway
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/verify-gateway.yml
+```
+
+---
+
+## What Gets Set Up
+
+| Component | Purpose |
+|-----------|---------|
+| **dstack-gateway.service** | Systemd service running on ports 80, 443, 9070 |
+| **Certificate renewal timer** | Automatic certificate renewal twice daily |
+| **Gateway-KMS integration** | Connection to KMS for TEE operations |
+
+---
+
+## Manual Setup
+
+If you prefer to set up services manually, follow these steps.
+
+### Step 1: Create Gateway Systemd Service
 
 Create the systemd service unit file:
 
@@ -354,23 +387,6 @@ Check dependency chain:
 systemctl list-dependencies dstack-gateway
 ```
 
-## Ansible Automation
-
-You can automate the service setup using Ansible.
-
-### Run the Ansible playbook
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/setup-gateway-service.yml
-```
-
-The playbook will:
-1. Create gateway systemd service
-2. Enable and start the service
-3. Set up certificate renewal timer
-4. Verify gateway is running
-
 ## Troubleshooting
 
 ### Gateway fails to start
@@ -468,85 +484,7 @@ sudo cat /etc/dstack/cloudflare/cloudflare.ini
 
 Verify API token is valid.
 
-## Verification Checklist
-
-Before proceeding, verify you have:
-
-- [ ] Created gateway systemd service
-- [ ] Enabled gateway service for automatic startup
-- [ ] Started gateway service successfully
-- [ ] Verified gateway logs show no errors
-- [ ] Confirmed ports 80, 443, 9070 are listening
-- [ ] Tested HTTPS connectivity
-- [ ] Set up certificate renewal timer
-- [ ] (Optional) Registered gateway with KMS
-
-### Quick verification script
-
-```bash
-#!/bin/bash
-echo "Checking gateway service setup..."
-
-# Check gateway service
-if sudo systemctl is-active --quiet dstack-gateway; then
-    echo "✓ Gateway service running"
-else
-    echo "✗ Gateway service not running"
-    exit 1
-fi
-
-# Check gateway enabled
-if sudo systemctl is-enabled --quiet dstack-gateway; then
-    echo "✓ Gateway enabled for boot"
-else
-    echo "✗ Gateway not enabled for boot"
-    exit 1
-fi
-
-# Check HTTPS port
-if sudo ss -tlnp | grep -q ':443.*dstack-gateway'; then
-    echo "✓ HTTPS port 443 listening"
-else
-    echo "✗ HTTPS port 443 not listening"
-    exit 1
-fi
-
-# Check HTTP port
-if sudo ss -tlnp | grep -q ':80.*dstack-gateway'; then
-    echo "✓ HTTP port 80 listening"
-else
-    echo "✗ HTTP port 80 not listening"
-    exit 1
-fi
-
-# Check WireGuard
-if ip link show dgw > /dev/null 2>&1; then
-    echo "✓ WireGuard interface active"
-else
-    echo "✗ WireGuard interface not found"
-    exit 1
-fi
-
-# Check certificate renewal timer
-if sudo systemctl is-active --quiet dstack-certbot-renew.timer; then
-    echo "✓ Certificate renewal timer active"
-else
-    echo "⚠ Certificate renewal timer not active"
-fi
-
-# Check KMS connectivity
-if systemctl is-active --quiet dstack-kms; then
-    echo "✓ KMS service running"
-else
-    echo "⚠ KMS service not running (gateway may still work for basic routing)"
-fi
-
-echo ""
-echo "Gateway service setup verified successfully!"
-echo ""
-echo "Service Status:"
-sudo systemctl status dstack-gateway --no-pager | grep -E "Active:|Main PID:"
-```
+---
 
 ## Understanding Gateway Service Architecture
 

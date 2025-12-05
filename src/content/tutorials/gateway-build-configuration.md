@@ -4,7 +4,7 @@ description: "Build dstack gateway from source and configure it for your environ
 section: "Gateway Deployment"
 stepNumber: 2
 totalSteps: 3
-lastUpdated: 2025-12-02
+lastUpdated: 2025-12-04
 prerequisites:
   - gateway-ssl-setup
   - clone-build-dstack-vmm
@@ -22,11 +22,6 @@ estimatedTime: "25 minutes"
 
 This tutorial guides you through building the dstack gateway from source and configuring it for your environment. The gateway acts as a reverse proxy that forwards TLS connections to Confidential Virtual Machines (CVMs) running on your TDX host.
 
-## What You'll Build
-
-- **dstack-gateway** - Reverse proxy for CVM traffic with automatic TLS termination
-- **dstack-certbot** - Certificate management tool (built alongside gateway)
-
 ## Prerequisites
 
 Before starting, ensure you have:
@@ -37,7 +32,51 @@ Before starting, ensure you have:
 - Rust toolchain installed
 - SSL certificates at /etc/dstack/certs/
 
-## Step 1: Build the Gateway Binary
+## Quick Start: Build with Ansible
+
+For most users, the recommended approach is to use the Ansible playbook.
+
+### Step 1: Run the Build Playbook
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/build-gateway.yml \
+  -e "gateway_domain=hosted.yourdomain.com"
+```
+
+The playbook will:
+1. **Build dstack-gateway** and dstack-certbot binaries
+2. **Install to system path** at /usr/local/bin/
+3. **Generate WireGuard keys** and create interface
+4. **Create gateway.toml** configuration
+5. **Enable WireGuard** on boot
+
+### Step 2: Verify Build
+
+```bash
+dstack-gateway --version
+sudo wg show dgw
+cat /etc/dstack/gateway/gateway.toml
+```
+
+---
+
+## What Gets Built
+
+| Component | Purpose |
+|-----------|---------|
+| **dstack-gateway** | Reverse proxy for CVM traffic with TLS termination |
+| **dstack-certbot** | Certificate management tool |
+| **WireGuard interface** | Secure tunnel to CVMs (dgw) |
+| **gateway.toml** | Gateway configuration file |
+
+---
+
+## Manual Build
+
+If you prefer to build manually, follow these steps.
+
+### Step 1: Build the Gateway Binary
 
 Navigate to the dstack repository and build the gateway:
 
@@ -398,24 +437,6 @@ The gateway routes requests based on subdomain patterns:
 | `<id>s.base_domain` | TLS passthrough to 443 | `app123s.hosted.example.com` |
 | `<id>-<port>g.base_domain` | gRPC on specific port | `app123-50051g.hosted.example.com` |
 
-## Ansible Automation
-
-You can automate the build and configuration using Ansible.
-
-### Run the Ansible playbook
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/build-gateway.yml
-```
-
-The playbook will:
-1. Build dstack-gateway and dstack-certbot
-2. Install binaries to /usr/local/bin
-3. Set up WireGuard interface
-4. Create gateway configuration
-5. Create certbot configuration
-
 ## Troubleshooting
 
 ### Build fails with missing dependencies
@@ -482,80 +503,7 @@ sudo chmod 600 /etc/dstack/certs/privkey.pem
 sudo chown root:root /etc/dstack/certs/*
 ```
 
-## Verification Checklist
-
-Before proceeding, verify you have:
-
-- [ ] Built dstack-gateway successfully
-- [ ] Built dstack-certbot successfully
-- [ ] Installed binaries to /usr/local/bin
-- [ ] Generated WireGuard keys
-- [ ] Created and started WireGuard interface
-- [ ] Created gateway configuration file
-- [ ] Created certbot configuration file
-- [ ] Verified certificate files exist
-- [ ] Checked ports are available
-
-### Quick verification script
-
-```bash
-#!/bin/bash
-echo "Checking gateway build and configuration..."
-
-# Check gateway binary
-if [ -x "/usr/local/bin/dstack-gateway" ]; then
-    echo "✓ Gateway binary installed"
-else
-    echo "✗ Gateway binary not found"
-    exit 1
-fi
-
-# Check certbot binary
-if [ -x "/usr/local/bin/dstack-certbot" ]; then
-    echo "✓ Certbot binary installed"
-else
-    echo "✗ Certbot binary not found"
-    exit 1
-fi
-
-# Check WireGuard interface
-if ip link show dgw > /dev/null 2>&1; then
-    echo "✓ WireGuard interface exists"
-else
-    echo "✗ WireGuard interface not found"
-    exit 1
-fi
-
-# Check gateway config
-if [ -f "/etc/dstack/gateway/gateway.toml" ]; then
-    echo "✓ Gateway configuration exists"
-else
-    echo "✗ Gateway configuration not found"
-    exit 1
-fi
-
-# Check certificates
-if [ -f "/etc/dstack/certs/fullchain.pem" ] && [ -f "/etc/dstack/certs/privkey.pem" ]; then
-    echo "✓ Certificates exist"
-else
-    echo "✗ Certificates not found"
-    exit 1
-fi
-
-# Check certificate validity
-DAYS_LEFT=$(openssl x509 -in /etc/dstack/certs/fullchain.pem -noout -checkend 0 && \
-  echo "valid" || echo "expired")
-if [ "$DAYS_LEFT" = "valid" ]; then
-    EXPIRY=$(openssl x509 -in /etc/dstack/certs/fullchain.pem -noout -enddate | cut -d= -f2)
-    echo "✓ Certificate valid until: $EXPIRY"
-else
-    echo "✗ Certificate expired!"
-    exit 1
-fi
-
-echo ""
-echo "Gateway build and configuration verified successfully!"
-```
+---
 
 ## Understanding Gateway Architecture
 

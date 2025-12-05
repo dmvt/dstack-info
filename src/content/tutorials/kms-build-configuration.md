@@ -4,7 +4,7 @@ description: "Build and configure the dstack Key Management Service"
 section: "KMS Deployment"
 stepNumber: 3
 totalSteps: 5
-lastUpdated: 2025-11-20
+lastUpdated: 2025-12-04
 prerequisites:
   - contract-deployment
 tags:
@@ -21,15 +21,6 @@ estimatedTime: "25 minutes"
 
 This tutorial guides you through building and configuring the dstack Key Management Service (KMS). The KMS is a critical component that manages cryptographic keys for TEE applications.
 
-## What You'll Build
-
-The dstack KMS provides:
-
-- **Key Management** - Generates and stores cryptographic keys for apps
-- **Certificate Authority** - Issues TLS certificates for secure communication
-- **Authorization** - Verifies app permissions via smart contract
-- **Remote Attestation** - Validates TEE integrity before releasing keys
-
 ## Prerequisites
 
 Before starting, ensure you have:
@@ -40,7 +31,54 @@ Before starting, ensure you have:
 - Completed [Rust Toolchain Installation](/tutorial/rust-toolchain-installation)
 - dstack repository cloned to ~/dstack
 
-## Step 1: Build the KMS Binary
+## Quick Start: Build with Ansible
+
+For most users, the recommended approach is to use the Ansible playbook.
+
+### Step 1: Run the Build Playbook
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml \
+  -e "alchemy_api_key=YOUR_ALCHEMY_API_KEY" \
+  -e "kms_contract_address=YOUR_KMS_CONTRACT_ADDRESS"
+```
+
+The playbook will:
+1. **Build KMS binary** in release mode
+2. **Install to system path** at /usr/local/bin/dstack-kms
+3. **Create configuration directories** (/etc/kms, /etc/kms/certs)
+4. **Generate kms.toml** configuration file
+5. **Build auth-eth service** for blockchain authorization
+6. **Create auth-eth.env** with your credentials
+
+### Step 2: Verify Build
+
+```bash
+dstack-kms --help
+cat /etc/kms/kms.toml
+```
+
+---
+
+## What Gets Built
+
+The dstack KMS provides:
+
+| Component | Purpose |
+|-----------|---------|
+| **dstack-kms** | Main KMS binary - generates and stores cryptographic keys |
+| **auth-eth** | Node.js service - verifies app permissions via smart contract |
+| **kms.toml** | Configuration file for KMS settings |
+| **auth-eth.env** | Environment file with Ethereum RPC credentials |
+
+---
+
+## Manual Build
+
+If you prefer to build manually, follow these steps.
+
+### Step 1: Build the KMS Binary
 
 Build the KMS service using Cargo in release mode.
 
@@ -307,54 +345,7 @@ curl -s -X POST $ETH_RPC_URL \
 
 Expected output shows the current block number.
 
-## Ansible Automation
-
-You can automate the KMS build and configuration using Ansible.
-
-### Configure variables
-
-Add to your `group_vars/all.yml`:
-
-```yaml
-# KMS Configuration
-kms_rpc_port: 9100
-auth_eth_port: 9200
-kms_workers: 8
-kms_log_level: "info"
-
-# Contract configuration (use Ansible Vault for secrets)
-alchemy_api_key: "{{ vault_alchemy_api_key }}"
-kms_contract_address: "{{ vault_kms_contract_address }}"
-```
-
-### Run the build playbook
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml
-```
-
-## Configuration Options
-
-### Configurable Variables
-
-The setup playbook supports these variables via `-e` flags:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `kms_workers` | 8 | Worker threads |
-| `kms_log_level` | info | Log level |
-| `kms_rpc_port` | 9100 | RPC port |
-| `auth_eth_port` | 9200 | Auth-eth port |
-| `pccs_url` | Intel PCCS | Quote verification URL |
-
-### Example with custom values
-
-```bash
-ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml \
-  -e "kms_workers=16" \
-  -e "kms_log_level=debug"
-```
+---
 
 ## Architecture Overview
 
@@ -449,85 +440,6 @@ Check your Alchemy API key and network:
 ```bash
 source /etc/kms/auth-eth.env
 curl -v $ETH_RPC_URL
-```
-
-## Verification Checklist
-
-Before proceeding, verify you have:
-
-- [ ] Built KMS binary in release mode
-- [ ] Installed KMS to /usr/local/bin/dstack-kms
-- [ ] Created /etc/kms directory structure
-- [ ] Created /etc/kms/kms.toml configuration
-- [ ] Built auth-eth TypeScript service
-- [ ] Created /etc/kms/auth-eth.env with credentials
-- [ ] Verified RPC connectivity to Ethereum
-
-### Quick verification script
-
-```bash
-#!/bin/bash
-echo "Checking KMS build and configuration..."
-
-# Check KMS binary
-if command -v dstack-kms &> /dev/null; then
-    echo "✓ dstack-kms installed"
-else
-    echo "✗ dstack-kms not found"
-    exit 1
-fi
-
-# Check configuration directory
-if [ -d "/etc/kms" ]; then
-    echo "✓ Configuration directory exists"
-else
-    echo "✗ Configuration directory not found"
-    exit 1
-fi
-
-# Check KMS config file
-if [ -f "/etc/kms/kms.toml" ]; then
-    echo "✓ kms.toml exists"
-else
-    echo "✗ kms.toml not found"
-    exit 1
-fi
-
-# Check certs directory
-if [ -d "/etc/kms/certs" ]; then
-    echo "✓ Certificates directory exists"
-else
-    echo "✗ Certificates directory not found"
-    exit 1
-fi
-
-# Check auth-eth build
-AUTH_ETH_MAIN="$HOME/dstack/kms/auth-eth/dist/src/main.js"
-if [ -f "$AUTH_ETH_MAIN" ]; then
-    echo "✓ auth-eth built"
-else
-    echo "✗ auth-eth not built"
-    exit 1
-fi
-
-# Check auth-eth env
-if [ -f "/etc/kms/auth-eth.env" ]; then
-    echo "✓ auth-eth.env exists"
-else
-    echo "✗ auth-eth.env not found"
-    exit 1
-fi
-
-# Validate TOML
-if python3 -c "import tomllib; tomllib.load(open('/etc/kms/kms.toml", "rb'))" 2>/dev/null; then
-    echo "✓ kms.toml syntax valid"
-else
-    echo "✗ kms.toml syntax invalid"
-    exit 1
-fi
-
-echo ""
-echo "KMS build and configuration verified successfully!"
 ```
 
 ## Next Steps

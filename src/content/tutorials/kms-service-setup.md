@@ -4,7 +4,7 @@ description: "Configure dstack KMS to run as systemd services with automatic sta
 section: "KMS Deployment"
 stepNumber: 5
 totalSteps: 5
-lastUpdated: 2025-12-01
+lastUpdated: 2025-12-04
 prerequisites:
   - kms-bootstrap
 tags:
@@ -21,15 +21,6 @@ estimatedTime: "15 minutes"
 
 This tutorial guides you through setting up the dstack Key Management Service (KMS) as systemd services. Running KMS as services ensures they start automatically on boot and restart if they crash.
 
-## What You'll Set Up
-
-The KMS deployment requires two services:
-
-- **dstack-kms** - Main KMS service that manages cryptographic keys
-- **auth-eth** - Authentication webhook that verifies permissions via Ethereum smart contracts
-
-Both services work together to provide secure key management with blockchain-based authorization.
-
 ## Prerequisites
 
 Before starting, ensure you have:
@@ -40,7 +31,49 @@ Before starting, ensure you have:
 - Auth-eth environment file at /etc/kms/auth-eth.env
 - Bootstrap completed with root keys generated
 
-## Step 1: Create Auth-ETH Systemd Service
+## Quick Start: Setup with Ansible
+
+For most users, the recommended approach is to use the Ansible playbook.
+
+### Step 1: Run the Service Setup Playbook
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/setup-kms-services.yml
+```
+
+The playbook will:
+1. **Create auth-eth systemd service** (starts before KMS)
+2. **Create KMS systemd service** (depends on auth-eth)
+3. **Enable both services** for automatic startup
+4. **Start both services** and verify they're running
+
+### Step 2: Verify Services
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-services.yml
+```
+
+---
+
+## What Gets Set Up
+
+The KMS deployment requires two services:
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| **dstack-auth-eth** | 9200 | Webhook that verifies permissions via Ethereum smart contracts |
+| **dstack-kms** | 9100 | Main KMS service that manages cryptographic keys |
+
+Both services work together: KMS calls auth-eth to verify app permissions before releasing keys.
+
+---
+
+## Manual Setup
+
+If you prefer to set up services manually, follow these steps.
+
+### Step 1: Create Auth-ETH Systemd Service
 
 The auth-eth service must start before KMS, as KMS depends on it for authorization.
 
@@ -303,24 +336,6 @@ Both services should show as active with new PIDs.
 | `journalctl -u dstack-kms --since "1 hour ago"` | KMS logs from last hour |
 | `journalctl -u dstack-kms -p err` | Show only KMS errors |
 
-## Ansible Automation
-
-You can automate the service setup using Ansible.
-
-### Run the Ansible playbook
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/setup-kms-services.yml
-```
-
-The playbook will:
-1. Create auth-eth systemd service
-2. Create KMS systemd service
-3. Enable both services
-4. Start both services
-5. Verify services are running
-
 ## Troubleshooting
 
 ### Auth-ETH fails to start
@@ -410,81 +425,7 @@ Expected response shows auth-eth is responding:
 {"result":false}
 ```
 
-## Verification Checklist
-
-Before proceeding, verify you have:
-
-- [ ] Created auth-eth systemd service
-- [ ] Created KMS systemd service
-- [ ] Enabled both services for automatic startup
-- [ ] Started both services successfully
-- [ ] Verified auth-eth logs show Ethereum connection
-- [ ] Verified KMS logs show successful initialization
-- [ ] Tested automatic restart behavior
-- [ ] Verified both services survive reboot (optional: `sudo reboot`)
-
-### Quick verification script
-
-```bash
-#!/bin/bash
-echo "Checking KMS service setup..."
-
-# Check auth-eth service
-if sudo systemctl is-active --quiet dstack-auth-eth; then
-    echo "✓ Auth-ETH service running"
-else
-    echo "✗ Auth-ETH service not running"
-    exit 1
-fi
-
-# Check KMS service
-if sudo systemctl is-active --quiet dstack-kms; then
-    echo "✓ KMS service running"
-else
-    echo "✗ KMS service not running"
-    exit 1
-fi
-
-# Check auth-eth enabled
-if sudo systemctl is-enabled --quiet dstack-auth-eth; then
-    echo "✓ Auth-ETH enabled for boot"
-else
-    echo "✗ Auth-ETH not enabled for boot"
-    exit 1
-fi
-
-# Check KMS enabled
-if sudo systemctl is-enabled --quiet dstack-kms; then
-    echo "✓ KMS enabled for boot"
-else
-    echo "✗ KMS not enabled for boot"
-    exit 1
-fi
-
-# Check certificates exist
-if [ -f "/etc/kms/certs/root-ca.crt" ]; then
-    echo "✓ Root CA certificate exists"
-else
-    echo "✗ Root CA certificate not found"
-    exit 1
-fi
-
-# Check auth-eth responding
-if curl -s -X POST http://127.0.0.1:9200 \
-  -H "Content-Type: application/json" \
-  -d '{"method":"ping"}' > /dev/null 2>&1; then
-    echo "✓ Auth-ETH webhook responding"
-else
-    echo "⚠ Auth-ETH webhook not responding (this may be normal if ping not implemented)"
-fi
-
-echo ""
-echo "KMS service setup verified successfully!"
-echo ""
-echo "Service Status:"
-sudo systemctl status dstack-auth-eth --no-pager | grep Active
-sudo systemctl status dstack-kms --no-pager | grep Active
-```
+---
 
 ## Understanding the Service Architecture
 

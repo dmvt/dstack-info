@@ -4,7 +4,7 @@ description: "Configure Certbot and SSL certificates for dstack gateway using Cl
 section: "Gateway Deployment"
 stepNumber: 1
 totalSteps: 3
-lastUpdated: 2025-12-02
+lastUpdated: 2025-12-04
 prerequisites:
   - kms-service-setup
   - dns-configuration
@@ -23,13 +23,6 @@ estimatedTime: "20 minutes"
 
 This tutorial guides you through setting up SSL certificates for the dstack gateway using Certbot and Cloudflare DNS validation. The gateway uses these certificates to provide secure HTTPS access to applications running in Confidential Virtual Machines (CVMs).
 
-## What You'll Configure
-
-- Cloudflare API token for DNS-01 ACME validation
-- Certbot for automatic certificate management
-- CAA DNS records to restrict certificate issuance
-- SSL certificates for your gateway domain
-
 ## Prerequisites
 
 Before starting, ensure you have:
@@ -39,7 +32,62 @@ Before starting, ensure you have:
 - Cloudflare account managing your domain
 - Domain with wildcard DNS pointing to your TDX server
 
-## Step 1: Create Cloudflare API Token
+## Quick Start: Setup with Ansible
+
+For most users, the recommended approach is to use the Ansible playbook.
+
+### Step 1: Configure Cloudflare Credentials
+
+Create a credentials file:
+
+```bash
+sudo mkdir -p /etc/dstack/cloudflare
+sudo tee /etc/dstack/cloudflare/cloudflare.ini > /dev/null <<EOF
+dns_cloudflare_api_token = your-cloudflare-api-token
+EOF
+sudo chmod 600 /etc/dstack/cloudflare/cloudflare.ini
+```
+
+### Step 2: Run the SSL Setup Playbook
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/setup-gateway-ssl.yml \
+  -e "gateway_domain=hosted.yourdomain.com" \
+  -e "acme_email=your-email@example.com"
+```
+
+The playbook will:
+1. **Install certbot** and Cloudflare DNS plugin
+2. **Request wildcard certificate** for your domain
+3. **Copy certificates** to /etc/dstack/certs/
+4. **Set up renewal hooks** for automatic renewal
+
+### Step 3: Verify Certificates
+
+```bash
+ls -la /etc/dstack/certs/
+openssl x509 -in /etc/dstack/certs/fullchain.pem -noout -dates
+```
+
+---
+
+## What Gets Configured
+
+| Component | Purpose |
+|-----------|---------|
+| **Cloudflare credentials** | API token for DNS-01 ACME validation |
+| **Wildcard certificate** | Covers *.hosted.yourdomain.com |
+| **Renewal hooks** | Automatic certificate renewal and gateway reload |
+| **CAA records** | Restrict certificate issuance to Let's Encrypt |
+
+---
+
+## Manual Setup
+
+If you prefer to set up SSL manually, follow these steps.
+
+### Step 1: Create Cloudflare API Token
 
 The gateway needs a Cloudflare API token with DNS edit permissions for automatic certificate renewal.
 
@@ -345,24 +393,6 @@ Expected output:
 Congratulations, all renewals succeeded.
 ```
 
-## Ansible Automation
-
-You can automate the SSL setup using Ansible.
-
-### Run the Ansible playbook
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/setup-gateway-ssl.yml
-```
-
-The playbook will:
-1. Create Cloudflare credentials directory
-2. Store API credentials securely
-3. Install certbot and Cloudflare plugin
-4. Request initial certificate
-5. Set up automatic renewal hooks
-
 ## Troubleshooting
 
 ### Certbot fails with DNS validation error
@@ -413,63 +443,7 @@ openssl x509 -in /etc/dstack/certs/fullchain.pem -noout -issuer
 
 Should show Let's Encrypt as issuer.
 
-## Verification Checklist
-
-Before proceeding, verify you have:
-
-- [ ] Created Cloudflare API token with DNS:Edit permission
-- [ ] Stored Cloudflare credentials securely
-- [ ] Configured CAA records for Let's Encrypt
-- [ ] Created certbot configuration
-- [ ] Requested wildcard certificate successfully
-- [ ] Copied certificates to /etc/dstack/certs/
-- [ ] Set up automatic renewal hooks
-- [ ] Tested dry-run renewal
-
-### Quick verification script
-
-```bash
-#!/bin/bash
-echo "Checking gateway SSL setup..."
-
-# Check credentials exist
-if [ -f "/etc/dstack/cloudflare/cloudflare.ini" ]; then
-    echo "✓ Cloudflare credentials exist"
-else
-    echo "✗ Cloudflare credentials not found"
-    exit 1
-fi
-
-# Check certificate exists
-if [ -f "/etc/dstack/certs/fullchain.pem" ]; then
-    echo "✓ Certificate exists"
-else
-    echo "✗ Certificate not found"
-    exit 1
-fi
-
-# Check private key exists
-if [ -f "/etc/dstack/certs/privkey.pem" ]; then
-    echo "✓ Private key exists"
-else
-    echo "✗ Private key not found"
-    exit 1
-fi
-
-# Check certificate validity
-EXPIRY=$(openssl x509 -in /etc/dstack/certs/fullchain.pem -noout -enddate | cut -d= -f2)
-echo "✓ Certificate expires: $EXPIRY"
-
-# Check renewal hook
-if [ -x "/etc/letsencrypt/renewal-hooks/deploy/dstack-gateway.sh" ]; then
-    echo "✓ Renewal hook installed"
-else
-    echo "⚠ Renewal hook not found or not executable"
-fi
-
-echo ""
-echo "Gateway SSL setup verified successfully!"
-```
+---
 
 ## Understanding SSL for dstack Gateway
 

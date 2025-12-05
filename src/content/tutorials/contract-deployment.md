@@ -4,7 +4,7 @@ description: "Deploy dstack KMS smart contracts to Sepolia testnet"
 section: "KMS Deployment"
 stepNumber: 2
 totalSteps: 5
-lastUpdated: 2025-11-20
+lastUpdated: 2025-12-04
 prerequisites:
   - smart-contract-compilation
   - blockchain-setup
@@ -33,7 +33,63 @@ Before starting, ensure you have:
   - Sepolia testnet ETH (at least 0.1 ETH)
   - Alchemy API key for Sepolia RPC
 
-## Step 1: Configure Environment Variables
+## Quick Start: Deploy with Ansible
+
+For most users, the recommended approach is to use the Ansible playbook.
+
+### Step 1: Configure Wallet Credentials
+
+Create a secrets file with your wallet credentials:
+
+```bash
+mkdir -p ~/.dstack/secrets
+cat > ~/.dstack/secrets/wallet.env << 'EOF'
+PRIVATE_KEY=your_private_key_here
+ALCHEMY_API_KEY=your_alchemy_api_key_here
+EOF
+chmod 600 ~/.dstack/secrets/wallet.env
+```
+
+### Step 2: Run the Deployment Playbook
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-contracts.yml
+```
+
+The playbook will:
+1. **Load wallet credentials** from your secrets file
+2. **Check wallet balance** to ensure sufficient ETH
+3. **Deploy DstackApp implementation** contract
+4. **Deploy DstackKms proxy** contract
+5. **Save contract addresses** for later use
+
+### Step 3: Verify Deployment
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-contracts.yml
+```
+
+---
+
+## What Gets Deployed
+
+The deployment creates two smart contracts:
+
+| Contract | Purpose |
+|----------|---------|
+| **DstackKms Proxy** | Main entry point - stores state, manages KMS settings |
+| **DstackApp Implementation** | Logic for app contracts, used as factory template |
+
+These contracts use the UUPS (Universal Upgradeable Proxy Standard) pattern, allowing future upgrades without changing addresses.
+
+---
+
+## Manual Deployment
+
+If you prefer to deploy manually, follow these steps.
+
+### Step 1: Configure Environment Variables
 
 The deployment scripts need your wallet credentials and RPC endpoint.
 
@@ -214,29 +270,6 @@ After deployment, you'll have:
 | DstackKms Proxy | `KMS_CONTRACT_ADDRESS` | Main entry point, stores state |
 | DstackApp Implementation | `APP_IMPLEMENTATION_ADDRESS` | Logic for app contracts |
 
-## Ansible Automation
-
-You can automate contract deployment using Ansible.
-
-### Configure variables
-
-Add to your `group_vars/all.yml`:
-
-```yaml
-# Wallet configuration (use Ansible Vault for secrets)
-wallet_private_key: "{{ vault_wallet_private_key }}"
-alchemy_api_key: "{{ vault_alchemy_api_key }}"
-```
-
-### Run the deployment playbook
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-contracts.yml
-```
-
-**Note:** For production, use Ansible Vault to encrypt sensitive variables.
-
 ## Troubleshooting
 
 ### Insufficient funds
@@ -293,52 +326,7 @@ npx hardhat kms:deploy --with-app-impl --network sepolia
 
 Each deployment creates a new contract at a new address.
 
-## Verification Checklist
-
-Before proceeding, verify you have:
-
-- [ ] Configured environment variables
-- [ ] Checked wallet has sufficient ETH
-- [ ] Deployed DstackKms contract
-- [ ] Deployed DstackApp implementation
-- [ ] Recorded contract addresses
-- [ ] Verified deployment on Etherscan
-
-### Quick verification script
-
-```bash
-#!/bin/bash
-echo "Checking contract deployment..."
-
-# Check environment
-if [ -z "$KMS_CONTRACT_ADDRESS" ]; then
-    echo "✗ KMS_CONTRACT_ADDRESS not set"
-    exit 1
-fi
-echo "✓ KMS_CONTRACT_ADDRESS: $KMS_CONTRACT_ADDRESS"
-
-if [ -z "$ALCHEMY_API_KEY" ]; then
-    echo "✗ ALCHEMY_API_KEY not set"
-    exit 1
-fi
-echo "✓ ALCHEMY_API_KEY configured"
-
-# Check contract exists
-CODE=$(curl -s -X POST https://eth-sepolia.g.alchemy.com/v2/$ALCHEMY_API_KEY \
-  -H "Content-Type: application/json" \
-  -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getCode\",\"params\":[\"$KMS_CONTRACT_ADDRESS\",\"latest\"],\"id\":1}" | jq -r '.result')
-
-if [ "$CODE" != "0x" ] && [ -n "$CODE" ]; then
-    echo "✓ Contract deployed and has code"
-else
-    echo "✗ Contract not found or empty"
-    exit 1
-fi
-
-echo ""
-echo "Contract deployment verified successfully!"
-echo "View on Etherscan: https://sepolia.etherscan.io/address/$KMS_CONTRACT_ADDRESS"
-```
+---
 
 ## Cost Estimation
 

@@ -4,7 +4,7 @@ description: "Initialize the dstack KMS with root keys and certificates"
 section: "KMS Deployment"
 stepNumber: 4
 totalSteps: 5
-lastUpdated: 2025-11-20
+lastUpdated: 2025-12-04
 prerequisites:
   - kms-build-configuration
 tags:
@@ -21,18 +21,6 @@ estimatedTime: "15 minutes"
 
 This tutorial guides you through bootstrapping the dstack KMS - the one-time initialization process that generates the root cryptographic keys and certificates. This establishes the KMS as a trusted authority for managing application keys.
 
-## What is Bootstrap?
-
-Bootstrap is a **one-time initialization** that creates:
-
-- **Root Certificate Authority** - Signs all other certificates
-- **RPC TLS Certificate** - Secures KMS communication
-- **Ethereum Signing Key** - K256 key for blockchain operations
-- **Temporary CA** - Used during onboarding of replica KMS instances
-- **TDX Quote** - Cryptographic proof keys were generated in TEE
-
-Once bootstrapped, the KMS transitions from initialization mode to normal operation mode.
-
 ## Prerequisites
 
 Before starting, ensure you have:
@@ -42,7 +30,58 @@ Before starting, ensure you have:
 - Configuration file at /etc/kms/kms.toml
 - Empty certificates directory at /etc/kms/certs/
 
-## Step 1: Verify Bootstrap Mode Configuration
+## Quick Start: Bootstrap with Ansible
+
+For most users, the recommended approach is to use the Ansible playbook.
+
+### Step 1: Run the Bootstrap Playbook
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
+  -e "kms_domain=kms.yourdomain.com"
+```
+
+The playbook will:
+1. **Verify KMS is configured** for bootstrap mode
+2. **Start KMS temporarily** to trigger bootstrap
+3. **Generate root CA** and RPC certificates
+4. **Generate K256 key** for Ethereum signing
+5. **Create TDX quote** (if running on TDX hardware)
+6. **Verify all 8 certificate files** were generated
+
+### Step 2: Verify Bootstrap
+
+```bash
+ls -la /etc/kms/certs/
+```
+
+You should see 8 files: root-ca.crt, root-ca.key, rpc.crt, rpc.key, tmp-ca.crt, tmp-ca.key, root-k256.key, and bootstrap-info.json.
+
+---
+
+## What Gets Generated
+
+Bootstrap is a **one-time initialization** that creates:
+
+| File | Type | Purpose |
+|------|------|---------|
+| `root-ca.crt` | Certificate | Root Certificate Authority (self-signed) |
+| `root-ca.key` | Private Key | Root CA signing key (P256 ECDSA) |
+| `rpc.crt` | Certificate | TLS certificate for RPC server |
+| `rpc.key` | Private Key | RPC server private key (P256 ECDSA) |
+| `tmp-ca.crt` | Certificate | Temporary CA for mutual TLS |
+| `tmp-ca.key` | Private Key | Temporary CA private key (P256 ECDSA) |
+| `root-k256.key` | Raw Key | Ethereum signing key (secp256k1, 32 bytes) |
+| `bootstrap-info.json` | Metadata | Public keys and TDX quote |
+
+---
+
+## Manual Bootstrap
+
+If you prefer to bootstrap manually, follow these steps.
+
+### Step 1: Verify Bootstrap Mode Configuration
 
 Check that KMS is configured for bootstrap mode.
 
@@ -233,52 +272,7 @@ Expected:
 }
 ```
 
-## Understanding the Generated Keys
-
-### File Inventory
-
-| File | Type | Purpose |
-|------|------|---------|
-| `root-ca.crt` | Certificate | Root Certificate Authority (self-signed) |
-| `root-ca.key` | Private Key | Root CA signing key (P256 ECDSA) |
-| `rpc.crt` | Certificate | TLS certificate for RPC server |
-| `rpc.key` | Private Key | RPC server private key (P256 ECDSA) |
-| `tmp-ca.crt` | Certificate | Temporary CA for mutual TLS |
-| `tmp-ca.key` | Private Key | Temporary CA private key (P256 ECDSA) |
-| `root-k256.key` | Raw Key | Ethereum signing key (secp256k1, 32 bytes) |
-| `bootstrap-info.json` | Metadata | Public keys and TDX quote |
-
-### Certificate Hierarchy
-
-```
-Root CA (self-signed)
-├── RPC Certificate (signed by Root CA)
-│   └── Used for: HTTPS/TLS communication
-└── Temporary CA (self-signed)
-    └── Used for: Onboarding replica KMS instances
-```
-
-### Cryptographic Details
-
-**Root CA (P256 ECDSA):**
-- Curve: NIST P-256
-- Purpose: Primary certificate authority
-- Subject: "Dstack KMS CA"
-- Self-signed: Yes
-- Signs: RPC certificates, app certificates
-
-**RPC Certificate (P256 ECDSA):**
-- Curve: NIST P-256
-- Purpose: TLS for RPC communication
-- Subject: Your domain name
-- Signed by: Root CA
-- Alt Names: Domain name
-
-**K256 Key (secp256k1):**
-- Curve: secp256k1 (Ethereum-compatible)
-- Size: 32 bytes (raw format)
-- Purpose: Signing app keys, blockchain operations
-- Format: Raw binary (no PEM encoding)
+---
 
 ## Automatic Bootstrap (Optional)
 
@@ -312,27 +306,6 @@ This is useful for:
 - Ansible automation
 - CI/CD pipelines
 - Reproducible deployments
-
-## Ansible Automation
-
-You can automate bootstrap using Ansible.
-
-### Configure variables
-
-Add to your `group_vars/all.yml`:
-
-```yaml
-# KMS Bootstrap
-kms_domain: "kms.example.com"
-auto_bootstrap: false  # Set true for automatic, false for manual
-```
-
-### Run the bootstrap playbook
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml
-```
 
 ## Troubleshooting
 
@@ -450,80 +423,6 @@ The TDX quote in `bootstrap-info.json` can be verified by:
 3. Smart contract verification (on-chain quote verification)
 
 This proves the keys were generated inside a genuine Intel TDX environment.
-
-## Verification Checklist
-
-Before proceeding, verify you have:
-
-- [ ] Started KMS in bootstrap mode
-- [ ] Triggered bootstrap via web UI or API
-- [ ] Generated 8 files in /etc/kms/certs/
-- [ ] Verified root CA certificate
-- [ ] Verified RPC certificate domain matches
-- [ ] Checked certificate chain is valid
-- [ ] Backed up bootstrap-info.json
-- [ ] Secured private keys (600 permissions)
-
-### Quick verification script
-
-```bash
-#!/bin/bash
-echo "Checking KMS bootstrap..."
-
-CERTS_DIR="/etc/kms/certs"
-
-# Count files
-FILE_COUNT=$(ls -1 "$CERTS_DIR" | wc -l)
-if [ "$FILE_COUNT" -eq 8 ]; then
-    echo "✓ All 8 files generated"
-else
-    echo "✗ Expected 8 files, found $FILE_COUNT"
-    exit 1
-fi
-
-# Check Root CA
-if openssl x509 -in "$CERTS_DIR/root-ca.crt" -noout -subject | grep -q "Dstack KMS CA"; then
-    echo "✓ Root CA certificate valid"
-else
-    echo "✗ Root CA certificate invalid"
-    exit 1
-fi
-
-# Check RPC certificate
-if openssl x509 -in "$CERTS_DIR/rpc.crt" -noout 2>/dev/null; then
-    echo "✓ RPC certificate valid"
-else
-    echo "✗ RPC certificate invalid"
-    exit 1
-fi
-
-# Check certificate chain
-if openssl verify -CAfile "$CERTS_DIR/root-ca.crt" "$CERTS_DIR/rpc.crt" 2>&1 | grep -q "OK"; then
-    echo "✓ Certificate chain valid"
-else
-    echo "✗ Certificate chain invalid"
-    exit 1
-fi
-
-# Check K256 key
-if [ -f "$CERTS_DIR/root-k256.key" ] && [ $(stat -f%z "$CERTS_DIR/root-k256.key" 2>/dev/null || stat -c%s "$CERTS_DIR/root-k256.key") -eq 32 ]; then
-    echo "✓ K256 key valid (32 bytes)"
-else
-    echo "✗ K256 key invalid"
-    exit 1
-fi
-
-# Check bootstrap info
-if [ -f "$CERTS_DIR/bootstrap-info.json" ] && jq empty "$CERTS_DIR/bootstrap-info.json" 2>/dev/null; then
-    echo "✓ bootstrap-info.json valid"
-else
-    echo "✗ bootstrap-info.json invalid"
-    exit 1
-fi
-
-echo ""
-echo "KMS bootstrap verified successfully!"
-```
 
 ## Next Steps
 
