@@ -3,7 +3,7 @@ title: "Contract Deployment"
 description: "Deploy dstack KMS smart contracts to Sepolia testnet"
 section: "KMS Deployment"
 stepNumber: 2
-totalSteps: 5
+totalSteps: 6
 lastUpdated: 2025-12-04
 prerequisites:
   - smart-contract-compilation

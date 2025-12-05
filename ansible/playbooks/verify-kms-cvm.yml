@@ -1,0 +1,197 @@
+---
+# Ansible playbook to verify KMS CVM deployment
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-cvm.yml
+#
+# This playbook verifies:
+# - KMS CVM is running via teepod
+# - RPC port 9100 is accessible
+# - Bootstrap completed successfully
+# - TDX attestation quote is present
+# - All certificate files exist
+# - Certificate chain is valid
+# - K256 key is correct size
+
+- name: Verify KMS CVM Deployment
+  hosts: dstack_servers
+  become: false
+  vars:
+    kms_rpc_port: 9100
+    user_home: "/home/{{ ansible_user }}"
+    kms_deployment_dir: "{{ user_home }}/kms-deployment"
+
+  tasks:
+    # Check CVM Status
+    - name: Check if KMS CVM is running
+      ansible.builtin.shell: |
+        teepod list 2>/dev/null | grep -q kms && echo "running" || echo "not_found"
+      register: cvm_status
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if CVM not running
+      ansible.builtin.fail:
+        msg: |
+          KMS CVM is not running.
+
+          Deploy the KMS CVM:
+            ansible-playbook playbooks/deploy-kms-cvm.yml -e "kms_domain=your.domain.com"
+      when: cvm_status.stdout != "running"
+
+    # Check RPC Connectivity
+    - name: Check RPC port is accessible
+      ansible.builtin.wait_for:
+        host: localhost
+        port: "{{ kms_rpc_port }}"
+        timeout: 10
+        state: started
+      register: port_status
+      failed_when: false
+
+    - name: Get KMS metadata
+      ansible.builtin.uri:
+        url: "http://localhost:{{ kms_rpc_port }}/prpc/KMS.GetMeta"
+        method: GET
+        return_content: yes
+        status_code: [200]
+      register: kms_meta
+      failed_when: false
+
+    - name: Parse metadata
+      ansible.builtin.set_fact:
+        ca_pubkey: "{{ kms_meta.json.ca_pubkey | default('NOT AVAILABLE') }}"
+        k256_pubkey: "{{ kms_meta.json.k256_pubkey | default('NOT AVAILABLE') }}"
+        has_quote: "{{ (kms_meta.json.quote | default('')) | length > 10 }}"
+        has_eventlog: "{{ (kms_meta.json.eventlog | default('')) | length > 10 }}"
+      when: kms_meta.status | default(0) == 200
+
+    # Verify Certificates via teepod exec
+    - name: Check certificate files in CVM
+      ansible.builtin.shell: |
+        teepod exec kms -- ls -la /etc/kms/certs/ 2>/dev/null | wc -l
+      register: cert_file_count
+      changed_when: false
+      failed_when: false
+
+    - name: Get Root CA subject
+      ansible.builtin.shell: |
+        teepod exec kms -- openssl x509 -in /etc/kms/certs/root-ca.crt -noout -subject 2>/dev/null || echo "NOT FOUND"
+      register: root_ca_subject
+      changed_when: false
+      failed_when: false
+
+    - name: Verify Root CA is self-signed
+      ansible.builtin.shell: |
+        teepod exec kms -- openssl verify -CAfile /etc/kms/certs/root-ca.crt /etc/kms/certs/root-ca.crt 2>&1 || echo "INVALID"
+      register: root_ca_verify
+      changed_when: false
+      failed_when: false
+
+    - name: Get RPC certificate subject
+      ansible.builtin.shell: |
+        teepod exec kms -- openssl x509 -in /etc/kms/certs/rpc.crt -noout -subject 2>/dev/null || echo "NOT FOUND"
+      register: rpc_cert_subject
+      changed_when: false
+      failed_when: false
+
+    - name: Extract RPC domain
+      ansible.builtin.set_fact:
+        rpc_domain: "{{ rpc_cert_subject.stdout | regex_search('CN\\s*=\\s*([^,]+)', '\\1') | first | default('UNKNOWN') }}"
+      when: rpc_cert_subject.stdout != "NOT FOUND"
+
+    - name: Verify certificate chain
+      ansible.builtin.shell: |
+        teepod exec kms -- openssl verify -CAfile /etc/kms/certs/root-ca.crt /etc/kms/certs/rpc.crt 2>&1 || echo "INVALID"
+      register: chain_verify
+      changed_when: false
+      failed_when: false
+
+    - name: Check K256 key size
+      ansible.builtin.shell: |
+        teepod exec kms -- stat --format="%s" /etc/kms/certs/root-k256.key 2>/dev/null || echo "0"
+      register: k256_size
+      changed_when: false
+      failed_when: false
+
+    - name: Check bootstrap-info.json exists
+      ansible.builtin.shell: |
+        teepod exec kms -- test -f /etc/kms/certs/bootstrap-info.json && echo "exists" || echo "missing"
+      register: bootstrap_info_exists
+      changed_when: false
+      failed_when: false
+
+    # Display Verification Summary
+    - name: Display verification summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "KMS CVM Verification"
+          - "============================================"
+          - ""
+          - "CVM Status:"
+          - "  Running: {{ 'Yes' if cvm_status.stdout == 'running' else 'No' }}"
+          - "  Port 9100: {{ 'Accessible' if port_status is success else 'Not Accessible' }}"
+          - "  Metadata API: {{ 'Working' if kms_meta.status | default(0) == 200 else 'Not Available' }}"
+          - ""
+          - "TDX Attestation:"
+          - "  Quote Present: {{ 'Yes' if has_quote | default(false) else 'No' }}"
+          - "  Eventlog Present: {{ 'Yes' if has_eventlog | default(false) else 'No' }}"
+          - ""
+          - "Certificate Validation:"
+          - "  Files in /etc/kms/certs/: {{ (cert_file_count.stdout | int) - 2 }} files"
+          - "  Root CA: {{ 'Valid (CN=Dstack KMS CA)' if 'Dstack KMS CA' in (root_ca_subject.stdout | default('')) else 'Invalid or missing' }}"
+          - "  Root CA Self-signed: {{ 'Yes' if 'OK' in (root_ca_verify.stdout | default('')) else 'No' }}"
+          - "  RPC Domain: {{ rpc_domain | default('NOT FOUND') }}"
+          - "  Chain Valid: {{ 'Yes' if 'OK' in (chain_verify.stdout | default('')) else 'No' }}"
+          - ""
+          - "Key Validation:"
+          - "  K256 Key Size: {{ '32 bytes (correct)' if (k256_size.stdout | int) == 32 else (k256_size.stdout | string) + ' bytes (invalid)' }}"
+          - "  bootstrap-info.json: {{ 'Present' if bootstrap_info_exists.stdout == 'exists' else 'Missing' }}"
+          - ""
+          - "Public Keys:"
+          - "  CA: {{ (ca_pubkey | default('N/A'))[:50] }}..."
+          - "  K256: {{ (k256_pubkey | default('N/A'))[:50] }}..."
+
+    # Determine overall status
+    - name: Determine overall status
+      ansible.builtin.set_fact:
+        verification_passed: >-
+          {{
+            cvm_status.stdout == 'running' and
+            (port_status is success) and
+            (kms_meta.status | default(0)) == 200 and
+            (has_quote | default(false)) and
+            'OK' in (chain_verify.stdout | default('')) and
+            (k256_size.stdout | int) == 32
+          }}
+
+    - name: Fail if verification failed
+      ansible.builtin.fail:
+        msg: |
+          KMS CVM verification FAILED.
+
+          Issues found:
+          {% if cvm_status.stdout != 'running' %}- CVM not running{% endif %}
+          {% if port_status is failed %}- Port 9100 not accessible{% endif %}
+          {% if (kms_meta.status | default(0)) != 200 %}- Metadata API not responding{% endif %}
+          {% if not (has_quote | default(false)) %}- TDX quote not present{% endif %}
+          {% if 'OK' not in (chain_verify.stdout | default('')) %}- Certificate chain invalid{% endif %}
+          {% if (k256_size.stdout | int) != 32 %}- K256 key wrong size{% endif %}
+
+          Try redeploying:
+            ansible-playbook playbooks/deploy-kms-cvm.yml \
+              -e "kms_domain=your.domain.com" -e "force_redeploy=true"
+      when: not (verification_passed | bool)
+
+    - name: Success message
+      ansible.builtin.debug:
+        msg:
+          - ""
+          - "KMS CVM Verification PASSED"
+          - ""
+          - "The KMS is running inside a TDX-protected CVM with:"
+          - "  - Valid TDX attestation quote"
+          - "  - Correctly signed certificates"
+          - "  - Valid K256 signing key"
+          - ""
+          - "The KMS is ready to serve TEE applications."
+      when: verification_passed | bool

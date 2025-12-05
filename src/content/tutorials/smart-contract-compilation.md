@@ -3,7 +3,7 @@ title: "Smart Contract Compilation"
 description: "Compile the dstack KMS smart contracts using Hardhat"
 section: "KMS Deployment"
 stepNumber: 1
-totalSteps: 5
+totalSteps: 6
 lastUpdated: 2025-12-04
 prerequisites:
   - vmm-service-setup

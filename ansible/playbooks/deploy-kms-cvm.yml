@@ -1,0 +1,246 @@
+---
+# Ansible playbook to deploy dstack KMS as a CVM
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-cvm.yml
+#
+# Configurable variables (pass with -e):
+#   kms_domain           - Domain name for KMS (required, e.g., kms.example.com)
+#   force_redeploy       - Set to true to destroy existing CVM and redeploy (default: false)
+#
+# Examples:
+#   # Standard deployment
+#   ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-cvm.yml \
+#     -e "kms_domain=kms.example.com"
+#
+#   # Force redeploy (destroys existing CVM)
+#   ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-cvm.yml \
+#     -e "kms_domain=kms.example.com" -e "force_redeploy=true"
+#
+# This playbook:
+# - Verifies prerequisites (Docker image, config files, VMM running)
+# - Updates kms.toml with the domain for auto-bootstrap
+# - Deploys KMS CVM via teepod
+# - Waits for KMS to become healthy
+# - Verifies bootstrap completed with TDX quote
+
+- name: Deploy dstack KMS as CVM
+  hosts: dstack_servers
+  become: false
+  vars:
+    user_home: "/home/{{ ansible_user }}"
+    kms_deployment_dir: "{{ user_home }}/kms-deployment"
+    kms_rpc_port: 9100
+    force_redeploy: false
+
+  tasks:
+    - name: Check if kms_domain is provided
+      ansible.builtin.fail:
+        msg: |
+          kms_domain is required.
+
+          Usage:
+            ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-cvm.yml \
+              -e "kms_domain=kms.example.com"
+      when: kms_domain is not defined or kms_domain == ""
+
+    - name: Check deployment directory exists
+      ansible.builtin.stat:
+        path: "{{ kms_deployment_dir }}"
+      register: deployment_dir
+
+    - name: Fail if deployment directory missing
+      ansible.builtin.fail:
+        msg: |
+          KMS deployment directory not found at {{ kms_deployment_dir }}
+
+          Run the build playbook first:
+            ansible-playbook playbooks/build-kms.yml
+      when: not deployment_dir.stat.exists
+
+    - name: Check required deployment files
+      ansible.builtin.stat:
+        path: "{{ kms_deployment_dir }}/{{ item }}"
+      register: required_files
+      loop:
+        - docker-compose.yml
+        - kms.toml
+        - auth-eth.env
+        - Dockerfile
+        - dstack-kms
+        - start-kms.sh
+
+    - name: Count missing files
+      ansible.builtin.set_fact:
+        missing_files: "{{ required_files.results | selectattr('stat.exists', 'equalto', false) | map(attribute='item') | list }}"
+
+    - name: Fail if required files missing
+      ansible.builtin.fail:
+        msg: |
+          Missing required deployment files: {{ missing_files | join(', ') }}
+
+          Run the build playbook:
+            ansible-playbook playbooks/build-kms.yml
+      when: missing_files | length > 0
+
+    - name: Check Docker is available
+      ansible.builtin.command:
+        cmd: docker info
+      register: docker_info
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if Docker not available
+      ansible.builtin.fail:
+        msg: |
+          Docker is not available or not running.
+
+          Install and start Docker:
+            sudo apt install docker.io
+            sudo systemctl start docker
+            sudo usermod -aG docker $USER
+      when: docker_info.rc != 0
+
+    - name: Check Docker image exists
+      ansible.builtin.shell: |
+        docker images dstack-kms:latest --format "{{ '{{' }}.Repository{{ '}}' }}:{{ '{{' }}.Tag{{ '}}' }}"
+      register: docker_image
+      changed_when: false
+      failed_when: false
+
+    - name: Build Docker image if not exists
+      ansible.builtin.shell: |
+        cd {{ kms_deployment_dir }}
+        docker build -t dstack-kms:latest .
+      when: docker_image.stdout != "dstack-kms:latest"
+      register: docker_build
+
+    - name: Check VMM is running
+      ansible.builtin.systemd:
+        name: dstack-vmm
+      register: vmm_status
+      failed_when: false
+
+    - name: Fail if VMM not running
+      ansible.builtin.fail:
+        msg: |
+          dstack-vmm service is not running.
+
+          Start the VMM:
+            sudo systemctl start dstack-vmm
+      when: vmm_status.status.ActiveState | default('inactive') != 'active'
+
+    - name: Update kms.toml with domain
+      ansible.builtin.lineinfile:
+        path: "{{ kms_deployment_dir }}/kms.toml"
+        regexp: '^auto_bootstrap_domain\s*='
+        line: 'auto_bootstrap_domain = "{{ kms_domain }}"'
+
+    - name: Ensure quote_enabled is true
+      ansible.builtin.lineinfile:
+        path: "{{ kms_deployment_dir }}/kms.toml"
+        regexp: '^quote_enabled\s*='
+        line: 'quote_enabled = true'
+
+    # Check for existing KMS deployment
+    - name: Check for existing KMS CVM
+      ansible.builtin.shell: |
+        teepod list 2>/dev/null | grep -q kms && echo "exists" || echo "not_found"
+      register: existing_cvm
+      changed_when: false
+      failed_when: false
+
+    - name: Handle existing CVM
+      block:
+        - name: Stop existing KMS CVM (force redeploy)
+          ansible.builtin.shell: |
+            teepod stop kms || true
+            teepod rm kms || true
+          when: force_redeploy | bool
+
+        - name: Fail if CVM exists and not forcing
+          ansible.builtin.fail:
+            msg: |
+              KMS CVM already exists.
+
+              To redeploy (will destroy existing certificates!):
+                ansible-playbook playbooks/deploy-kms-cvm.yml \
+                  -e "kms_domain={{ kms_domain }}" -e "force_redeploy=true"
+          when: not (force_redeploy | bool)
+      when: existing_cvm.stdout == "exists"
+
+    # Deploy KMS CVM
+    - name: Deploy KMS CVM via teepod
+      ansible.builtin.shell: |
+        cd {{ kms_deployment_dir }}
+        teepod deploy docker-compose.yml
+      register: teepod_deploy
+      changed_when: true
+
+    - name: Display deployment output
+      ansible.builtin.debug:
+        msg: "{{ teepod_deploy.stdout_lines | default(['Deployment initiated']) }}"
+
+    # Wait for KMS to be healthy
+    - name: Wait for KMS port to be available
+      ansible.builtin.wait_for:
+        host: localhost
+        port: "{{ kms_rpc_port }}"
+        timeout: 120
+        state: started
+      register: port_check
+
+    - name: Wait for KMS bootstrap to complete
+      ansible.builtin.uri:
+        url: "http://localhost:{{ kms_rpc_port }}/prpc/KMS.GetMeta"
+        method: GET
+        return_content: yes
+        status_code: 200
+      register: kms_meta
+      until: kms_meta.status == 200
+      retries: 30
+      delay: 5
+      failed_when: false
+
+    - name: Check bootstrap info contains TDX quote
+      ansible.builtin.set_fact:
+        has_quote: "{{ (kms_meta.json.quote | default('')) | length > 10 }}"
+        ca_pubkey: "{{ kms_meta.json.ca_pubkey | default('NOT AVAILABLE') }}"
+        k256_pubkey: "{{ kms_meta.json.k256_pubkey | default('NOT AVAILABLE') }}"
+      when: kms_meta.status == 200
+
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "KMS CVM Deployment Complete!"
+          - "============================================"
+          - ""
+          - "Domain: {{ kms_domain }}"
+          - "RPC Port: {{ kms_rpc_port }}"
+          - "Deployment: {{ kms_deployment_dir }}"
+          - ""
+          - "Status:"
+          - "  CVM Running: {{ 'Yes' if port_check is success else 'No' }}"
+          - "  Bootstrap: {{ 'Complete' if kms_meta.status | default(0) == 200 else 'In Progress' }}"
+          - "  TDX Quote: {{ 'Present' if has_quote | default(false) else 'Not Available' }}"
+          - ""
+          - "Public Keys:"
+          - "  CA: {{ (ca_pubkey | default('N/A'))[:50] }}..."
+          - "  K256: {{ (k256_pubkey | default('N/A'))[:50] }}..."
+          - ""
+          - "Test Endpoints:"
+          - "  Metadata: curl http://localhost:{{ kms_rpc_port }}/prpc/KMS.GetMeta"
+          - ""
+          - "Next Steps:"
+          - "  Verify: ansible-playbook playbooks/verify-kms-cvm.yml"
+
+    - name: Fail if bootstrap not complete
+      ansible.builtin.fail:
+        msg: |
+          KMS bootstrap did not complete successfully.
+
+          Check CVM logs:
+            teepod logs kms
+
+          Verify configuration:
+            cat {{ kms_deployment_dir }}/kms.toml
+      when: kms_meta.status | default(0) != 200
