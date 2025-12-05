@@ -4,7 +4,7 @@ description: "Deploy your first application to a dstack Confidential Virtual Mac
 section: "First Application"
 stepNumber: 2
 totalSteps: 3
-lastUpdated: 2025-12-02
+lastUpdated: 2025-12-05
 prerequisites:
   - guest-image-setup
 tags:
@@ -31,7 +31,7 @@ This tutorial guides you through deploying your first application to a dstack Co
 
 When you deploy an application to dstack:
 
-1. **Teepod** receives your Docker Compose configuration
+1. **VMM** receives your Docker Compose configuration
 2. **QEMU with TDX** launches a new protected VM
 3. **Guest OS** boots with measured firmware and kernel
 4. **Tappd** (guest daemon) starts inside the CVM
@@ -43,7 +43,7 @@ When you deploy an application to dstack:
 │                    Your Request                              │
 │                         ↓                                    │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │                     Teepod                             │  │
+│  │                      VMM                               │  │
 │  │  Creates CVM, passes docker-compose configuration      │  │
 │  └────────────────────────┬──────────────────────────────┘  │
 │                           ↓                                  │
@@ -65,14 +65,14 @@ When you deploy an application to dstack:
 Before starting, ensure you have:
 
 - Completed [Guest OS Image Setup](/tutorial/guest-image-setup)
-- Teepod service running
+- VMM service running (with web interface at http://localhost:9080)
 - At least one guest OS image available
-- VMM, KMS, and Gateway services running
+- KMS and Gateway services running
 
 Verify services are running:
 
 ```bash
-sudo systemctl status dstack-vmm dstack-kms dstack-gateway dstack-teepod
+sudo systemctl status dstack-vmm dstack-kms dstack-gateway
 ```
 
 ## Step 1: Create Application Directory
@@ -207,10 +207,28 @@ EOF
 
 ## Step 4: Deploy the Application
 
-Use teepod to deploy the application:
+### Option A: Deploy via VMM Web Interface (Recommended)
+
+1. Open the VMM Management Console in your browser:
+   ```
+   http://localhost:9080
+   ```
+
+2. Click **"Deploy a new instance"**
+
+3. Fill in the deployment form:
+   - **Name**: `hello-world`
+   - **vCPUs**: `2`
+   - **Memory**: `2048` MB
+   - **Image**: Select `dstack-0.4.0`
+   - **Docker Compose**: Paste the contents of your docker-compose.yaml
+
+4. Click **Deploy**
+
+### Option B: Deploy via VMM API
 
 ```bash
-# Deploy using teepod HTTP API
+# Deploy using VMM HTTP API
 curl -X POST http://127.0.0.1:9080/api/deploy \
   -H "Content-Type: application/json" \
   -d '{
@@ -221,18 +239,6 @@ curl -X POST http://127.0.0.1:9080/api/deploy \
     "memory": 2048,
     "env": {}
   }'
-```
-
-Alternatively, use the teepod CLI if available:
-
-```bash
-# Using teepod CLI
-teepod deploy \
-  --name hello-world \
-  --image dstack-0.4.0 \
-  --compose docker-compose.yaml \
-  --vcpus 2 \
-  --memory 2048
 ```
 
 Expected response:
@@ -251,33 +257,37 @@ Expected response:
 
 ## Step 5: Monitor Deployment Progress
 
-Watch the deployment logs:
+Watch the deployment in the VMM web interface, or check the logs:
 
 ```bash
-# View teepod logs
-sudo journalctl -u dstack-teepod -f
+# View VMM logs
+sudo journalctl -u dstack-vmm -f
 ```
 
 You should see:
 
 ```
-INFO teepod: Received deploy request for hello-world
-INFO teepod: Using image dstack-0.4.0
-INFO teepod: Allocated CID 30001
-INFO teepod: Starting QEMU with TDX enabled
-INFO teepod: CVM boot initiated
-INFO teepod: Guest OS booting...
-INFO teepod: Tappd started in guest
-INFO teepod: Docker containers starting
-INFO teepod: Application hello-world deployed successfully
+INFO vmm: Received deploy request for hello-world
+INFO vmm: Using image dstack-0.4.0
+INFO vmm: Allocated CID 30001
+INFO vmm: Starting QEMU with TDX enabled
+INFO vmm: CVM boot initiated
+INFO vmm: Guest OS booting...
+INFO vmm: Tappd started in guest
+INFO vmm: Docker containers starting
+INFO vmm: Application hello-world deployed successfully
 ```
 
 ## Step 6: Verify CVM is Running
 
-List running CVMs:
+### Via VMM Web Interface
+
+Open http://localhost:9080 and check the instance list. The hello-world instance should show status "running".
+
+### Via VMM API
 
 ```bash
-curl http://127.0.0.1:9080/api/instances | jq .
+curl -s http://127.0.0.1:9080/api/instances | jq .
 ```
 
 Expected output:
@@ -338,16 +348,14 @@ Expected output:
 
 ## Step 8: View Application Logs
 
-View logs from the running application:
+### Via VMM Web Interface
+
+Click **Logs** on the hello-world instance in the VMM console.
+
+### Via VMM API
 
 ```bash
-curl "http://127.0.0.1:9080/api/instances/hello-world/logs?lines=50"
-```
-
-Or via the teepod CLI:
-
-```bash
-teepod logs hello-world --lines 50
+curl -s "http://127.0.0.1:9080/api/instances/hello-world/logs?lines=50"
 ```
 
 Expected nginx access logs:
@@ -361,7 +369,7 @@ Expected nginx access logs:
 Get detailed information about the running CVM:
 
 ```bash
-curl http://127.0.0.1:9080/api/instances/hello-world | jq .
+curl -s http://127.0.0.1:9080/api/instances/hello-world | jq .
 ```
 
 Response includes:
@@ -391,26 +399,28 @@ Response includes:
 
 ## Managing the Application
 
-### Stop the application
+### Via VMM Web Interface
 
+Use the action buttons (Stop, Start, Restart, Delete) on the instance in the VMM console.
+
+### Via VMM API
+
+**Stop the application:**
 ```bash
 curl -X POST http://127.0.0.1:9080/api/instances/hello-world/stop
 ```
 
-### Start it again
-
+**Start it again:**
 ```bash
 curl -X POST http://127.0.0.1:9080/api/instances/hello-world/start
 ```
 
-### Restart
-
+**Restart:**
 ```bash
 curl -X POST http://127.0.0.1:9080/api/instances/hello-world/restart
 ```
 
-### Delete the application
-
+**Delete the application:**
 ```bash
 curl -X DELETE http://127.0.0.1:9080/api/instances/hello-world
 ```
@@ -429,7 +439,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/deploy-hello-world.yml
 The playbook will:
 1. Create application directory
 2. Generate Docker Compose configuration
-3. Deploy via teepod API
+3. Deploy via VMM API
 4. Verify deployment succeeded
 5. Test application accessibility
 
@@ -437,10 +447,10 @@ The playbook will:
 
 ### CVM fails to start
 
-Check teepod logs for specific errors:
+Check VMM logs for specific errors:
 
 ```bash
-sudo journalctl -u dstack-teepod -n 100 --no-pager | grep -i error
+sudo journalctl -u dstack-vmm -n 100 --no-pager | grep -i error
 ```
 
 Common issues:
@@ -455,7 +465,7 @@ curl -X POST http://127.0.0.1:9080/api/deploy \
 **Image not found:**
 ```bash
 # Verify image exists
-curl http://127.0.0.1:9080/api/images
+curl -s http://127.0.0.1:9080/api/images
 ```
 
 **TDX not available:**
@@ -470,7 +480,7 @@ Check if the container is running inside the CVM:
 
 ```bash
 # View container logs
-curl "http://127.0.0.1:9080/api/instances/hello-world/logs?container=nginx"
+curl -s "http://127.0.0.1:9080/api/instances/hello-world/logs?container=nginx"
 ```
 
 Check port mapping:
@@ -486,7 +496,7 @@ The CVM needs network access to pull images. Verify:
 
 ```bash
 # Check CVM network connectivity
-curl http://127.0.0.1:9080/api/instances/hello-world/exec \
+curl -s http://127.0.0.1:9080/api/instances/hello-world/exec \
   -d '{"cmd": ["ping", "-c", "1", "8.8.8.8"]}'
 ```
 
@@ -498,7 +508,7 @@ Before proceeding, verify you have:
 
 - [ ] Created Docker Compose configuration
 - [ ] Created custom HTML content
-- [ ] Deployed application via teepod
+- [ ] Deployed application via VMM
 - [ ] Verified CVM is running
 - [ ] Accessed application via port mapping
 - [ ] Viewed application logs
@@ -510,12 +520,12 @@ Before proceeding, verify you have:
 #!/bin/bash
 echo "Checking Hello World deployment..."
 
-# Check teepod is running
+# Check VMM is running
 if ! curl -s http://127.0.0.1:9080/api/images > /dev/null 2>&1; then
-    echo "✗ Teepod not responding"
+    echo "✗ VMM not responding"
     exit 1
 fi
-echo "✓ Teepod responding"
+echo "✓ VMM responding"
 
 # Check for running instances
 INSTANCES=$(curl -s http://127.0.0.1:9080/api/instances | jq -r '.instances | length')
@@ -590,5 +600,5 @@ Your Hello World application is now running inside a TDX-protected CVM. The next
 
 - [Docker Compose Reference](https://docs.docker.com/compose/compose-file/)
 - [nginx Documentation](https://nginx.org/en/docs/)
+- [dstack GitHub Repository](https://github.com/Dstack-TEE/dstack)
 - [dstack Examples Repository](https://github.com/Dstack-TEE/dstack-examples)
-- [Teepod API Documentation](https://github.com/Dstack-TEE/dstack/tree/main/teepod)

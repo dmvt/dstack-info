@@ -4,14 +4,14 @@ description: "Download and configure guest OS images for dstack CVM deployment"
 section: "First Application"
 stepNumber: 1
 totalSteps: 3
-lastUpdated: 2025-12-02
+lastUpdated: 2025-12-05
 prerequisites:
   - gateway-service-setup
 tags:
   - dstack
   - cvm
   - guest-os
-  - teepod
+  - vmm
   - image
 difficulty: "intermediate"
 estimatedTime: "30 minutes"
@@ -24,8 +24,8 @@ This tutorial guides you through setting up guest OS images for deploying Confid
 ## What You'll Configure
 
 - **Guest OS images** - Pre-built Yocto-based images for CVMs
-- **Teepod service** - The CVM manager that launches and manages guest VMs
-- **Image directory structure** - Proper organization for multiple image versions
+- **VMM image directory** - Proper organization for multiple image versions
+- **Image verification** - Confirm VMM can access the images
 
 ## Understanding Guest OS Images
 
@@ -45,7 +45,7 @@ These components are measured by TDX hardware during boot, creating a cryptograp
 Before starting, ensure you have:
 
 - Completed [Gateway Service Setup](/tutorial/gateway-service-setup)
-- VMM service running
+- VMM service running (with web interface at http://localhost:9080)
 - KMS service running
 - Gateway service running
 - At least 10GB free disk space for images
@@ -152,208 +152,32 @@ Expected output:
 | `rootfs_hash` | Cryptographic hash of rootfs for verification |
 | `is_dev` | Whether this is a development image (allows SSH) |
 
-## Step 5: Build Teepod
+## Step 5: Verify VMM Can Access Images
 
-Teepod is the CVM manager that launches and manages guest VMs. Build it from the dstack repository:
+The VMM service should already be running from the earlier setup. Verify it can see the installed images.
 
-```bash
-cd ~/dstack
-
-# Build teepod
-source $HOME/.cargo/env
-cargo build --release -p teepod
-```
-
-This may take several minutes. Expected output ends with:
-
-```
-    Finished `release` profile [optimized] target(s) in 2m 30s
-```
-
-Install the teepod binary:
+### Check VMM Service Status
 
 ```bash
-sudo cp target/release/teepod /usr/local/bin/
-sudo chmod 755 /usr/local/bin/teepod
+sudo systemctl status dstack-vmm
 ```
 
-Verify installation:
+The service should be active and running.
+
+### Verify Images via VMM Web Interface
+
+Open the VMM Management Console in your browser:
+
+```
+http://localhost:9080
+```
+
+You should see the installed guest images listed in the interface.
+
+### Verify Images via API
 
 ```bash
-teepod --version
-```
-
-## Step 6: Create Teepod Configuration
-
-Create the teepod configuration directory:
-
-```bash
-sudo mkdir -p /etc/dstack/teepod
-```
-
-Create the teepod configuration file:
-
-```bash
-sudo tee /etc/dstack/teepod/teepod.toml > /dev/null <<'EOF'
-# Teepod Configuration
-# CVM Manager for dstack
-
-# API server configuration
-address = "unix:/var/run/teepod.sock"
-http_address = "127.0.0.1:9080"
-
-# Image and runtime paths
-image_path = "/var/lib/dstack/images"
-run_path = "/var/lib/dstack/run"
-
-# CVM configuration
-[cvm]
-# KMS endpoints for key management
-kms_urls = ["http://127.0.0.1:9100"]
-
-# Gateway/tproxy endpoints for network access
-tproxy_urls = ["http://127.0.0.1:9070"]
-
-# VSOCK CID pool for CVMs
-cid_start = 30000
-cid_pool_size = 1000
-
-# Port mapping for CVM network access
-[cvm.port_mapping]
-enabled = true
-address = "127.0.0.1"
-range = [
-    { protocol = "tcp", from = 1, to = 20000 },
-    { protocol = "udp", from = 1, to = 20000 },
-]
-
-# Default CVM resources
-[cvm.defaults]
-vcpus = 2
-memory = 2048  # MB
-disk_size = 10240  # MB
-EOF
-```
-
-### Configuration Options Explained
-
-| Setting | Description |
-|---------|-------------|
-| `address` | Unix socket for local API access |
-| `http_address` | HTTP API endpoint for web UI |
-| `image_path` | Directory containing guest OS images |
-| `run_path` | Runtime directory for VM state |
-| `kms_urls` | KMS endpoints for key operations |
-| `tproxy_urls` | Gateway endpoints for routing |
-| `cid_start` | Starting VSOCK Context ID |
-| `cid_pool_size` | Number of available CIDs |
-
-## Step 7: Create Runtime Directories
-
-Create the directories teepod needs at runtime:
-
-```bash
-sudo mkdir -p /var/lib/dstack/run
-sudo mkdir -p /var/run/teepod
-sudo chown root:root /var/lib/dstack/run
-sudo chmod 755 /var/lib/dstack/run
-```
-
-## Step 8: Create Teepod Systemd Service
-
-Create the systemd service file:
-
-```bash
-sudo tee /etc/systemd/system/dstack-teepod.service > /dev/null <<'EOF'
-[Unit]
-Description=dstack Teepod CVM Manager
-Documentation=https://dstack.info
-After=network.target dstack-kms.service dstack-gateway.service
-Wants=dstack-kms.service dstack-gateway.service
-
-[Service]
-Type=simple
-User=root
-ExecStart=/usr/local/bin/teepod --config /etc/dstack/teepod/teepod.toml
-Restart=always
-RestartSec=5
-StandardOutput=journal
-StandardError=journal
-
-# Working directory
-WorkingDirectory=/var/lib/dstack
-
-# Environment
-Environment="RUST_LOG=info"
-
-# Security hardening
-NoNewPrivileges=false
-ProtectSystem=strict
-ReadWritePaths=/var/lib/dstack /var/run/teepod /tmp
-
-# Resource limits
-LimitNOFILE=65535
-LimitNPROC=65535
-
-[Install]
-WantedBy=multi-user.target
-EOF
-```
-
-## Step 9: Enable and Start Teepod
-
-Reload systemd and start the service:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable dstack-teepod
-sudo systemctl start dstack-teepod
-```
-
-Check the service status:
-
-```bash
-sudo systemctl status dstack-teepod
-```
-
-Expected output:
-
-```
-● dstack-teepod.service - dstack Teepod CVM Manager
-     Loaded: loaded (/etc/systemd/system/dstack-teepod.service; enabled; preset: enabled)
-     Active: active (running) since Mon 2025-12-02 10:30:00 UTC; 5s ago
-       Docs: https://dstack.info
-   Main PID: 12345 (teepod)
-      Tasks: 4 (limit: 154303)
-     Memory: 15.2M
-        CPU: 123ms
-     CGroup: /system.slice/dstack-teepod.service
-             └─12345 /usr/local/bin/teepod --config /etc/dstack/teepod/teepod.toml
-```
-
-## Step 10: Verify Teepod Operation
-
-### Check teepod logs
-
-```bash
-sudo journalctl -u dstack-teepod -n 50
-```
-
-Look for successful initialization messages:
-
-```
-INFO teepod: Starting teepod CVM manager
-INFO teepod: Loading images from /var/lib/dstack/images
-INFO teepod: Found image: dstack-0.4.0
-INFO teepod: HTTP API listening on 127.0.0.1:9080
-INFO teepod: Unix socket at /var/run/teepod.sock
-INFO teepod: Ready to accept CVM requests
-```
-
-### Test HTTP API
-
-```bash
-curl http://127.0.0.1:9080/api/images
+curl -s http://127.0.0.1:9080/api/images | jq .
 ```
 
 Expected output:
@@ -370,11 +194,17 @@ Expected output:
 }
 ```
 
-### List available images
+## Step 6: Verify VMM Configuration
+
+Ensure VMM is configured to use the correct image path. Check the configuration:
 
 ```bash
-curl http://127.0.0.1:9080/api/images | jq .
+cat /etc/dstack/vmm.toml | grep -A5 "image"
 ```
+
+The `image_path` should point to `/var/lib/dstack/images`.
+
+If VMM isn't finding the images, verify the path in the configuration matches where you installed them.
 
 ## Ansible Automation
 
@@ -391,9 +221,8 @@ ansible-playbook -i inventory/hosts.yml playbooks/setup-guest-images.yml \
 The playbook will:
 1. Create image directory structure
 2. Download guest OS image
-3. Build and install teepod
-4. Configure teepod service
-5. Start and verify the service
+3. Extract and verify image components
+4. Verify VMM can access the images
 
 ## Managing Multiple Image Versions
 
@@ -413,36 +242,42 @@ List all installed images:
 ls -la /var/lib/dstack/images/
 ```
 
-When deploying applications, specify which image version to use.
+Or via the VMM API:
+
+```bash
+curl -s http://127.0.0.1:9080/api/images | jq '.images[].name'
+```
+
+When deploying applications, specify which image version to use in the docker-compose.yml.
 
 ## Troubleshooting
 
-### Teepod fails to start
+### Images not appearing in VMM
 
-Check the logs for specific errors:
+Check the VMM logs for image loading errors:
 
 ```bash
-sudo journalctl -u dstack-teepod -n 100 --no-pager
+sudo journalctl -u dstack-vmm -n 100 --no-pager | grep -i image
 ```
 
 Common issues:
 
-**Image not found:**
+**Image directory not found:**
 ```bash
-# Verify image exists
-ls -la /var/lib/dstack/images/dstack-*/
+# Verify image directory exists and has correct permissions
+ls -la /var/lib/dstack/images/
 ```
 
-**Permission denied:**
+**Metadata.json missing or invalid:**
 ```bash
-# Fix permissions
-sudo chown -R root:root /var/lib/dstack
-sudo chmod -R 755 /var/lib/dstack/images
+# Check if metadata exists
+cat /var/lib/dstack/images/dstack-*/metadata.json
 ```
 
-**Port already in use:**
+**VMM not configured for correct path:**
 ```bash
-sudo lsof -i :9080
+# Check VMM configuration
+grep image_path /etc/dstack/vmm.toml
 ```
 
 ### Image download fails
@@ -465,6 +300,19 @@ rm -rf /var/lib/dstack/images/dstack-${DSTACK_VERSION}
 # Then repeat Steps 2-3
 ```
 
+### VMM service not running
+
+```bash
+# Check service status
+sudo systemctl status dstack-vmm
+
+# View recent logs
+sudo journalctl -u dstack-vmm -n 50
+
+# Restart if needed
+sudo systemctl restart dstack-vmm
+```
+
 ## Verification Checklist
 
 Before proceeding, verify you have:
@@ -473,10 +321,8 @@ Before proceeding, verify you have:
 - [ ] Downloaded guest OS image
 - [ ] Extracted image components (OVMF.fd, bzImage, initramfs, rootfs)
 - [ ] Verified metadata.json exists and is valid
-- [ ] Built and installed teepod binary
-- [ ] Created teepod configuration
-- [ ] Started teepod service successfully
-- [ ] Verified HTTP API responds
+- [ ] Confirmed VMM service is running
+- [ ] Verified VMM API shows the installed images
 
 ### Quick verification script
 
@@ -500,27 +346,28 @@ else
     exit 1
 fi
 
-# Check teepod binary
-if [ -x "/usr/local/bin/teepod" ]; then
-    echo "✓ Teepod binary installed"
+# Check VMM service
+if sudo systemctl is-active --quiet dstack-vmm; then
+    echo "✓ VMM service running"
 else
-    echo "✗ Teepod binary missing"
+    echo "✗ VMM service not running"
     exit 1
 fi
 
-# Check teepod service
-if sudo systemctl is-active --quiet dstack-teepod; then
-    echo "✓ Teepod service running"
-else
-    echo "✗ Teepod service not running"
-    exit 1
-fi
-
-# Check HTTP API
+# Check VMM API
 if curl -s http://127.0.0.1:9080/api/images > /dev/null 2>&1; then
-    echo "✓ Teepod HTTP API responding"
+    echo "✓ VMM API responding"
 else
-    echo "✗ Teepod HTTP API not responding"
+    echo "✗ VMM API not responding"
+    exit 1
+fi
+
+# Check images visible to VMM
+IMAGE_COUNT=$(curl -s http://127.0.0.1:9080/api/images | jq '.images | length')
+if [ "$IMAGE_COUNT" -gt 0 ]; then
+    echo "✓ VMM found $IMAGE_COUNT image(s)"
+else
+    echo "✗ VMM found no images"
     exit 1
 fi
 
@@ -533,7 +380,7 @@ echo "Guest image setup verified successfully!"
 When a CVM starts, the following sequence occurs:
 
 ```
-1. Teepod launches QEMU with TDX enabled
+1. VMM launches QEMU with TDX enabled
            ↓
 2. OVMF (Virtual Firmware) boots
    - Measures itself into MRTD
@@ -560,11 +407,11 @@ Each step creates cryptographic measurements that can be verified through TDX at
 
 ## Next Steps
 
-With guest images configured and teepod running, you're ready to deploy your first application. The next tutorial covers deploying a Hello World application to verify your setup works correctly.
+With guest images configured and VMM able to access them, you're ready to deploy your first application. The next tutorial covers deploying a Hello World application to verify your setup works correctly.
 
 ## Additional Resources
 
 - [meta-dstack Repository](https://github.com/Dstack-TEE/meta-dstack)
-- [Teepod Documentation](https://github.com/Dstack-TEE/dstack/tree/main/teepod)
+- [dstack GitHub Repository](https://github.com/Dstack-TEE/dstack)
 - [Yocto Project](https://www.yoctoproject.org/)
 - [TDX Guest Architecture](https://www.intel.com/content/www/us/en/developer/tools/trust-domain-extensions/overview.html)

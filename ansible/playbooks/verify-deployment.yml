@@ -13,7 +13,7 @@
   become: yes
   vars:
     images_dir: /var/lib/dstack/images
-    teepod_http_port: 9080
+    vmm_http_port: 9080
 
   tasks:
     - name: "=== Phase 5.1: Guest Image Verification ==="
@@ -57,54 +57,42 @@
       loop_control:
         label: "{{ item.path | basename }}"
 
-    - name: Check teepod binary exists
-      ansible.builtin.stat:
-        path: /usr/local/bin/teepod
-      register: teepod_bin
-
-    - name: Verify teepod binary
-      ansible.builtin.assert:
-        that: teepod_bin.stat.exists
-        fail_msg: "Teepod binary not found. Run setup-guest-images.yml"
-        success_msg: "✓ Teepod binary installed"
-
-    - name: Check teepod configuration exists
-      ansible.builtin.stat:
-        path: /etc/dstack/teepod/teepod.toml
-      register: teepod_conf
-
-    - name: Verify teepod configuration
-      ansible.builtin.assert:
-        that: teepod_conf.stat.exists
-        fail_msg: "Teepod configuration not found. Run setup-guest-images.yml"
-        success_msg: "✓ Teepod configuration exists"
-
-    - name: Check teepod service status
+    - name: Check VMM service status
       ansible.builtin.command:
-        cmd: systemctl is-active dstack-teepod
-      register: teepod_active
+        cmd: systemctl is-active dstack-vmm
+      register: vmm_active
       changed_when: false
       failed_when: false
 
-    - name: Verify teepod service running
+    - name: Verify VMM service running
       ansible.builtin.assert:
-        that: teepod_active.stdout == 'active'
-        fail_msg: "Teepod service not running. Run: sudo systemctl start dstack-teepod"
-        success_msg: "✓ Teepod service running"
+        that: vmm_active.stdout == 'active'
+        fail_msg: "VMM service not running. Run: sudo systemctl start dstack-vmm"
+        success_msg: "✓ VMM service running"
 
-    - name: Test teepod HTTP API
+    - name: Test VMM HTTP API
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/images"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/images"
         method: GET
         return_content: yes
-      register: teepod_api
+      register: vmm_api
       failed_when: false
 
-    - name: Verify teepod API responding
+    - name: Verify VMM API responding
       ansible.builtin.assert:
-        that: teepod_api.status == 200
-        fail_msg: "Teepod HTTP API not responding"
-        success_msg: "✓ Teepod HTTP API responding"
+        that: vmm_api.status == 200
+        fail_msg: "VMM HTTP API not responding"
+        success_msg: "✓ VMM HTTP API responding"
+
+    - name: Verify VMM sees installed images
+      ansible.builtin.set_fact:
+        vmm_image_count: "{{ vmm_api.json.images | default([]) | length }}"
+      when: vmm_api.status == 200
+
+    - name: Display VMM visible images
+      ansible.builtin.debug:
+        msg: "VMM found {{ vmm_image_count }} image(s): {{ vmm_api.json.images | map(attribute='name') | list }}"
+      when: vmm_api.status == 200
 
     - name: "=== Phase 5.2: Application Deployment Verification ==="
       ansible.builtin.debug:
@@ -112,7 +100,7 @@
 
     - name: Get running instances
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances"
         method: GET
         return_content: yes
       register: instances
@@ -168,7 +156,7 @@
 
     - name: Request TDX quote from hello-world
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances/hello-world/quote"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances/hello-world/quote"
         method: POST
         body_format: json
         body:
@@ -200,10 +188,9 @@
           - "Phase 5.1 - Guest Images:"
           - "  - Images directory: {{ '✓' if images_dir_stat.stat.exists else '✗' }}"
           - "  - Images installed: {{ installed_images.files | length }}"
-          - "  - Teepod binary: {{ '✓' if teepod_bin.stat.exists else '✗' }}"
-          - "  - Teepod config: {{ '✓' if teepod_conf.stat.exists else '✗' }}"
-          - "  - Teepod service: {{ '✓' if teepod_active.stdout == 'active' else '✗' }}"
-          - "  - Teepod API: {{ '✓' if teepod_api.status == 200 else '✗' }}"
+          - "  - VMM service: {{ '✓' if vmm_active.stdout == 'active' else '✗' }}"
+          - "  - VMM API: {{ '✓' if vmm_api.status == 200 else '✗' }}"
+          - "  - VMM images: {{ vmm_image_count | default(0) }}"
           - ""
           - "Phase 5.2 - Application Deployment:"
           - "  - Running instances: {{ running_instances | length | default(0) }}"
@@ -214,5 +201,5 @@
           - "  - TDX quotes: {{ '✓ Working' if (quote_response.status | default(0)) == 200 else '⚠ Not tested' }}"
           - "  - Measurements: {{ '✓ Present' if (quote_response.json.measurements.mrtd | default('')) != '' else '⚠ Not verified' }}"
           - ""
-          - "Overall Status: {{ 'All checks passed!' if teepod_active.stdout == 'active' and teepod_api.status == 200 else 'Some checks failed' }}"
+          - "Overall Status: {{ 'All checks passed!' if vmm_active.stdout == 'active' and vmm_api.status == 200 else 'Some checks failed' }}"
           - "========================================="

@@ -1,32 +1,53 @@
 ---
 # setup-guest-images.yml
-# Phase 5.1: Set up guest OS images and teepod service
+# Set up guest OS images for CVM deployment via VMM
 #
 # Prerequisites:
+#   - VMM service running (Phase 3)
 #   - Gateway service running (Phase 4)
-#   - dstack repository cloned (Phase 2.3)
 #
 # Variables (set in group_vars/all.yml or via -e):
 #   - dstack_version: Guest OS image version (default: 0.4.0)
-#   - teepod_http_port: HTTP API port (default: 9080)
+#   - vmm_http_port: VMM HTTP API port (default: 9080)
 #
 # Usage:
 #   ansible-playbook -i inventory/hosts.yml playbooks/setup-guest-images.yml
+#   ansible-playbook -i inventory/hosts.yml playbooks/setup-guest-images.yml -e "dstack_version=0.5.0"
 
-- name: Set up Guest OS Images and Teepod
+- name: Set up Guest OS Images for VMM
   hosts: dstack_servers
   become: yes
   vars:
-    dstack_repo_path: /root/dstack
     images_dir: /var/lib/dstack/images
-    run_dir: /var/lib/dstack/run
-    teepod_config_dir: /etc/dstack/teepod
     dstack_version: "0.4.0"
-    teepod_http_port: 9080
-    cid_start: 30000
-    cid_pool_size: 1000
+    vmm_http_port: 9080
 
   tasks:
+    # =========================================================================
+    # VERIFY VMM IS RUNNING
+    # =========================================================================
+    - name: Check VMM service is running
+      ansible.builtin.command:
+        cmd: systemctl is-active dstack-vmm
+      register: vmm_status
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if VMM not running
+      ansible.builtin.fail:
+        msg: |
+          VMM service is not running.
+
+          Start VMM first:
+            sudo systemctl start dstack-vmm
+
+          Or run the VMM setup playbook:
+            ansible-playbook playbooks/vmm-service-setup.yml
+      when: vmm_status.stdout != 'active'
+
+    # =========================================================================
+    # CREATE DIRECTORY STRUCTURE
+    # =========================================================================
     - name: Create image directory structure
       ansible.builtin.file:
         path: "{{ images_dir }}"
@@ -35,17 +56,9 @@
         owner: root
         group: root
 
-    - name: Create runtime directories
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-        mode: '0755'
-        owner: root
-        group: root
-      loop:
-        - "{{ run_dir }}"
-        - /var/run/teepod
-
+    # =========================================================================
+    # DOWNLOAD AND EXTRACT IMAGE
+    # =========================================================================
     - name: Check if image already exists
       ansible.builtin.stat:
         path: "{{ images_dir }}/dstack-{{ dstack_version }}/metadata.json"
@@ -74,6 +87,9 @@
         remote_src: yes
       when: not image_exists.stat.exists
 
+    # =========================================================================
+    # VERIFY IMAGE COMPONENTS
+    # =========================================================================
     - name: Verify image components exist
       ansible.builtin.stat:
         path: "{{ images_dir }}/dstack-{{ dstack_version }}/{{ item }}"
@@ -103,171 +119,30 @@
       ansible.builtin.debug:
         msg: "Image version: {{ (metadata.stdout | from_json).version }}"
 
-    - name: Check dstack repository exists
-      ansible.builtin.stat:
-        path: "{{ dstack_repo_path }}/Cargo.toml"
-      register: dstack_repo
-
-    - name: Fail if dstack repository not found
-      ansible.builtin.fail:
-        msg: "dstack repository not found at {{ dstack_repo_path }}. Run Phase 2.3 first."
-      when: not dstack_repo.stat.exists
-
-    - name: Build teepod
-      ansible.builtin.shell:
-        cmd: |
-          source $HOME/.cargo/env
-          cargo build --release -p teepod
-        chdir: "{{ dstack_repo_path }}"
-        executable: /bin/bash
-      register: teepod_build
-      changed_when: "'Compiling' in teepod_build.stderr"
-
-    - name: Install teepod binary
-      ansible.builtin.copy:
-        src: "{{ dstack_repo_path }}/target/release/teepod"
-        dest: /usr/local/bin/teepod
-        remote_src: yes
-        mode: '0755'
-        owner: root
-        group: root
-
-    - name: Verify teepod installation
-      ansible.builtin.command:
-        cmd: /usr/local/bin/teepod --version
-      register: teepod_version
-      changed_when: false
-      failed_when: false
-
-    - name: Display teepod version
-      ansible.builtin.debug:
-        msg: "Teepod version: {{ teepod_version.stdout | default('unable to determine') }}"
-
-    - name: Create teepod configuration directory
-      ansible.builtin.file:
-        path: "{{ teepod_config_dir }}"
-        state: directory
-        mode: '0755'
-        owner: root
-        group: root
-
-    - name: Create teepod configuration file
-      ansible.builtin.copy:
-        content: |
-          # Teepod Configuration
-          # Generated by Ansible
-
-          # API server configuration
-          address = "unix:/var/run/teepod.sock"
-          http_address = "127.0.0.1:{{ teepod_http_port }}"
-
-          # Image and runtime paths
-          image_path = "{{ images_dir }}"
-          run_path = "{{ run_dir }}"
-
-          # CVM configuration
-          [cvm]
-          # KMS endpoints for key management
-          kms_urls = ["http://127.0.0.1:9100"]
-
-          # Gateway/tproxy endpoints for network access
-          tproxy_urls = ["http://127.0.0.1:9070"]
-
-          # VSOCK CID pool for CVMs
-          cid_start = {{ cid_start }}
-          cid_pool_size = {{ cid_pool_size }}
-
-          # Port mapping for CVM network access
-          [cvm.port_mapping]
-          enabled = true
-          address = "127.0.0.1"
-          range = [
-              { protocol = "tcp", from = 1, to = 20000 },
-              { protocol = "udp", from = 1, to = 20000 },
-          ]
-
-          # Default CVM resources
-          [cvm.defaults]
-          vcpus = 2
-          memory = 2048
-          disk_size = 10240
-        dest: "{{ teepod_config_dir }}/teepod.toml"
-        mode: '0644'
-        owner: root
-        group: root
-      notify: Restart teepod
-
-    - name: Create teepod systemd service
-      ansible.builtin.copy:
-        content: |
-          [Unit]
-          Description=dstack Teepod CVM Manager
-          Documentation=https://dstack.info
-          After=network.target dstack-kms.service dstack-gateway.service
-          Wants=dstack-kms.service dstack-gateway.service
-
-          [Service]
-          Type=simple
-          User=root
-          ExecStart=/usr/local/bin/teepod --config {{ teepod_config_dir }}/teepod.toml
-          Restart=always
-          RestartSec=5
-          StandardOutput=journal
-          StandardError=journal
-
-          WorkingDirectory=/var/lib/dstack
-
-          Environment="RUST_LOG=info"
-
-          NoNewPrivileges=false
-          ProtectSystem=strict
-          ReadWritePaths=/var/lib/dstack /var/run/teepod /tmp
-
-          LimitNOFILE=65535
-          LimitNPROC=65535
-
-          [Install]
-          WantedBy=multi-user.target
-        dest: /etc/systemd/system/dstack-teepod.service
-        mode: '0644'
-        owner: root
-        group: root
-      notify: Reload systemd
-
-    - name: Flush handlers
-      ansible.builtin.meta: flush_handlers
-
-    - name: Enable teepod service
+    # =========================================================================
+    # VERIFY VMM CAN ACCESS IMAGES
+    # =========================================================================
+    - name: Restart VMM to pick up new images
       ansible.builtin.systemd:
-        name: dstack-teepod
-        enabled: yes
-        daemon_reload: yes
+        name: dstack-vmm
+        state: restarted
+      when: not image_exists.stat.exists
 
-    - name: Start teepod service
-      ansible.builtin.systemd:
-        name: dstack-teepod
-        state: started
-
-    - name: Wait for teepod to start
+    - name: Wait for VMM to restart
       ansible.builtin.pause:
         seconds: 3
+      when: not image_exists.stat.exists
 
-    - name: Check teepod service status
-      ansible.builtin.command:
-        cmd: systemctl is-active dstack-teepod
-      register: teepod_status
-      changed_when: false
-      failed_when: false
-
-    - name: Test teepod HTTP API
+    - name: Test VMM HTTP API
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/images"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/images"
         method: GET
         return_content: yes
+        status_code: [200, 401]
       register: api_response
       retries: 5
       delay: 2
-      until: api_response.status == 200
+      until: api_response.status in [200, 401]
       failed_when: false
 
     - name: Display available images
@@ -275,33 +150,58 @@
         msg: "Available images: {{ api_response.json.images | default([]) | map(attribute='name') | list }}"
       when: api_response.status == 200
 
-    - name: Get teepod logs (last 20 lines)
-      ansible.builtin.command:
-        cmd: journalctl -u dstack-teepod -n 20 --no-pager
-      register: teepod_logs
-      changed_when: false
-      failed_when: false
+    - name: Verify our image is visible to VMM
+      ansible.builtin.set_fact:
+        image_visible: "{{ 'dstack-' + dstack_version in (api_response.json.images | default([]) | map(attribute='name') | list) }}"
+      when: api_response.status == 200
+
+    - name: Warn if image not visible
+      ansible.builtin.debug:
+        msg: |
+          WARNING: Image dstack-{{ dstack_version }} not visible in VMM API.
+
+          This may be due to:
+          - VMM not configured for correct image path
+          - Image metadata.json is invalid
+          - VMM needs restart
+
+          Check VMM configuration:
+            grep image /etc/dstack/vmm.toml
+      when: api_response.status == 200 and not (image_visible | default(false))
+
+    # =========================================================================
+    # CLEANUP AND SUMMARY
+    # =========================================================================
+    - name: Clean up downloaded archive
+      ansible.builtin.file:
+        path: "/tmp/dstack-{{ dstack_version }}.tar.gz"
+        state: absent
+      when: not image_exists.stat.exists
+
+    - name: List all installed images
+      ansible.builtin.find:
+        paths: "{{ images_dir }}"
+        file_type: directory
+        patterns: "dstack-*"
+      register: installed_images
 
     - name: Summary
       ansible.builtin.debug:
         msg:
-          - "Guest image setup complete!"
+          - "============================================"
+          - "Guest Image Setup Complete"
+          - "============================================"
+          - ""
           - "Image: dstack-{{ dstack_version }}"
-          - "Image path: {{ images_dir }}/dstack-{{ dstack_version }}"
-          - "Teepod status: {{ teepod_status.stdout }}"
-          - "HTTP API: http://127.0.0.1:{{ teepod_http_port }}"
+          - "Path: {{ images_dir }}/dstack-{{ dstack_version }}"
+          - ""
+          - "Installed images:"
+          - "{{ installed_images.files | map(attribute='path') | map('basename') | list }}"
+          - ""
+          - "VMM Status: {{ vmm_status.stdout }}"
+          - "VMM API: http://127.0.0.1:{{ vmm_http_port }}"
           - ""
           - "Commands:"
-          - "  Status:  sudo systemctl status dstack-teepod"
-          - "  Logs:    sudo journalctl -u dstack-teepod -f"
-          - "  Images:  curl http://127.0.0.1:{{ teepod_http_port }}/api/images"
-
-  handlers:
-    - name: Reload systemd
-      ansible.builtin.systemd:
-        daemon_reload: yes
-
-    - name: Restart teepod
-      ansible.builtin.systemd:
-        name: dstack-teepod
-        state: restarted
+          - "  List images: curl http://127.0.0.1:{{ vmm_http_port }}/api/images"
+          - "  VMM status:  sudo systemctl status dstack-vmm"
+          - "  VMM logs:    sudo journalctl -u dstack-vmm -f"

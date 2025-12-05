@@ -1,10 +1,10 @@
 ---
 # deploy-hello-world.yml
-# Phase 5.2: Deploy Hello World application to a CVM
+# Deploy Hello World application to a CVM via VMM
 #
 # Prerequisites:
-#   - Guest images configured (Phase 5.1)
-#   - Teepod service running
+#   - VMM service running with web interface
+#   - Guest images configured
 #
 # Variables (set in group_vars/all.yml or via -e):
 #   - app_name: Application name (default: hello-world)
@@ -19,7 +19,7 @@
   hosts: dstack_servers
   become: yes
   vars:
-    teepod_http_port: 9080
+    vmm_http_port: 9080
     app_name: "hello-world"
     dstack_version: "0.4.0"
     app_vcpus: 2
@@ -27,18 +27,29 @@
     app_dir: "/root/dstack-apps/{{ app_name }}"
 
   tasks:
-    - name: Check teepod is running
+    # =========================================================================
+    # VERIFY VMM IS RUNNING
+    # =========================================================================
+    - name: Check VMM is running
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/images"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/images"
         method: GET
-      register: teepod_check
+        status_code: [200, 401]
+      register: vmm_check
       failed_when: false
 
-    - name: Fail if teepod not running
+    - name: Fail if VMM not running
       ansible.builtin.fail:
-        msg: "Teepod not running. Run setup-guest-images.yml first."
-      when: teepod_check.status != 200
+        msg: |
+          VMM not running at http://127.0.0.1:{{ vmm_http_port }}.
 
+          Start VMM first:
+            sudo systemctl start dstack-vmm
+      when: vmm_check.status is not defined or vmm_check.status not in [200, 401]
+
+    # =========================================================================
+    # CREATE APPLICATION FILES
+    # =========================================================================
     - name: Create application directory
       ansible.builtin.file:
         path: "{{ app_dir }}"
@@ -152,20 +163,23 @@
         owner: root
         group: root
 
+    # =========================================================================
+    # DEPLOY APPLICATION
+    # =========================================================================
     - name: Check if application already deployed
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances"
         method: GET
         return_content: yes
       register: instances
 
     - name: Set existing instance fact
       ansible.builtin.set_fact:
-        app_exists: "{{ instances.json.instances | selectattr('name', 'equalto', app_name) | list | length > 0 }}"
+        app_exists: "{{ instances.json.instances | default([]) | selectattr('name', 'equalto', app_name) | list | length > 0 }}"
 
     - name: Delete existing application if present
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ app_name }}"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ app_name }}"
         method: DELETE
       when: app_exists
       failed_when: false
@@ -180,9 +194,9 @@
         src: "{{ app_dir }}/docker-compose.yaml"
       register: compose_content
 
-    - name: Deploy application via teepod API
+    - name: Deploy application via VMM API
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/deploy"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/deploy"
         method: POST
         body_format: json
         body:
@@ -203,20 +217,23 @@
         msg: "Deployment result: {{ deploy_result.json }}"
       when: deploy_result.json is defined
 
+    # =========================================================================
+    # VERIFY DEPLOYMENT
+    # =========================================================================
     - name: Wait for CVM to boot
       ansible.builtin.pause:
         seconds: 30
 
     - name: Check instance status
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances"
         method: GET
         return_content: yes
       register: final_instances
       retries: 10
       delay: 5
       until: >
-        final_instances.json.instances | selectattr('name', 'equalto', app_name) |
+        final_instances.json.instances | default([]) | selectattr('name', 'equalto', app_name) |
         selectattr('status', 'equalto', 'running') | list | length > 0
 
     - name: Get instance details
@@ -258,12 +275,15 @@
 
     - name: Get application logs
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ app_name }}/logs?lines=20"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ app_name }}/logs?lines=20"
         method: GET
         return_content: yes
       register: app_logs
       failed_when: false
 
+    # =========================================================================
+    # SUMMARY
+    # =========================================================================
     - name: Summary
       ansible.builtin.debug:
         msg:
@@ -279,8 +299,10 @@
           - "Access URL: http://127.0.0.1:{{ app_port }}/"
           - "Accessibility: {{ 'OK' if app_response.status == 200 else 'FAILED' }}"
           - ""
+          - "VMM Web Interface: http://localhost:{{ vmm_http_port }}"
+          - ""
           - "Commands:"
-          - "  View instance: curl http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ app_name }}"
-          - "  View logs:     curl http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ app_name }}/logs"
-          - "  Stop:          curl -X POST http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ app_name }}/stop"
-          - "  Delete:        curl -X DELETE http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ app_name }}"
+          - "  View instance: curl http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ app_name }}"
+          - "  View logs:     curl http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ app_name }}/logs"
+          - "  Stop:          curl -X POST http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ app_name }}/stop"
+          - "  Delete:        curl -X DELETE http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ app_name }}"

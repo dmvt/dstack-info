@@ -84,7 +84,7 @@ Before starting, ensure you have:
 
 - Completed [Hello World Application](/tutorial/hello-world-app)
 - A running CVM instance
-- Access to the teepod API
+- Access to the VMM API (http://localhost:9080)
 
 Verify you have a running CVM:
 
@@ -96,7 +96,7 @@ curl http://127.0.0.1:9080/api/instances | jq '.instances[] | {name, status}'
 
 The TDX quote is a signed attestation report from the hardware. Request a quote from your running CVM:
 
-### Via Teepod API
+### Via VMM API
 
 ```bash
 curl -X POST http://127.0.0.1:9080/api/instances/hello-world/quote \
@@ -590,10 +590,9 @@ Congratulations! You have completed Phase 5 (First Application Deployment):
 Your dstack deployment now includes:
 
 - TDX-enabled host with hardware security
-- VMM service managing virtual machines
+- VMM service managing CVMs and virtual machines
 - KMS service providing key management
 - Gateway service routing traffic
-- Teepod service managing CVMs
 - A running Hello World application
 - Cryptographic proof of security via attestation
 

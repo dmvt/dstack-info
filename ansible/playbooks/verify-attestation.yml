@@ -17,7 +17,7 @@
   hosts: dstack_servers
   become: yes
   vars:
-    teepod_http_port: 9080
+    vmm_http_port: 9080
     instance_name: "hello-world"
     report_data: "616e7369626c652d766572696669636174696f6e"  # hex: "ansible-verification"
 
@@ -26,21 +26,21 @@
       ansible.builtin.debug:
         msg: "Verifying attestation for instance: {{ instance_name }}"
 
-    - name: Check teepod is running
+    - name: Check VMM is running
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/images"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/images"
         method: GET
-      register: teepod_check
+      register: vmm_check
       failed_when: false
 
-    - name: Fail if teepod not running
+    - name: Fail if VMM not running
       ansible.builtin.fail:
-        msg: "Teepod not running"
-      when: teepod_check.status != 200
+        msg: "VMM not running"
+      when: vmm_check.status != 200
 
     - name: Get instance list
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances"
         method: GET
         return_content: yes
       register: instances
@@ -79,7 +79,7 @@
 
     - name: Request TDX quote
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ teepod_http_port }}/api/instances/{{ instance_name }}/quote"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ instance_name }}/quote"
         method: POST
         body_format: json
         body:
