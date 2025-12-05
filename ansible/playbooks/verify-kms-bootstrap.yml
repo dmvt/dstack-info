@@ -1,0 +1,203 @@
+---
+# Ansible playbook to verify KMS bootstrap completion
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-bootstrap.yml
+#
+# This playbook verifies:
+# - All 7 core certificate/key files exist
+# - Root CA certificate is valid
+# - RPC certificate domain matches configuration
+# - Certificate chain is valid
+# - K256 key is correct size (32 bytes)
+# - Private keys have restrictive permissions
+# - bootstrap-info.json exists (if quote_enabled was true)
+
+- name: Verify KMS Bootstrap
+  hosts: dstack_servers
+  become: false
+  vars:
+    kms_config_dir: "/etc/kms"
+    kms_certs_dir: "/etc/kms/certs"
+
+  tasks:
+    - name: Check certificates directory exists
+      ansible.builtin.stat:
+        path: "{{ kms_certs_dir }}"
+      register: certs_dir
+
+    - name: Fail if certificates directory missing
+      ansible.builtin.fail:
+        msg: |
+          Certificates directory not found at {{ kms_certs_dir }}
+
+          Run bootstrap first:
+            ansible-playbook playbooks/bootstrap-kms.yml -e "kms_domain=your.domain.com"
+      when: not certs_dir.stat.exists
+
+    - name: Check core certificate files exist
+      ansible.builtin.stat:
+        path: "{{ kms_certs_dir }}/{{ item }}"
+      register: cert_files
+      loop:
+        - root-ca.crt
+        - root-ca.key
+        - rpc.crt
+        - rpc.key
+        - tmp-ca.crt
+        - tmp-ca.key
+        - root-k256.key
+
+    - name: Count existing core files
+      ansible.builtin.set_fact:
+        core_files_found: "{{ cert_files.results | selectattr('stat.exists', 'equalto', true) | list | length }}"
+        missing_files: "{{ cert_files.results | selectattr('stat.exists', 'equalto', false) | map(attribute='item') | list }}"
+
+    - name: Check bootstrap-info.json exists
+      ansible.builtin.stat:
+        path: "{{ kms_certs_dir }}/bootstrap-info.json"
+      register: bootstrap_info
+
+    - name: Get Root CA certificate info
+      ansible.builtin.shell: |
+        openssl x509 -in {{ kms_certs_dir }}/root-ca.crt -noout -subject -issuer 2>/dev/null
+      register: root_ca_info
+      changed_when: false
+      failed_when: false
+      when: cert_files.results[0].stat.exists
+
+    - name: Verify Root CA is self-signed
+      ansible.builtin.shell: |
+        openssl verify -CAfile {{ kms_certs_dir }}/root-ca.crt {{ kms_certs_dir }}/root-ca.crt 2>&1
+      register: root_ca_verify
+      changed_when: false
+      failed_when: false
+      when: cert_files.results[0].stat.exists
+
+    - name: Get RPC certificate info
+      ansible.builtin.shell: |
+        openssl x509 -in {{ kms_certs_dir }}/rpc.crt -noout -subject 2>/dev/null
+      register: rpc_cert_info
+      changed_when: false
+      failed_when: false
+      when: cert_files.results[2].stat.exists
+
+    - name: Extract RPC domain from certificate
+      ansible.builtin.set_fact:
+        rpc_domain: "{{ rpc_cert_info.stdout | regex_search('CN\\s*=\\s*([^,]+)', '\\1') | first | default('UNKNOWN') }}"
+      when: rpc_cert_info.stdout is defined and rpc_cert_info.stdout | length > 0
+
+    - name: Verify certificate chain
+      ansible.builtin.shell: |
+        openssl verify -CAfile {{ kms_certs_dir }}/root-ca.crt {{ kms_certs_dir }}/rpc.crt 2>&1
+      register: chain_verify
+      changed_when: false
+      failed_when: false
+      when: cert_files.results[0].stat.exists and cert_files.results[2].stat.exists
+
+    - name: Check K256 key size
+      ansible.builtin.stat:
+        path: "{{ kms_certs_dir }}/root-k256.key"
+      register: k256_key
+      when: cert_files.results[6].stat.exists
+
+    - name: Check private key permissions
+      ansible.builtin.stat:
+        path: "{{ kms_certs_dir }}/{{ item }}"
+      register: key_permissions
+      loop:
+        - root-ca.key
+        - rpc.key
+        - tmp-ca.key
+        - root-k256.key
+
+    - name: Count secure key permissions
+      ansible.builtin.set_fact:
+        secure_keys: "{{ key_permissions.results | selectattr('stat.exists', 'equalto', true) | selectattr('stat.mode', 'equalto', '0600') | list | length }}"
+        total_keys: "{{ key_permissions.results | selectattr('stat.exists', 'equalto', true) | list | length }}"
+
+    - name: Read bootstrap-info.json if exists
+      ansible.builtin.slurp:
+        src: "{{ kms_certs_dir }}/bootstrap-info.json"
+      register: bootstrap_info_content
+      when: bootstrap_info.stat.exists
+      failed_when: false
+
+    - name: Parse bootstrap info
+      ansible.builtin.set_fact:
+        bootstrap_data: "{{ bootstrap_info_content.content | b64decode | from_json }}"
+      when: bootstrap_info.stat.exists and bootstrap_info_content.content is defined
+      failed_when: false
+
+    - name: Display verification summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "KMS Bootstrap Verification"
+          - "============================================"
+          - ""
+          - "Certificate Files ({{ core_files_found }}/7 core files):"
+          - "  root-ca.crt:    {{ '✓' if cert_files.results[0].stat.exists else '✗ MISSING' }}"
+          - "  root-ca.key:    {{ '✓' if cert_files.results[1].stat.exists else '✗ MISSING' }}"
+          - "  rpc.crt:        {{ '✓' if cert_files.results[2].stat.exists else '✗ MISSING' }}"
+          - "  rpc.key:        {{ '✓' if cert_files.results[3].stat.exists else '✗ MISSING' }}"
+          - "  tmp-ca.crt:     {{ '✓' if cert_files.results[4].stat.exists else '✗ MISSING' }}"
+          - "  tmp-ca.key:     {{ '✓' if cert_files.results[5].stat.exists else '✗ MISSING' }}"
+          - "  root-k256.key:  {{ '✓' if cert_files.results[6].stat.exists else '✗ MISSING' }}"
+          - "  bootstrap-info.json: {{ '✓ (TDX quote present)' if bootstrap_info.stat.exists else '⊘ Not present (quote_enabled=false)' }}"
+          - ""
+          - "Certificate Validation:"
+          - "  Root CA: {{ '✓ Valid (CN=Dstack KMS CA)' if 'Dstack KMS CA' in (root_ca_info.stdout | default('')) else '✗ Invalid or missing' }}"
+          - "  Root CA Self-signed: {{ '✓ Yes' if 'OK' in (root_ca_verify.stdout | default('')) else '✗ No' }}"
+          - "  RPC Domain: {{ rpc_domain | default('NOT FOUND') }}"
+          - "  Chain Valid: {{ '✓ Yes' if 'OK' in (chain_verify.stdout | default('')) else '✗ No' }}"
+          - ""
+          - "Key Validation:"
+          - "  K256 Key Size: {{ '✓ 32 bytes' if (k256_key.stat.size | default(0)) == 32 else '✗ Invalid (' + (k256_key.stat.size | default(0) | string) + ' bytes)' }}"
+          - "  Secure Permissions: {{ secure_keys }}/{{ total_keys }} keys with mode 0600"
+
+    - name: Display TDX attestation info
+      ansible.builtin.debug:
+        msg:
+          - ""
+          - "TDX Attestation:"
+          - "  CA Public Key: {{ (bootstrap_data.ca_pubkey | default('N/A'))[:40] }}..."
+          - "  K256 Public Key: {{ (bootstrap_data.k256_pubkey | default('N/A'))[:40] }}..."
+          - "  Quote Present: {{ '✓ Yes' if bootstrap_data.quote is defined else '✗ No' }}"
+      when: bootstrap_info.stat.exists and bootstrap_data is defined
+
+    - name: Determine overall status
+      ansible.builtin.set_fact:
+        bootstrap_valid: >-
+          {{
+            (core_files_found | int) == 7 and
+            'OK' in (chain_verify.stdout | default('')) and
+            (k256_key.stat.size | default(0)) == 32
+          }}
+
+    - name: Fail if bootstrap incomplete
+      ansible.builtin.fail:
+        msg: |
+          KMS bootstrap verification FAILED.
+
+          Issues found:
+          {% if (core_files_found | int) < 7 %}- Missing certificate files: {{ missing_files | join(', ') }}{% endif %}
+          {% if 'OK' not in (chain_verify.stdout | default('')) %}- Certificate chain invalid{% endif %}
+          {% if (k256_key.stat.size | default(0)) != 32 %}- K256 key wrong size (expected 32 bytes){% endif %}
+
+          Run bootstrap:
+            ansible-playbook playbooks/bootstrap-kms.yml -e "kms_domain=your.domain.com"
+
+          Or force re-bootstrap:
+            ansible-playbook playbooks/bootstrap-kms.yml -e "kms_domain=your.domain.com" -e "force_rebootstrap=true"
+      when: not (bootstrap_valid | bool)
+
+    - name: Success message
+      ansible.builtin.debug:
+        msg:
+          - ""
+          - "✓ KMS Bootstrap verification PASSED"
+          - ""
+          - "KMS is ready. Next steps:"
+          - "  1. Set up KMS systemd service"
+          - "  2. Set up auth-eth systemd service"
+          - "  3. Start services: sudo systemctl start kms auth-eth"
+      when: bootstrap_valid | bool
