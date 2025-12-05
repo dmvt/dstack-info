@@ -401,43 +401,6 @@ pip install ansible-lint
 ansible-lint playbooks/verify-tdx.yml
 ```
 
-## Best Practices
-
-### 1. Version Control Your Inventory
-
-Create a git repository for your inventory (separate from dstack-info):
-
-```bash
-mkdir ~/ansible-inventory
-cd ~/ansible-inventory
-git init
-cp ~/dstack-info/ansible/inventory/hosts.yml .
-git add hosts.yml
-git commit -m "Initial TDX inventory"
-```
-
-**Security:** Never commit sensitive data. Use Ansible Vault for secrets.
-
-### 2. Use Ansible Vault for Sensitive Data
-
-If you need to store sensitive variables:
-
-```bash
-ansible-vault create group_vars/all.yml
-# Enter password when prompted
-```
-
-### 3. Verify Idempotence
-
-Run the playbook twice to ensure it's idempotent:
-
-```bash
-ansible-playbook playbooks/verify-tdx.yml -i inventory/hosts.yml
-ansible-playbook playbooks/verify-tdx.yml -i inventory/hosts.yml
-```
-
-Both runs should show identical results (no changes).
-
 ## Next Steps
 
 **TDX Setup Complete!** ✅
