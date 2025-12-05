@@ -100,27 +100,39 @@
             npx hardhat compile
       when: not kms_artifact.stat.exists
 
-    - name: Check wallet balance
+    - name: Get wallet address from private key
       ansible.builtin.shell: |
         cd {{ contract_dir }}
+        node -e "
+          const { ethers } = require('ethers');
+          const wallet = new ethers.Wallet('{{ wallet_private_key }}');
+          console.log(wallet.address);
+        "
+      register: wallet_address_result
+      changed_when: false
+      no_log: true  # Hide private key in logs
 
-        # Get wallet address from private key and check balance
-        WALLET_ADDRESS=$(cast wallet address --private-key "{{ wallet_private_key }}" 2>/dev/null || echo "")
-        if [ -z "$WALLET_ADDRESS" ]; then
-          echo '{"error": "Invalid private key"}'
-          exit 1
-        fi
+    - name: Set wallet address
+      ansible.builtin.set_fact:
+        wallet_address: "{{ wallet_address_result.stdout | trim }}"
 
-        BALANCE_WEI=$(cast balance "$WALLET_ADDRESS" --rpc-url "{{ rpc_url }}" 2>/dev/null || echo "0")
+    - name: Check wallet balance via JSON-RPC
+      ansible.builtin.shell: |
+        BALANCE_HEX=$(curl -s -X POST {{ rpc_url }} \
+          -H "Content-Type: application/json" \
+          -d '{"jsonrpc":"2.0","method":"eth_getBalance","params":["{{ wallet_address }}","latest"],"id":1}' | \
+          jq -r '.result')
+
+        # Convert hex to decimal wei, then to ETH
+        BALANCE_WEI=$(printf "%d" "$BALANCE_HEX" 2>/dev/null || echo "0")
         BALANCE_ETH=$(echo "scale=6; $BALANCE_WEI / 1000000000000000000" | bc 2>/dev/null || echo "0")
 
         # Check if balance is sufficient (0.05 ETH minimum)
         SUFFICIENT=$(echo "$BALANCE_ETH >= 0.05" | bc 2>/dev/null || echo "0")
 
-        echo "{\"address\": \"$WALLET_ADDRESS\", \"balance\": \"$BALANCE_ETH\", \"sufficient\": $SUFFICIENT}"
+        echo "{\"balance\": \"$BALANCE_ETH\", \"sufficient\": $SUFFICIENT}"
       register: balance_check
       changed_when: false
-      no_log: true  # Hide private key in logs
 
     - name: Parse balance result
       ansible.builtin.set_fact:
@@ -129,7 +141,7 @@
     - name: Display wallet info
       ansible.builtin.debug:
         msg:
-          - "Wallet address: {{ wallet_info.address }}"
+          - "Wallet address: {{ wallet_address }}"
           - "Balance: {{ wallet_info.balance }} ETH"
 
     - name: Warn if balance may be insufficient
@@ -141,18 +153,18 @@
           Get testnet ETH from:
           - https://sepoliafaucet.com/
           - https://sepolia-faucet.pk910.de/
-      when: not wallet_info.sufficient
+      when: wallet_info.sufficient == 0
 
     - name: Deploy contracts
       ansible.builtin.shell: |
         cd {{ contract_dir }}
         export PRIVATE_KEY="{{ wallet_private_key }}"
+        export ALCHEMY_API_KEY="demo"
         {% if etherscan_api_key is defined %}
         export ETHERSCAN_API_KEY="{{ etherscan_api_key }}"
         {% endif %}
 
         # Run deployment with automatic confirmation
-        # Note: hardhat.config.ts should use the PRIVATE_KEY env var and demo RPC
         echo "y" | npx hardhat kms:deploy {% if deploy_app_impl %}--with-app-impl {% endif %}--network sepolia
       register: deploy_result
       no_log: true  # Hide private key in logs
@@ -217,7 +229,7 @@
           - "============================================"
           - ""
           - "Network: Sepolia Testnet"
-          - "Deployer: {{ wallet_info.address }}"
+          - "Deployer: {{ wallet_address }}"
           - ""
           - "Contract Addresses:"
           - "  DstackKms Proxy: {{ kms_contract_address }}"

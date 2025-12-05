@@ -29,20 +29,19 @@ Before starting, ensure you have:
 
 - Completed [Smart Contract Compilation](/tutorial/smart-contract-compilation)
 - Completed [Blockchain Setup](/tutorial/blockchain-setup) with:
-  - Ethereum wallet with private key
+  - Ethereum wallet with private key stored locally
   - Sepolia testnet ETH (at least 0.1 ETH)
-  - Alchemy API key for Sepolia RPC
 
 ## Quick Start: Deploy with Ansible
 
-For most users, the recommended approach is to use the Ansible playbook.
+For most users, the recommended approach is to use the Ansible playbooks.
 
-### Step 1: Verify Wallet Credentials
+### Step 1: Verify Local Wallet Credentials
 
-Your wallet credentials from [Blockchain Setup](/tutorial/blockchain-setup) should already be stored:
+Your wallet credentials from [Blockchain Setup](/tutorial/blockchain-setup) should be stored on your **local machine**:
 
 ```bash
-# Verify your secrets exist
+# Verify your local secrets exist
 ls -la ~/.dstack/secrets/
 ```
 
@@ -52,7 +51,22 @@ You should see:
 
 If missing, go back to [Blockchain Setup](/tutorial/blockchain-setup) to create them.
 
-### Step 2: Run the Deployment Playbook
+### Step 2: Upload Credentials to Server
+
+The deployment playbook runs on the server, so it needs access to your wallet credentials. This playbook uploads them securely (skipping if they already exist on the server):
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/upload-wallet-credentials.yml
+```
+
+The playbook will:
+1. **Check local credentials** exist on your machine
+2. **Check if server already has credentials** (skips upload if they do)
+3. **Create secure directory** on server (`~/.dstack/secrets/`)
+4. **Upload credentials** with proper permissions (mode 0600)
+
+### Step 3: Run the Deployment Playbook
 
 ```bash
 cd ~/dstack-info/ansible
@@ -60,13 +74,13 @@ ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-contracts.yml
 ```
 
 The playbook will:
-1. **Load wallet credentials** from your secrets file
+1. **Load wallet credentials** from the server's secrets file
 2. **Check wallet balance** to ensure sufficient ETH
 3. **Deploy DstackApp implementation** contract
 4. **Deploy DstackKms proxy** contract
 5. **Save contract addresses** for later use
 
-### Step 3: Verify Deployment
+### Step 4: Verify Deployment
 
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-contracts.yml
