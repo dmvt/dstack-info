@@ -285,20 +285,72 @@ curl -v https://api.trustedservices.intel.com/sgx/certification/v4/
 
 Ensure your server can reach Intel's API (port 443 outbound).
 
-### PCCS shows "No certificate data for this platform"
+### PCCS shows "No certificate data for this platform" (404 Error)
 
-The platform hasn't been registered yet:
+This error means Intel's Provisioning Certification Service doesn't have PCK certificates for your specific platform in their database. Check PCCS logs:
 
 ```bash
-# Run PCK ID retrieval tool
-sudo PCKIDRetrievalTool
-
-# Wait for PCCS to cache certificates
-sleep 30
-
-# Restart QGS
-sudo systemctl restart qgsd
+sudo journalctl -u pccs -n 50 --no-pager
 ```
+
+If you see:
+```
+Intel PCS server returns error(404).
+Error: No cache data for this platform.
+```
+
+**This is a platform registration issue**, not an API key problem. Your API key is working, but Intel's database doesn't contain certificates for your specific CPU/platform combination.
+
+#### Possible Causes
+
+1. **Cloud provider hasn't registered hardware**: Many cloud providers haven't registered their platforms with Intel's provisioning service
+2. **New platform not in database**: Newer CPUs may not yet be in Intel's production database
+3. **Platform-specific issue**: Some hardware configurations may not support DCAP attestation
+
+#### Solutions
+
+1. **Contact your cloud provider**: Ask them to register their TDX-capable platforms with Intel's Provisioning Certification Service
+
+2. **Run PCK ID retrieval**: Generate platform information for registration:
+   ```bash
+   sudo PCKIDRetrievalTool
+   cat pckid_retrieval.csv
+   ```
+   The CSV file contains platform identification data that can be submitted to Intel for registration.
+
+3. **Check Intel sandbox endpoint** (for testing only): Some platforms may work with Intel's pre-production endpoint. Edit PCCS config:
+   ```bash
+   sudo nano /opt/intel/sgx-dcap-pccs/config/default.json
+   # Change "uri" to: "https://sbx.api.trustedservices.intel.com/sgx/certification/v4/"
+   # Note: Requires a sandbox API key from Intel
+   ```
+
+4. **Contact Intel support**: For production deployments, work with Intel to register your platform.
+
+#### Verify API Key Works
+
+Test that your API key is valid (this endpoint doesn't require platform registration):
+
+```bash
+curl -H "Ocp-Apim-Subscription-Key: YOUR_API_KEY" \
+  "https://api.trustedservices.intel.com/sgx/certification/v4/qe/identity"
+```
+
+If this returns JSON data with `enclaveIdentity`, your API key is working correctly.
+
+#### Impact on dstack
+
+Without valid PCK certificates, TDX attestation will fail and CVMs cannot boot. The error manifests as:
+
+```
+Error: Failed to get sealing key
+    0: Failed to get quote
+    1: TDX_ATTEST_ERROR_UNEXPECTED
+```
+
+Until the platform is registered with Intel, you cannot deploy CVMs that require TDX attestation.
+
+For more information, see [Intel DCAP GitHub Issue #365](https://github.com/intel/SGXDataCenterAttestationPrimitives/issues/365).
 
 ### QGS returns TDX_ATTEST_ERROR_UNEXPECTED
 
