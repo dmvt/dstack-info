@@ -111,11 +111,46 @@ The key looks like: `a1b2c3d4e5f6789...` (32+ character hex string)
 
 **Important:** Save this key securely. You'll need it for PCCS configuration.
 
-## Step 2: Configure PCCS with API Key
+---
 
-Now configure PCCS to use your Intel API key.
+## Quick Start: Configure with Ansible
 
-### Edit PCCS Configuration
+For most users, the recommended approach is to use the Ansible playbook after obtaining your Intel API key.
+
+### Run the PCCS Configuration Playbook
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/setup-pccs-apikey.yml \
+  -e "intel_api_key=YOUR_API_KEY_HERE"
+```
+
+Replace `YOUR_API_KEY_HERE` with the API key you obtained in Step 1.
+
+The playbook will:
+1. **Update PCCS configuration** with your Intel API key
+2. **Configure QCNL** to use local PCCS
+3. **Restart services** (PCCS and QGS)
+4. **Verify services** are running correctly
+5. **Test certificate retrieval** via PCKIDRetrievalTool
+
+### Verify Configuration
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/verify-pccs.yml
+```
+
+If the playbook completes successfully, skip to [Next Steps](#next-steps).
+
+---
+
+## Manual Configuration
+
+If you prefer to configure manually, follow these steps.
+
+### Step 2: Configure PCCS with API Key
+
+Edit the PCCS configuration file:
 
 ```bash
 sudo nano /opt/intel/sgx-dcap-pccs/config/default.json
@@ -139,7 +174,7 @@ Find the `ApiKey` field and add your key:
 
 Replace `YOUR_INTEL_API_KEY_HERE` with the API key you obtained in Step 1.
 
-### Optional: Configure Admin Token
+#### Optional: Configure Admin Token
 
 For additional security, set an admin token for PCCS management:
 
@@ -158,11 +193,9 @@ Update the configuration:
 }
 ```
 
-### Save and Exit
-
 Save the file (Ctrl+O, Enter, Ctrl+X in nano).
 
-## Step 3: Restart Attestation Services
+### Step 3: Restart Attestation Services
 
 Restart PCCS and QGS to apply the configuration:
 
@@ -180,11 +213,11 @@ sudo systemctl status qgsd
 
 Both services should show `active (running)`.
 
-## Step 4: Verify PCCS Configuration
+### Step 4: Verify PCCS Configuration
 
 Test that PCCS can communicate with Intel's API.
 
-### Check PCCS Logs
+#### Check PCCS Logs
 
 ```bash
 sudo journalctl -u pccs -n 50 --no-pager
@@ -192,7 +225,7 @@ sudo journalctl -u pccs -n 50 --no-pager
 
 Look for successful startup messages. If you see authentication errors, verify your API key is correct.
 
-### Test PCK Certificate Retrieval
+#### Test PCK Certificate Retrieval
 
 The first time a TDX quote is requested, PCCS will fetch PCK certificates from Intel. You can trigger this by running:
 
@@ -203,7 +236,7 @@ sudo PCKIDRetrievalTool
 
 This generates platform information and triggers PCCS to fetch certificates.
 
-### Check PCCS Health
+#### Check PCCS Health
 
 ```bash
 curl -s http://localhost:8081/sgx/certification/v4/rootcacrl | head -c 100
@@ -211,7 +244,7 @@ curl -s http://localhost:8081/sgx/certification/v4/rootcacrl | head -c 100
 
 If PCCS is working, this returns certificate data. If it fails, check the logs for errors.
 
-## Step 5: Verify QGS Can Generate Quotes
+### Step 5: Verify QGS Can Generate Quotes
 
 Test that the Quote Generation Service can now create TDX quotes:
 
@@ -228,21 +261,7 @@ Look for messages like:
 
 If you see `No certificate data for this platform` errors, wait a few minutes for PCCS to cache the certificates, then restart QGS.
 
-## Ansible Automation
-
-For automated configuration, use the setup playbook:
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/setup-pccs-apikey.yml \
-  -e "intel_api_key=YOUR_API_KEY_HERE"
-```
-
-The playbook will:
-1. Update PCCS configuration with your API key
-2. Restart PCCS and QGS services
-3. Verify services are running
-4. Test certificate retrieval
+---
 
 ## Troubleshooting
 
@@ -301,6 +320,8 @@ Ensure it points to local PCCS:
 
 If using a custom PCCS setup, update the URL accordingly.
 
+---
+
 ## Configuration Reference
 
 ### PCCS Configuration File
@@ -327,6 +348,8 @@ Location: `/etc/sgx_default_qcnl.conf`
 | `use_secure_cert` | Verify PCCS TLS cert |
 | `retry_times` | Retry attempts |
 | `retry_delay` | Delay between retries (seconds) |
+
+---
 
 ## Next Steps
 
