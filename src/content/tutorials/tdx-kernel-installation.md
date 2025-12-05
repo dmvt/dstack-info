@@ -149,7 +149,7 @@ uname -r
 
 This shows you're still running the generic kernel. After reboot, you'll be running `6.8.0-1028-intel`.
 
-## Step 6: Reboot to TDX Kernel
+## Reboot to TDX Kernel
 
 Reboot the server to load the TDX-enabled kernel:
 
