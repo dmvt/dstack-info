@@ -105,80 +105,52 @@ These contracts use the UUPS (Universal Upgradeable Proxy Standard) pattern, all
 
 If you prefer to deploy manually, follow these steps.
 
-### Step 1: Configure Environment Variables
+### Step 1: Set Environment Variables
 
-The deployment scripts need your wallet credentials and RPC endpoint.
-
-### Create environment file
+The deployment scripts need your wallet private key. The hardhat config uses the public demo RPC endpoint.
 
 ```bash
 cd ~/dstack/kms/auth-eth
 
-# Create .env file (keep this secure!)
-cat > .env << 'EOF'
-# Your wallet private key (without 0x prefix)
-PRIVATE_KEY=your_private_key_here
+# Set your private key from the secrets file
+export PRIVATE_KEY=$(cat ~/.dstack/secrets/sepolia-private-key)
 
-# Alchemy API key for Sepolia
-ALCHEMY_API_KEY=your_alchemy_api_key_here
-
-# Optional: Etherscan API key for verification
-ETHERSCAN_API_KEY=your_etherscan_api_key_here
-EOF
+# Use the demo RPC endpoint (required by hardhat.config.ts)
+export ALCHEMY_API_KEY="demo"
 ```
 
-### Set environment variables
+**Security Warning:** Never commit your private key or share it. The key is only held in memory during this session.
 
-Load the environment:
-
-```bash
-source .env
-export PRIVATE_KEY
-export ALCHEMY_API_KEY
-export ETHERSCAN_API_KEY
-```
-
-**Security Warning:** Never commit your `.env` file or share your private key. Add `.env` to `.gitignore`.
-
-### Verify configuration
-
-```bash
-# Check variables are set (shows only first/last chars)
-echo "PRIVATE_KEY: ${PRIVATE_KEY:0:4}...${PRIVATE_KEY: -4}"
-echo "ALCHEMY_API_KEY: ${ALCHEMY_API_KEY:0:4}...${ALCHEMY_API_KEY: -4}"
-```
-
-## Step 2: Check Wallet Balance
+### Step 2: Check Wallet Balance
 
 Verify your wallet has sufficient ETH for deployment:
 
 ```bash
-cd ~/dstack/kms/auth-eth
+# Get your wallet address
+WALLET_ADDRESS=$(cat ~/.dstack/secrets/sepolia-address)
+echo "Wallet: $WALLET_ADDRESS"
 
-# Check balance using Hardhat
-npx hardhat run --network sepolia -e "
-const [signer] = await hre.ethers.getSigners();
-const address = await signer.getAddress();
-const balance = await hre.ethers.provider.getBalance(address);
-console.log('Address:', address);
-console.log('Balance:', hre.ethers.formatEther(balance), 'ETH');
-"
+# Check balance using curl
+curl -s -X POST "https://eth-sepolia.g.alchemy.com/v2/demo" \
+  -H "Content-Type: application/json" \
+  -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBalance\",\"params\":[\"$WALLET_ADDRESS\",\"latest\"],\"id\":1}" | \
+  jq -r '.result' | xargs printf "Balance: %d wei\n"
 ```
 
-Expected output shows your address and balance.
+You need at least 0.08 ETH (~80000000000000000 wei) for deployment.
 
 If balance is insufficient, get Sepolia ETH from:
+- [PoW Faucet](https://sepolia-faucet.pk910.de/) (recommended - no requirements)
 - [Alchemy Sepolia Faucet](https://sepoliafaucet.com/)
-- [PoW Faucet](https://sepolia-faucet.pk910.de/)
 
-## Step 3: Deploy DstackKms Contract
+### Step 3: Deploy Contracts
 
-Deploy the main KMS registry contract with the DstackApp implementation:
+Deploy the DstackKms proxy and DstackApp implementation:
 
 ```bash
 cd ~/dstack/kms/auth-eth
 
-# Deploy DstackKms with DstackApp implementation
+# Deploy contracts (will prompt for confirmation)
 npx hardhat kms:deploy --with-app-impl --network sepolia
 ```
 
@@ -189,71 +161,56 @@ Deploying with account: 0xYourAddress
 Account balance: 0.123456789 ETH
 Step 1: Deploying DstackApp implementation...
 ✅ DstackApp implementation deployed to: 0x...
-Setting DstackApp implementation during initialization: 0x...
 Step 2: Deploying DstackKms...
-Starting DstackKms deployment process...
 Network: sepolia (chainId: 11155111)
-Estimating deployment cost...
-Deployment gas estimate: ~2,500,000 gas
 Do you want to proceed with deployment? (y/n)
-Deploying proxy...
-Waiting for deployment...
 DstackKms Proxy deployed to: 0xYourKmsContractAddress
 ✅ Complete KMS setup deployed successfully!
-- DstackApp implementation: 0x...
-- DstackKms proxy: 0xYourKmsContractAddress
-🚀 Ready for factory app deployments!
 ```
 
-### Save contract addresses
+### Step 4: Save Contract Addresses
 
-Record the deployed addresses for later use:
-
-```bash
-# Save to environment
-export KMS_CONTRACT_ADDRESS="0xYourKmsContractAddress"
-export APP_IMPLEMENTATION_ADDRESS="0xYourAppImplAddress"
-
-# Add to .env file
-echo "KMS_CONTRACT_ADDRESS=$KMS_CONTRACT_ADDRESS" >> .env
-echo "APP_IMPLEMENTATION_ADDRESS=$APP_IMPLEMENTATION_ADDRESS" >> .env
-```
-
-## Step 4: Verify Deployment
-
-### Check contract on Etherscan
-
-Visit Sepolia Etherscan to verify your deployment:
-
-```
-https://sepolia.etherscan.io/address/YOUR_KMS_CONTRACT_ADDRESS
-```
-
-### Query contract state
+Save the deployed addresses for later use:
 
 ```bash
 cd ~/dstack/kms/auth-eth
 
-# Get KMS info (will be empty until bootstrapped)
-npx hardhat info:kms --network sepolia
+# Replace with your actual addresses from deployment output
+KMS_CONTRACT_ADDRESS="0xYourKmsContractAddress"
+APP_IMPLEMENTATION_ADDRESS="0xYourAppImplAddress"
 
-# Get app implementation address
-npx hardhat kms:get-app-implementation --network sepolia
+# Save to .deployed-addresses file (same format as Ansible)
+cat > .deployed-addresses << EOF
+# KMS Contract Deployment - $(date -Iseconds)
+# Network: Sepolia Testnet
+
+KMS_CONTRACT_ADDRESS=$KMS_CONTRACT_ADDRESS
+APP_IMPLEMENTATION_ADDRESS=$APP_IMPLEMENTATION_ADDRESS
+
+# View on Etherscan:
+# https://sepolia.etherscan.io/address/$KMS_CONTRACT_ADDRESS
+EOF
+
+chmod 600 .deployed-addresses
+echo "Addresses saved to .deployed-addresses"
 ```
 
-### Verify using cast (optional)
+### Step 5: Verify Deployment
 
-If you have Foundry installed:
+Check that the contract exists on chain:
 
 ```bash
-# Check contract exists
-cast code $KMS_CONTRACT_ADDRESS --rpc-url https://eth-sepolia.g.alchemy.com/v2/$ALCHEMY_API_KEY
+# Verify contract has bytecode
+curl -s -X POST "https://eth-sepolia.g.alchemy.com/v2/demo" \
+  -H "Content-Type: application/json" \
+  -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getCode\",\"params\":[\"$KMS_CONTRACT_ADDRESS\",\"latest\"],\"id\":1}" | \
+  jq -r 'if .result != "0x" then "✓ Contract deployed successfully" else "✗ Contract not found" end'
 
-# Get owner
-cast call $KMS_CONTRACT_ADDRESS "owner()" --rpc-url https://eth-sepolia.g.alchemy.com/v2/$ALCHEMY_API_KEY
+# View on Etherscan
+echo "View on Etherscan: https://sepolia.etherscan.io/address/$KMS_CONTRACT_ADDRESS"
 ```
 
-## Step 5: Verify Contract Source (Optional)
+### Step 6: Verify Contract Source (Optional)
 
 Verify the contract source on Etherscan for transparency:
 
@@ -323,10 +280,10 @@ A transaction with this nonce already exists. Wait for it to confirm.
 Error: could not detect network
 ```
 
-Check your Alchemy API key and network connectivity:
+Check network connectivity:
 
 ```bash
-curl -X POST https://eth-sepolia.g.alchemy.com/v2/$ALCHEMY_API_KEY \
+curl -s -X POST "https://eth-sepolia.g.alchemy.com/v2/demo" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
