@@ -4,18 +4,19 @@
 #
 # Configurable variables (pass with -e):
 #   kms_domain           - Domain name for KMS (e.g., kms.example.com)
-#   quote_enabled        - Generate TDX attestation quote (default: true)
-#                          Set to false if tappd is not running
+#   quote_enabled        - Generate TDX attestation quote (default: false)
+#                          Only works inside a TDX guest VM (CVM) with guest-agent running.
+#                          Host-based KMS cannot generate attestation quotes.
 #   force_rebootstrap    - Set to true to destroy existing keys and re-bootstrap (default: false)
 #
 # Examples:
-#   # Basic usage (requires tappd for TDX quote)
+#   # Host-based KMS (standard deployment)
 #   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
 #     -e "kms_domain=kms.example.com"
 #
-#   # Without TDX quote generation (for testing/development)
+#   # KMS inside a CVM with attestation (requires guest-agent)
 #   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
-#     -e "kms_domain=kms.example.com" -e "quote_enabled=false"
+#     -e "kms_domain=kms.example.com" -e "quote_enabled=true"
 #
 #   # Force re-bootstrap (destroys existing keys!)
 #   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
@@ -39,7 +40,7 @@
     kms_certs_dir: "/etc/kms/certs"
     kms_install_path: "/usr/local/bin/dstack-kms"
     force_rebootstrap: false
-    quote_enabled: true
+    quote_enabled: false
 
   tasks:
     - name: Check if kms_domain is provided

@@ -42,17 +42,12 @@ ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
   -e "kms_domain=kms.yourdomain.com"
 ```
 
-**Without TDX attestation (if tappd is not running):**
-
-```bash
-ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
-  -e "kms_domain=kms.yourdomain.com" -e "quote_enabled=false"
-```
-
 The playbook accepts these variables:
 - `kms_domain` (required) - Domain name for the KMS server
-- `quote_enabled` (default: true) - Generate TDX attestation quote. Set to `false` if tappd is not running
+- `quote_enabled` (default: false) - Generate TDX attestation quote. Only works inside a CVM with guest-agent
 - `force_rebootstrap` (default: false) - Destroy existing keys and re-bootstrap
+
+> **Note:** Host-based KMS runs on the TDX hypervisor, not inside a TDX guest VM. TDX attestation quotes can only be generated from within a CVM where the guest-agent provides `/var/run/dstack.sock`. For host-based deployments, `quote_enabled=false` is the correct setting.
 
 The playbook will:
 1. **Verify KMS is configured** for bootstrap mode
