@@ -4,12 +4,18 @@
 #
 # Configurable variables (pass with -e):
 #   kms_domain           - Domain name for KMS (e.g., kms.example.com)
+#   quote_enabled        - Generate TDX attestation quote (default: true)
+#                          Set to false if tappd is not running
 #   force_rebootstrap    - Set to true to destroy existing keys and re-bootstrap (default: false)
 #
 # Examples:
-#   # Basic usage
+#   # Basic usage (requires tappd for TDX quote)
 #   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
 #     -e "kms_domain=kms.example.com"
+#
+#   # Without TDX quote generation (for testing/development)
+#   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
+#     -e "kms_domain=kms.example.com" -e "quote_enabled=false"
 #
 #   # Force re-bootstrap (destroys existing keys!)
 #   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
@@ -19,6 +25,7 @@
 # - Checks if bootstrap already completed
 # - Backs up existing keys if re-bootstrapping
 # - Configures automatic bootstrap in kms.toml
+# - Configures quote_enabled setting
 # - Runs KMS to trigger bootstrap
 # - Verifies all 8 files generated
 # - Verifies certificate chain
@@ -32,6 +39,7 @@
     kms_certs_dir: "/etc/kms/certs"
     kms_install_path: "/usr/local/bin/dstack-kms"
     force_rebootstrap: false
+    quote_enabled: true
 
   tasks:
     - name: Check if kms_domain is provided
@@ -82,7 +90,7 @@
         msg: |
           {% if bootstrap_check.stat.exists %}
           ⚠️  KMS appears to be already bootstrapped (root-ca.key exists)
-          {% if force_rebootstrap %}
+          {% if force_rebootstrap | bool %}
           force_rebootstrap=true - Will backup and re-bootstrap
           {% else %}
           Set force_rebootstrap=true to re-bootstrap (will backup existing keys)
@@ -99,7 +107,7 @@
           To re-bootstrap (⚠️ creates new keys):
             ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
               -e "kms_domain={{ kms_domain }}" -e "force_rebootstrap=true"
-      when: bootstrap_check.stat.exists and not force_rebootstrap
+      when: bootstrap_check.stat.exists and not (force_rebootstrap | bool)
 
     - name: Backup existing keys if re-bootstrapping
       ansible.builtin.copy:
@@ -108,7 +116,7 @@
         remote_src: true
         mode: preserve
       become: true
-      when: bootstrap_check.stat.exists and force_rebootstrap
+      when: bootstrap_check.stat.exists and (force_rebootstrap | bool)
 
     - name: Remove existing keys if re-bootstrapping
       ansible.builtin.file:
@@ -124,7 +132,7 @@
         - tmp-ca.key
         - root-k256.key
         - bootstrap-info.json
-      when: bootstrap_check.stat.exists and force_rebootstrap
+      when: bootstrap_check.stat.exists and (force_rebootstrap | bool)
 
     - name: Configure automatic bootstrap in kms.toml
       ansible.builtin.lineinfile:
@@ -134,18 +142,30 @@
         insertafter: '^\[core\.onboard\]'
       become: true
 
-    - name: Run KMS to trigger automatic bootstrap
-      ansible.builtin.shell: |
-        {{ kms_install_path }} --config {{ kms_config_dir }}/kms.toml 2>&1
-      register: bootstrap_output
-      failed_when: false
-      changed_when: "'Bootstrap completed' in bootstrap_output.stdout or 'Bootstrap completed' in bootstrap_output.stderr"
+    - name: Configure quote_enabled in kms.toml
+      ansible.builtin.lineinfile:
+        path: "{{ kms_config_dir }}/kms.toml"
+        regexp: '^quote_enabled\s*='
+        line: 'quote_enabled = {{ quote_enabled | bool | lower }}'
+        insertafter: '^\[core\.onboard\]'
+      become: true
 
-    - name: Display bootstrap output
+    - name: Display quote configuration
       ansible.builtin.debug:
-        var: bootstrap_output.stdout_lines
+        msg: "TDX quote generation: {{ 'enabled' if (quote_enabled | bool) else 'disabled (tappd not required)' }}"
 
-    - name: Wait for bootstrap files to be created
+    - name: Start KMS in background to trigger automatic bootstrap
+      ansible.builtin.shell: |
+        nohup {{ kms_install_path }} --config {{ kms_config_dir }}/kms.toml > /tmp/kms-bootstrap.log 2>&1 &
+        echo $!
+      register: kms_pid
+      changed_when: true
+
+    - name: Display KMS process info
+      ansible.builtin.debug:
+        msg: "KMS started with PID {{ kms_pid.stdout }} - waiting for bootstrap to complete"
+
+    - name: Wait for core bootstrap files to be created
       ansible.builtin.wait_for:
         path: "{{ kms_certs_dir }}/{{ item }}"
         timeout: 30
@@ -157,21 +177,53 @@
         - tmp-ca.crt
         - tmp-ca.key
         - root-k256.key
-        - bootstrap-info.json
 
-    - name: Verify all 8 files were generated
+    - name: Wait for bootstrap-info.json (when quote enabled)
+      ansible.builtin.wait_for:
+        path: "{{ kms_certs_dir }}/bootstrap-info.json"
+        timeout: 30
+      when: quote_enabled | bool
+
+    - name: Stop KMS process after bootstrap
+      ansible.builtin.shell: |
+        kill {{ kms_pid.stdout }} 2>/dev/null || true
+        sleep 1
+        # Force kill if still running
+        kill -9 {{ kms_pid.stdout }} 2>/dev/null || true
+      changed_when: true
+      failed_when: false
+
+    - name: Capture bootstrap log output
+      ansible.builtin.slurp:
+        src: /tmp/kms-bootstrap.log
+      register: bootstrap_log
+      failed_when: false
+
+    - name: Display bootstrap log
+      ansible.builtin.debug:
+        msg: "{{ bootstrap_log.content | default('') | b64decode | default('No log output') }}"
+      when: bootstrap_log.content is defined
+
+    - name: Verify core certificate files were generated
       ansible.builtin.find:
         paths: "{{ kms_certs_dir }}"
-        patterns: "*"
+        patterns:
+          - "root-ca.crt"
+          - "root-ca.key"
+          - "rpc.crt"
+          - "rpc.key"
+          - "tmp-ca.crt"
+          - "tmp-ca.key"
+          - "root-k256.key"
         file_type: file
       register: cert_files
 
-    - name: Check file count
+    - name: Check core file count
       ansible.builtin.assert:
         that:
-          - cert_files.matched == 8
-        fail_msg: "Expected 8 files, found {{ cert_files.matched }}"
-        success_msg: "✓ All 8 files generated"
+          - cert_files.matched >= 7
+        fail_msg: "Expected at least 7 core files, found {{ cert_files.matched }}"
+        success_msg: "✓ All 7 core files generated"
 
     - name: Verify Root CA certificate
       ansible.builtin.shell: |
@@ -206,21 +258,31 @@
         fail_msg: "K256 key should be 32 bytes, found {{ k256_key.stat.size }}"
         success_msg: "✓ K256 key valid (32 bytes)"
 
-    - name: Verify bootstrap-info.json is valid JSON
+    - name: Verify bootstrap-info.json is valid JSON (when quote enabled)
       ansible.builtin.shell: |
         jq empty {{ kms_certs_dir }}/bootstrap-info.json
       register: json_verify
       changed_when: false
       failed_when: json_verify.rc != 0
+      when: quote_enabled | bool
 
-    - name: Read bootstrap info
+    - name: Read bootstrap info (when quote enabled)
       ansible.builtin.slurp:
         src: "{{ kms_certs_dir }}/bootstrap-info.json"
       register: bootstrap_info_raw
+      when: quote_enabled | bool
 
-    - name: Parse bootstrap info
+    - name: Parse bootstrap info (when quote enabled)
       ansible.builtin.set_fact:
         bootstrap_info: "{{ bootstrap_info_raw.content | b64decode | from_json }}"
+      when: quote_enabled | bool
+
+    - name: Set empty bootstrap info (when quote disabled)
+      ansible.builtin.set_fact:
+        bootstrap_info:
+          ca_pubkey: "(quote disabled - no public key available)"
+          k256_pubkey: "(quote disabled - no public key available)"
+      when: not (quote_enabled | bool)
 
     - name: Ensure private keys have restrictive permissions
       ansible.builtin.file:
@@ -242,8 +304,9 @@
           - ""
           - "Domain: {{ kms_domain }}"
           - "Certificate Directory: {{ kms_certs_dir }}"
+          - "TDX Quote: {{ 'enabled' if (quote_enabled | bool) else 'disabled' }}"
           - ""
-          - "Generated Files (8):"
+          - "Generated Files ({{ '8' if (quote_enabled | bool) else '7' }}):"
           - "  ✓ root-ca.crt       - Root Certificate Authority"
           - "  ✓ root-ca.key       - Root CA private key (P256 ECDSA)"
           - "  ✓ rpc.crt           - RPC TLS certificate"
@@ -251,19 +314,19 @@
           - "  ✓ tmp-ca.crt        - Temporary CA for onboarding"
           - "  ✓ tmp-ca.key        - Temporary CA private key"
           - "  ✓ root-k256.key     - Ethereum signing key (secp256k1)"
-          - "  ✓ bootstrap-info.json - Public keys and TDX quote"
+          - "  {{ '✓ bootstrap-info.json - Public keys and TDX quote' if (quote_enabled | bool) else '⊘ bootstrap-info.json - Skipped (quote disabled)' }}"
           - ""
           - "Verifications:"
           - "  ✓ Root CA certificate valid"
           - "  ✓ RPC certificate domain matches"
           - "  ✓ Certificate chain valid"
           - "  ✓ K256 key valid (32 bytes)"
-          - "  ✓ bootstrap-info.json valid JSON"
+          - "  {{ '✓ bootstrap-info.json valid JSON' if (quote_enabled | bool) else '⊘ bootstrap-info.json skipped' }}"
           - ""
-          - "CA Public Key (first 64 chars):"
-          - "  {{ bootstrap_info.ca_pubkey[:64] }}..."
+          - "CA Public Key:"
+          - "  {{ bootstrap_info.ca_pubkey[:64] if (bootstrap_info.ca_pubkey | length > 64) else bootstrap_info.ca_pubkey }}"
           - ""
-          - "K256 Public Key (first 64 chars):"
-          - "  {{ bootstrap_info.k256_pubkey[:64] }}..."
+          - "K256 Public Key:"
+          - "  {{ bootstrap_info.k256_pubkey[:64] if (bootstrap_info.k256_pubkey | length > 64) else bootstrap_info.k256_pubkey }}"
           - ""
           - "⚠️  IMPORTANT: Backup {{ kms_certs_dir }}/ securely!"

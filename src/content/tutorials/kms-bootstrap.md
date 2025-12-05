@@ -42,13 +42,25 @@ ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
   -e "kms_domain=kms.yourdomain.com"
 ```
 
+**Without TDX attestation (if tappd is not running):**
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-kms.yml \
+  -e "kms_domain=kms.yourdomain.com" -e "quote_enabled=false"
+```
+
+The playbook accepts these variables:
+- `kms_domain` (required) - Domain name for the KMS server
+- `quote_enabled` (default: true) - Generate TDX attestation quote. Set to `false` if tappd is not running
+- `force_rebootstrap` (default: false) - Destroy existing keys and re-bootstrap
+
 The playbook will:
 1. **Verify KMS is configured** for bootstrap mode
 2. **Start KMS temporarily** to trigger bootstrap
 3. **Generate root CA** and RPC certificates
 4. **Generate K256 key** for Ethereum signing
-5. **Create TDX quote** (if running on TDX hardware)
-6. **Verify all 8 certificate files** were generated
+5. **Create TDX quote** (if quote_enabled=true and tappd is running)
+6. **Verify all certificate files** were generated (7 files, or 8 with TDX quote)
 
 ### Step 2: Verify Bootstrap
 
@@ -56,7 +68,7 @@ The playbook will:
 ls -la /etc/kms/certs/
 ```
 
-You should see 8 files: root-ca.crt, root-ca.key, rpc.crt, rpc.key, tmp-ca.crt, tmp-ca.key, root-k256.key, and bootstrap-info.json.
+You should see 7 core files: root-ca.crt, root-ca.key, rpc.crt, rpc.key, tmp-ca.crt, tmp-ca.key, and root-k256.key. If `quote_enabled=true`, you'll also see bootstrap-info.json (8 files total).
 
 ---
 
@@ -73,7 +85,7 @@ Bootstrap is a **one-time initialization** that creates:
 | `tmp-ca.crt` | Certificate | Temporary CA for mutual TLS |
 | `tmp-ca.key` | Private Key | Temporary CA private key (P256 ECDSA) |
 | `root-k256.key` | Raw Key | Ethereum signing key (secp256k1, 32 bytes) |
-| `bootstrap-info.json` | Metadata | Public keys and TDX quote |
+| `bootstrap-info.json` | Metadata | Public keys and TDX quote (only with quote_enabled=true) |
 
 ---
 
