@@ -119,7 +119,7 @@ Expected output:
 [core.onboard]
 enabled = true
 auto_bootstrap_domain = ""
-quote_enabled = true
+quote_enabled = false
 address = "0.0.0.0"
 port = 9100
 ```
@@ -127,7 +127,7 @@ port = 9100
 **Key settings:**
 - `enabled = true` - Allows bootstrap/onboard operations
 - `auto_bootstrap_domain = ""` - Empty means manual bootstrap via web UI
-- `quote_enabled = true` - Generate TDX attestation quote
+- `quote_enabled = false` - TDX attestation (only works inside a CVM, not on host)
 - `port = 9100` - Web UI and RPC listen port
 
 ### Verify certificates directory is empty
@@ -228,12 +228,11 @@ Check that all keys and certificates were generated correctly.
 ls -la /etc/kms/certs/
 ```
 
-Expected output (8 files):
+Expected output (7 core files for host-based KMS):
 ```
-total 40
+total 36
 drwxr-xr-x 2 ubuntu ubuntu 4096 Nov 20 10:35 .
 drwxr-xr-x 3 ubuntu ubuntu 4096 Nov 20 10:30 ..
--rw-r--r-- 1 ubuntu ubuntu  424 Nov 20 10:35 bootstrap-info.json
 -rw-r--r-- 1 ubuntu ubuntu  615 Nov 20 10:35 root-ca.crt
 -rw------- 1 ubuntu ubuntu  227 Nov 20 10:35 root-ca.key
 -rw------- 1 ubuntu ubuntu   32 Nov 20 10:35 root-k256.key
@@ -242,6 +241,8 @@ drwxr-xr-x 3 ubuntu ubuntu 4096 Nov 20 10:30 ..
 -rw-r--r-- 1 ubuntu ubuntu  615 Nov 20 10:35 tmp-ca.crt
 -rw------- 1 ubuntu ubuntu  227 Nov 20 10:35 tmp-ca.key
 ```
+
+> **Note:** If `quote_enabled=true` was used (inside a CVM), you'll also see `bootstrap-info.json`.
 
 ### Verify Root CA certificate
 
@@ -279,7 +280,9 @@ Expected:
 /etc/kms/certs/rpc.crt: OK
 ```
 
-### Inspect bootstrap metadata
+### Inspect bootstrap metadata (if quote_enabled=true)
+
+If KMS was bootstrapped inside a CVM with `quote_enabled=true`:
 
 ```bash
 cat /etc/kms/certs/bootstrap-info.json | jq .
@@ -294,6 +297,8 @@ Expected:
   "eventlog": "base64-encoded-eventlog"
 }
 ```
+
+> **Note:** For host-based KMS with `quote_enabled=false`, this file won't exist.
 
 ---
 
@@ -323,12 +328,9 @@ dstack-kms --config /etc/kms/kms.toml
 The KMS will:
 1. Detect bootstrap is needed
 2. Generate all keys automatically
-3. Exit immediately
+3. Start the RPC server
 
-This is useful for:
-- Ansible automation
-- CI/CD pipelines
-- Reproducible deployments
+> **Note:** The KMS does not exit after bootstrap - it continues running as a server. For automation, you'll need to run it in the background and stop it after the certificate files are created. The Ansible playbook handles this automatically.
 
 ## Troubleshooting
 
@@ -367,21 +369,23 @@ chmod 755 /etc/kms/certs
 ### TDX quote generation failed
 
 ```
-Error: tappd socket not found
+Error: Failed to get quote
+Caused by: client error (Connect)
 ```
 
-The KMS cannot generate TDX quote because tappd is not running. Options:
+This error occurs when `quote_enabled=true` but the KMS cannot connect to the guest-agent socket at `/var/run/dstack.sock`.
 
-**Option 1:** Disable quote generation (for testing):
+**For host-based KMS:** This is expected. TDX attestation only works inside a CVM (Confidential Virtual Machine) where the guest-agent provides the socket. Set `quote_enabled=false`:
+
 ```toml
 [core.onboard]
 quote_enabled = false
 ```
 
-**Option 2:** Start tappd service (for production):
+**For KMS inside a CVM:** Ensure the guest-agent service is running:
 ```bash
-# tappd must be running on the TEE host
-systemctl status tappd
+systemctl status dstack-guest-agent
+ls -la /var/run/dstack.sock
 ```
 
 ### Port already in use
@@ -437,15 +441,17 @@ tar czf - /etc/kms/certs/ | \
 # - Secure key management system
 ```
 
-### TDX Quote Verification
+### TDX Quote Verification (CVM only)
 
-The TDX quote in `bootstrap-info.json` can be verified by:
+If KMS was bootstrapped inside a CVM with `quote_enabled=true`, the TDX quote in `bootstrap-info.json` can be verified by:
 
 1. External parties querying `/prpc/KMS.GetMeta`
 2. Intel PCCS (Platform Configuration and Certification Service)
 3. Smart contract verification (on-chain quote verification)
 
 This proves the keys were generated inside a genuine Intel TDX environment.
+
+> **Note:** For host-based KMS with `quote_enabled=false`, there is no TDX quote. The trust model relies on physical security of the host server.
 
 ## Next Steps
 
