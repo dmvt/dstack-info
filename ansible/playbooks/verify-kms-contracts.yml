@@ -95,15 +95,38 @@
 
     - name: Check TypeScript types for DstackKms
       ansible.builtin.stat:
-        path: "{{ contract_dir }}/typechain-types/contracts/DstackKms.sol/DstackKms.ts"
+        path: "{{ contract_dir }}/typechain-types/contracts/DstackKms.ts"
       register: kms_types
       when: types_dir.stat.exists
 
     - name: Check TypeScript types for DstackApp
       ansible.builtin.stat:
-        path: "{{ contract_dir }}/typechain-types/contracts/DstackApp.sol/DstackApp.ts"
+        path: "{{ contract_dir }}/typechain-types/contracts/DstackApp.ts"
       register: app_types
       when: types_dir.stat.exists
+
+    - name: Check for deployed addresses file
+      ansible.builtin.stat:
+        path: "{{ contract_dir }}/.deployed-addresses"
+      register: deployed_file
+
+    - name: Read deployed addresses
+      ansible.builtin.slurp:
+        src: "{{ contract_dir }}/.deployed-addresses"
+      register: deployed_content
+      when: deployed_file.stat.exists
+
+    - name: Parse deployed addresses
+      ansible.builtin.set_fact:
+        kms_address: "{{ deployed_content.content | b64decode | regex_search('KMS_CONTRACT_ADDRESS=([0-9a-fA-Fx]+)', '\\1') | first | default('Not deployed') }}"
+        app_impl_address: "{{ deployed_content.content | b64decode | regex_search('APP_IMPLEMENTATION_ADDRESS=([0-9a-fA-Fx]+)', '\\1') | first | default('Not deployed') }}"
+      when: deployed_file.stat.exists
+
+    - name: Set not deployed if no file
+      ansible.builtin.set_fact:
+        kms_address: "Not deployed"
+        app_impl_address: "Not deployed"
+      when: not deployed_file.stat.exists
 
     - name: Get contract bytecode size
       ansible.builtin.shell: |
@@ -137,11 +160,16 @@
           - "  ✓ IAppAuthBasicManagement.sol"
           - ""
           - "TypeScript types: {{ 'Generated' if types_dir.stat.exists else 'Not found' }}"
-          - "  - DstackKms.ts: {{ 'Found' if (kms_types.stat.exists | default(false)) else 'Not found' }}"
-          - "  - DstackApp.ts: {{ 'Found' if (app_types.stat.exists | default(false)) else 'Not found' }}"
+          - "  ✓ DstackKms.ts: {{ 'Found' if (kms_types.stat.exists | default(false)) else 'Not found' }}"
+          - "  ✓ DstackApp.ts: {{ 'Found' if (app_types.stat.exists | default(false)) else 'Not found' }}"
           - ""
           - "Contract bytecode sizes:"
           - "  - DstackKms: {{ bytecode_sizes.results[0].stdout | int }} bytes"
           - "  - DstackApp: {{ bytecode_sizes.results[1].stdout | int }} bytes"
           - ""
-          - "All contract artifacts are valid and ready for deployment!"
+          - "Deployed addresses (Sepolia):"
+          - "  - DstackKms Proxy: {{ kms_address }}"
+          - "  - DstackApp Impl:  {{ app_impl_address }}"
+          - "{% if kms_address != 'Not deployed' %}  - Etherscan: https://sepolia.etherscan.io/address/{{ kms_address }}{% endif %}"
+          - ""
+          - "All contract artifacts are valid!"
