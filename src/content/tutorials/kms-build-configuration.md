@@ -25,9 +25,7 @@ This tutorial guides you through building and configuring the dstack Key Managem
 
 Before starting, ensure you have:
 
-- Completed [Contract Deployment](/tutorial/contract-deployment) with:
-  - KMS contract address deployed to Sepolia
-  - Alchemy API key for RPC access
+- Completed [Contract Deployment](/tutorial/contract-deployment) with deployed KMS contract
 - Completed [Rust Toolchain Installation](/tutorial/rust-toolchain-installation)
 - dstack repository cloned to ~/dstack
 
@@ -39,24 +37,24 @@ For most users, the recommended approach is to use the Ansible playbook.
 
 ```bash
 cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml \
-  -e "alchemy_api_key=YOUR_ALCHEMY_API_KEY" \
-  -e "kms_contract_address=YOUR_KMS_CONTRACT_ADDRESS"
+ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml
 ```
 
 The playbook will:
-1. **Build KMS binary** in release mode
-2. **Install to system path** at /usr/local/bin/dstack-kms
-3. **Create configuration directories** (/etc/kms, /etc/kms/certs)
-4. **Generate kms.toml** configuration file
-5. **Build auth-eth service** for blockchain authorization
-6. **Create auth-eth.env** with your credentials
+1. **Detect contract address** from the previous deployment (`.deployed-addresses` file)
+2. **Build KMS binary** in release mode
+3. **Install to system path** at /usr/local/bin/dstack-kms
+4. **Create configuration directories** (/etc/kms, /etc/kms/certs)
+5. **Generate kms.toml** configuration file
+6. **Build auth-eth service** for blockchain authorization
+7. **Create auth-eth.env** with contract address and demo RPC endpoint
 
 ### Step 2: Verify Build
 
 ```bash
 dstack-kms --help
 cat /etc/kms/kms.toml
+cat /etc/kms/auth-eth.env
 ```
 
 ---
@@ -279,38 +277,44 @@ You should see `main.js` and other compiled files.
 
 Create environment configuration for the auth-eth service.
 
+### Get contract address from deployment
+
+```bash
+# Read the contract address from the deployment file
+KMS_CONTRACT_ADDRESS=$(grep KMS_CONTRACT_ADDRESS ~/dstack/kms/auth-eth/.deployed-addresses | cut -d= -f2)
+echo "Contract address: $KMS_CONTRACT_ADDRESS"
+```
+
+If the file doesn't exist, you need to complete [Contract Deployment](/tutorial/contract-deployment) first.
+
 ### Create environment file
 
 ```bash
-cat > /etc/kms/auth-eth.env << 'EOF'
+cat > /etc/kms/auth-eth.env << EOF
 # Auth-ETH Service Configuration
 
 # Server settings
 HOST=127.0.0.1
 PORT=9200
 
-# Ethereum RPC endpoint (Sepolia via Alchemy)
-ETH_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
+# Ethereum RPC endpoint (using public demo endpoint)
+ETH_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/demo
 
-# KMS Authorization Contract Address (from deployment)
-KMS_CONTRACT_ADDR=YOUR_KMS_CONTRACT_ADDRESS
+# KMS Authorization Contract Address
+KMS_CONTRACT_ADDR=$KMS_CONTRACT_ADDRESS
 EOF
-```
-
-### Update with your values
-
-Edit the file and replace:
-- `YOUR_ALCHEMY_API_KEY` with your Alchemy API key
-- `YOUR_KMS_CONTRACT_ADDRESS` with the address from [Contract Deployment](/tutorial/contract-deployment)
-
-```bash
-nano /etc/kms/auth-eth.env
 ```
 
 ### Secure the file
 
 ```bash
 chmod 600 /etc/kms/auth-eth.env
+```
+
+### Verify configuration
+
+```bash
+cat /etc/kms/auth-eth.env
 ```
 
 ## Step 7: Verify Configuration
@@ -337,13 +341,23 @@ echo "KMS_CONTRACT_ADDR: $KMS_CONTRACT_ADDR"
 
 ```bash
 source /etc/kms/auth-eth.env
-curl -s -X POST $ETH_RPC_URL \
+curl -s -X POST "$ETH_RPC_URL" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' | \
   jq .
 ```
 
 Expected output shows the current block number.
+
+### Verify contract exists
+
+```bash
+source /etc/kms/auth-eth.env
+curl -s -X POST "$ETH_RPC_URL" \
+  -H "Content-Type: application/json" \
+  -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getCode\",\"params\":[\"$KMS_CONTRACT_ADDR\",\"latest\"],\"id\":1}" | \
+  jq -r 'if .result != "0x" then "✓ Contract found" else "✗ Contract not found" end'
+```
 
 ---
 
@@ -435,11 +449,24 @@ cat /etc/kms/kms.toml | python3 -c "import sys, tomllib; tomllib.load(sys.stdin.
 Error: could not connect to RPC
 ```
 
-Check your Alchemy API key and network:
+Check network connectivity:
 
 ```bash
-source /etc/kms/auth-eth.env
-curl -v $ETH_RPC_URL
+curl -s "https://eth-sepolia.g.alchemy.com/v2/demo" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+```
+
+### Contract address not set
+
+```
+Error: KMS_CONTRACT_ADDR not set
+```
+
+Ensure you've completed [Contract Deployment](/tutorial/contract-deployment) and the `.deployed-addresses` file exists:
+
+```bash
+cat ~/dstack/kms/auth-eth/.deployed-addresses
 ```
 
 ## Next Steps

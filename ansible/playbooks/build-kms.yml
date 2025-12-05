@@ -8,20 +8,19 @@
 #   kms_rpc_port         - KMS RPC port (default: 9100)
 #   auth_eth_port        - Auth-eth service port (default: 9200)
 #   pccs_url             - Intel PCCS URL for quote verification
-#   alchemy_api_key      - Alchemy API key for Sepolia RPC
-#   kms_contract_address - KMS contract address from deployment
+#   kms_contract_address - KMS contract address (auto-detected from .deployed-addresses)
 #
 # Examples:
-#   # Basic usage
+#   # Basic usage (reads contract address from previous deployment)
 #   ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml
 #
 #   # With custom configuration
 #   ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml \
 #     -e "kms_workers=16" -e "kms_log_level=debug"
 #
-#   # With contract credentials
+#   # With explicit contract address
 #   ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml \
-#     -e "alchemy_api_key=YOUR_KEY" -e "kms_contract_address=0x..."
+#     -e "kms_contract_address=0x..."
 #
 # This playbook:
 # - Builds KMS binary in release mode
@@ -69,6 +68,32 @@
           Clone the repository first:
             git clone https://github.com/Dstack-TEE/dstack.git ~/dstack
       when: not repo_check.stat.exists
+
+    - name: Check for deployed addresses file
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}/kms/auth-eth/.deployed-addresses"
+      register: deployed_file
+      when: kms_contract_address is not defined
+
+    - name: Read deployed contract address
+      ansible.builtin.slurp:
+        src: "{{ dstack_repo_path }}/kms/auth-eth/.deployed-addresses"
+      register: deployed_content
+      when:
+        - kms_contract_address is not defined
+        - deployed_file.stat.exists | default(false)
+
+    - name: Parse contract address from deployment file
+      ansible.builtin.set_fact:
+        kms_contract_address: "{{ deployed_content.content | b64decode | regex_search('KMS_CONTRACT_ADDRESS=([0-9a-fA-Fx]+)', '\\1') | first }}"
+      when:
+        - kms_contract_address is not defined
+        - deployed_content.content is defined
+
+    - name: Display detected contract address
+      ansible.builtin.debug:
+        msg: "Using KMS contract address from deployment: {{ kms_contract_address }}"
+      when: kms_contract_address is defined
 
     - name: Check Rust is installed
       ansible.builtin.stat:
@@ -254,6 +279,18 @@
             npx tsc --project tsconfig.json
       when: not auth_eth_build.stat.exists
 
+    - name: Warn if contract address not found
+      ansible.builtin.debug:
+        msg: |
+          WARNING: KMS contract address not found.
+
+          Either:
+          1. Run contract deployment first:
+             ansible-playbook playbooks/deploy-kms-contracts.yml
+          2. Or pass the address explicitly:
+             -e "kms_contract_address=0x..."
+      when: kms_contract_address is not defined
+
     - name: Create auth-eth environment file
       ansible.builtin.copy:
         content: |
@@ -264,17 +301,14 @@
           HOST=127.0.0.1
           PORT={{ auth_eth_port }}
 
-          # Ethereum RPC endpoint
-          {% if alchemy_api_key is defined and alchemy_api_key %}
-          ETH_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/{{ alchemy_api_key }}
-          {% else %}
-          ETH_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
-          {% endif %}
+          # Ethereum RPC endpoint (using public demo endpoint)
+          ETH_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/demo
 
           # KMS Authorization Contract Address
           {% if kms_contract_address is defined and kms_contract_address %}
           KMS_CONTRACT_ADDR={{ kms_contract_address }}
           {% else %}
+          # TODO: Set contract address after deployment
           KMS_CONTRACT_ADDR=YOUR_KMS_CONTRACT_ADDRESS
           {% endif %}
         dest: "{{ kms_config_dir }}/auth-eth.env"
@@ -302,7 +336,5 @@
           - "Auth-ETH:"
           - "  Build: {{ dstack_repo_path }}/kms/auth-eth/dist/"
           - "  Config: {{ kms_config_dir }}/auth-eth.env"
-          - ""
-          - "NOTE: Edit {{ kms_config_dir }}/auth-eth.env to add:"
-          - "  - Alchemy API key (for Sepolia RPC)"
-          - "  - KMS contract address (after deployment)"
+          - "  RPC: https://eth-sepolia.g.alchemy.com/v2/demo"
+          - "  Contract: {{ kms_contract_address | default('NOT SET - run deploy-kms-contracts.yml first') }}"
