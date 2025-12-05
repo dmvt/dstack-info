@@ -19,7 +19,7 @@
   become: yes
   vars:
     images_dir: /var/lib/dstack/images
-    dstack_version: "0.4.0"
+    dstack_version: "0.5.5"
     vmm_http_port: 9080
 
   tasks:
@@ -71,19 +71,10 @@
         mode: '0644'
       when: not image_exists.stat.exists
 
-    - name: Create image version directory
-      ansible.builtin.file:
-        path: "{{ images_dir }}/dstack-{{ dstack_version }}"
-        state: directory
-        mode: '0755'
-        owner: root
-        group: root
-      when: not image_exists.stat.exists
-
     - name: Extract guest OS image
       ansible.builtin.unarchive:
         src: "/tmp/dstack-{{ dstack_version }}.tar.gz"
-        dest: "{{ images_dir }}/dstack-{{ dstack_version }}/"
+        dest: "{{ images_dir }}/"
         remote_src: yes
       when: not image_exists.stat.exists
 
@@ -94,10 +85,9 @@
       ansible.builtin.stat:
         path: "{{ images_dir }}/dstack-{{ dstack_version }}/{{ item }}"
       loop:
-        - OVMF.fd
+        - ovmf.fd
         - bzImage
         - initramfs.cpio.gz
-        - rootfs.cpio
         - metadata.json
       register: image_components
 

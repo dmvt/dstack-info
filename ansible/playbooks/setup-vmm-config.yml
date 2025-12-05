@@ -213,6 +213,7 @@
           kms_url = "{{ vmm_kms_url }}"
           event_buffer_size = 20
           node_name = ""
+          image_path = "{{ dstack_lib_dir }}/images"
 
           [cvm]
           qemu_path = ""

@@ -31,7 +31,7 @@
     kms_rpc_port: 9100
     vmm_http_port: 9080
     force_redeploy: false
-    dstack_version: "0.4.0"
+    dstack_version: "0.5.5"
     kms_vcpus: 2
     kms_memory: 4096
 
@@ -147,23 +147,34 @@
     # Check for existing KMS deployment via VMM API
     - name: Check for existing KMS CVM
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances"
-        method: GET
+        url: "http://127.0.0.1:{{ vmm_http_port }}/prpc/Status?json"
+        method: POST
+        body_format: json
+        body:
+          brief: true
         return_content: yes
       register: instances
       failed_when: false
 
     - name: Set KMS exists fact
       ansible.builtin.set_fact:
-        kms_exists: "{{ instances.json.instances | default([]) | selectattr('name', 'equalto', 'kms') | list | length > 0 }}"
+        kms_exists: "{{ instances.json.vms | default([]) | selectattr('name', 'equalto', 'kms') | list | length > 0 }}"
       when: instances.status == 200
+
+    - name: Get KMS CVM ID
+      ansible.builtin.set_fact:
+        kms_vm_id: "{{ (instances.json.vms | default([]) | selectattr('name', 'equalto', 'kms') | list | first).id | default('') }}"
+      when: kms_exists | default(false)
 
     - name: Handle existing CVM
       block:
         - name: Delete existing KMS CVM (force redeploy)
           ansible.builtin.uri:
-            url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances/kms"
-            method: DELETE
+            url: "http://127.0.0.1:{{ vmm_http_port }}/prpc/RemoveVm?json"
+            method: POST
+            body_format: json
+            body:
+              id: "{{ kms_vm_id }}"
           when: force_redeploy | bool
 
         - name: Wait for cleanup
@@ -184,22 +195,41 @@
 
     # Read and deploy KMS CVM via VMM API
     - name: Read docker-compose file
-      ansible.builtin.slurp:
-        src: "{{ kms_deployment_dir }}/docker-compose.yml"
+      ansible.builtin.command:
+        cmd: cat "{{ kms_deployment_dir }}/docker-compose.yml"
       register: compose_content
+      changed_when: false
+
+    - name: Build app manifest
+      ansible.builtin.set_fact:
+        app_manifest:
+          manifest_version: 2
+          name: "kms"
+          runner: "docker-compose"
+          docker_compose_file: "{{ compose_content.stdout }}"
+          docker_config: {}
+          kms_enabled: false
+          gateway_enabled: false
+          public_logs: true
+          public_sysinfo: true
+          public_tcbinfo: true
+          local_key_provider_enabled: true
+          allowed_envs: []
+          no_instance_id: true
+          secure_time: false
 
     - name: Deploy KMS CVM via VMM API
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/deploy"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/prpc/CreateVm?json"
         method: POST
         body_format: json
         body:
           name: "kms"
           image: "dstack-{{ dstack_version }}"
-          compose: "{{ compose_content.content }}"
-          vcpus: "{{ kms_vcpus }}"
+          compose_file: "{{ app_manifest | to_json }}"
+          vcpu: "{{ kms_vcpus }}"
           memory: "{{ kms_memory }}"
-          env: {}
+          disk_size: 20
         return_content: yes
         status_code: [200, 201]
       register: deploy_result
@@ -269,8 +299,8 @@
         msg: |
           KMS bootstrap did not complete successfully.
 
-          Check CVM logs via VMM:
-            curl http://127.0.0.1:{{ vmm_http_port }}/api/instances/kms/logs
+          Check CVM logs via VMM web interface:
+            http://127.0.0.1:{{ vmm_http_port }}/
 
           Verify configuration:
             cat {{ kms_deployment_dir }}/kms.toml
