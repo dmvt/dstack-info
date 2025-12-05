@@ -95,7 +95,7 @@ cd ~/dstack
 ### Build KMS in release mode
 
 ```bash
-cargo build --release -p kms
+cargo build --release -p dstack-kms
 ```
 
 This compilation will:
@@ -106,18 +106,18 @@ This compilation will:
 ### Verify the build
 
 ```bash
-ls -lh ~/dstack/target/release/kms
+ls -lh ~/dstack/target/release/dstack-kms
 ```
 
 Expected output (typically 20-30MB):
 ```
--rwxrwxr-x 1 ubuntu ubuntu 25M Nov 20 10:30 /home/ubuntu/dstack/target/release/kms
+-rwxrwxr-x 1 ubuntu ubuntu 25M Nov 20 10:30 /home/ubuntu/dstack/target/release/dstack-kms
 ```
 
 ### Test the binary
 
 ```bash
-~/dstack/target/release/kms --help
+~/dstack/target/release/dstack-kms --help
 ```
 
 This displays available command-line options.
@@ -129,7 +129,7 @@ Install the KMS binary to a system-wide location.
 ### Copy to /usr/local/bin
 
 ```bash
-sudo cp ~/dstack/target/release/kms /usr/local/bin/dstack-kms
+sudo cp ~/dstack/target/release/dstack-kms /usr/local/bin/dstack-kms
 sudo chmod 755 /usr/local/bin/dstack-kms
 ```
 
