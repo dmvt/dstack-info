@@ -2,8 +2,8 @@
 title: "KMS Service Management"
 description: "Manage and monitor the dstack KMS running inside a CVM"
 section: "KMS Deployment"
-stepNumber: 6
-totalSteps: 6
+stepNumber: 7
+totalSteps: 7
 lastUpdated: 2025-12-04
 prerequisites:
   - kms-bootstrap

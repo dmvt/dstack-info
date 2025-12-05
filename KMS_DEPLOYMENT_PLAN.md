@@ -206,20 +206,26 @@ ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-cvm.yml
 
 ## Execution Order
 
-1. [ ] Read dstack source code for key_provider implementation
-2. [ ] Verify current VMM config has key_provider enabled
-3. [ ] Update deploy-kms-cvm.yml with local_key_provider_enabled: true
-4. [ ] Test KMS CVM deployment manually
-5. [ ] Verify KMS bootstrap succeeds
-6. [ ] Update tutorials with key provider documentation
-7. [ ] Test full Ansible automation
-8. [ ] Commit and deploy changes
+1. [x] Read dstack source code for key_provider implementation
+2. [x] Verify current VMM config has key_provider enabled
+3. [x] Update deploy-kms-cvm.yml with local_key_provider_enabled: true
+4. [x] Test KMS CVM deployment manually (failed - needs PCCS)
+5. [x] Document PCCS/Intel API key requirement
+6. [x] Create intel-pccs-setup.md tutorial
+7. [x] Create setup-pccs-apikey.yml Ansible playbook
+8. [x] Update KMS tutorials with new prerequisite
+9. [ ] Obtain Intel API key and configure PCCS
+10. [ ] Re-test KMS CVM deployment
+11. [ ] Test full Ansible automation
+12. [ ] Commit and deploy changes
 
 ---
 
 ## BLOCKER: TDX Attestation Infrastructure Required
 
-**Status:** BLOCKING - Requires Intel PCCS API key configuration
+**Status:** RESOLVED - Tutorial and playbook created for Intel PCCS API key configuration
+
+**Resolution:** Created `intel-pccs-setup.md` tutorial and `setup-pccs-apikey.yml` Ansible playbook.
 
 ### Issue Discovered
 
@@ -280,31 +286,53 @@ If using local PCCS (`/opt/intel/sgx-dcap-pccs/config/default.json`):
 }
 ```
 
+### Alternatives Researched (2025-12-05)
+
+**Tested Approaches:**
+1. ✅ `local_key_provider_enabled: true` - Works but still needs attestation
+2. ✅ PCK ID Retrieval Tool - Generated platform info but needs API key to fetch certs
+3. ✅ Updated QCNL to use Intel API directly - Still requires authentication
+4. ❌ Local cache-only mode - Requires pre-populated cache (which needs API key to create)
+
+**Intel API Key Registration (FREE):**
+- Register at: https://api.portal.trustedservices.intel.com/
+- This is a FREE developer subscription, not a paid service
+- Once registered, add key to `/opt/intel/sgx-dcap-pccs/config/default.json`
+
+**Alternative: Ask Phala Team:**
+- They may have a community PCCS service
+- They may have a development mode for bootstrapping
+- Contact via GitHub Discussions: https://github.com/Dstack-TEE/dstack/discussions
+
 ### Next Steps
 
-1. **Option A:** Obtain Intel API key and configure PCCS
-   - Register at Intel Developer Zone
-   - Add API key to PCCS config
+1. **Option A (Recommended):** Get Intel API key (FREE registration)
+   - Register at Intel Developer Zone (https://api.portal.trustedservices.intel.com/)
+   - Add API key to `/opt/intel/sgx-dcap-pccs/config/default.json`
    - Restart PCCS and QGS services
    - Re-test CVM deployment
 
-2. **Option B:** Research if there's a way to skip attestation for initial bootstrap
-   - Check if dstack supports running without TDX quotes initially
-   - May need to consult Phala team
+2. **Option B:** Ask Phala team for alternative
+   - Check if they have community attestation infrastructure
+   - Ask if there's a development/testing mode
 
 3. **Option C:** Document PCCS/API key requirement in tutorials
    - Add prerequisite for Intel API key
    - Add tutorial for PCCS configuration
 
-### Impact on Tutorials
+### Impact on Tutorials - COMPLETED
 
-The following tutorials need to be updated:
+The following tutorials have been updated:
 
-| Tutorial | Required Updates |
-|----------|------------------|
-| `tdx-kernel-installation.md` | Add PCCS API key configuration step |
-| `attestation-verification.md` | Document PCK certificate requirements |
-| `kms-build-configuration.md` | Note that TDX attestation requires PCCS |
+| Tutorial | Updates Made |
+|----------|--------------|
+| `intel-pccs-setup.md` | **NEW** - Created comprehensive tutorial for Intel API key registration and PCCS configuration |
+| `kms-build-configuration.md` | Added `intel-pccs-setup` as prerequisite, renumbered to step 4 of 7 |
+| `kms-cvm-deployment.md` | Added `intel-pccs-setup` as prerequisite, renumbered to step 5 of 7 |
+| `kms-bootstrap.md` | Renumbered to step 6 of 7 |
+| `kms-service-setup.md` | Renumbered to step 7 of 7 |
+
+New Ansible playbook: `setup-pccs-apikey.yml` - Configures PCCS with Intel API key
 
 ---
 
@@ -321,7 +349,14 @@ The following tutorials need to be updated:
 
 ## Related Files
 
-- `/Users/lsdan/dstack/dstack-info/ansible/playbooks/deploy-kms-cvm.yml`
-- `/Users/lsdan/dstack/dstack-info/ansible/playbooks/setup-vmm-config.yml`
-- `/Users/lsdan/dstack/dstack-info/src/content/tutorials/kms-bootstrap.md`
-- `/Users/lsdan/dstack/dstack-info/src/content/tutorials/vmm-configuration.md`
+### Ansible Playbooks
+- `ansible/playbooks/deploy-kms-cvm.yml` - KMS CVM deployment (updated with local_key_provider_enabled)
+- `ansible/playbooks/setup-vmm-config.yml` - VMM configuration (key_provider enabled)
+- `ansible/playbooks/setup-pccs-apikey.yml` - **NEW** PCCS API key configuration
+
+### Tutorials
+- `src/content/tutorials/intel-pccs-setup.md` - **NEW** Intel API key and PCCS setup (step 3 of 7)
+- `src/content/tutorials/kms-build-configuration.md` - KMS build (step 4 of 7)
+- `src/content/tutorials/kms-cvm-deployment.md` - KMS CVM deployment (step 5 of 7)
+- `src/content/tutorials/kms-bootstrap.md` - KMS bootstrap verification (step 6 of 7)
+- `src/content/tutorials/kms-service-setup.md` - KMS service management (step 7 of 7)

@@ -2,11 +2,12 @@
 title: "KMS Build & Configuration"
 description: "Build and configure the dstack Key Management Service"
 section: "KMS Deployment"
-stepNumber: 3
-totalSteps: 6
+stepNumber: 4
+totalSteps: 7
 lastUpdated: 2025-12-04
 prerequisites:
   - contract-deployment
+  - intel-pccs-setup
 tags:
   - dstack
   - kms
