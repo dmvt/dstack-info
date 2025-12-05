@@ -59,11 +59,27 @@ The playbook will:
 
 ### Step 2: Verify Bootstrap
 
+**Quick check:**
+
 ```bash
 ls -la /etc/kms/certs/
 ```
 
 You should see 7 core files: root-ca.crt, root-ca.key, rpc.crt, rpc.key, tmp-ca.crt, tmp-ca.key, and root-k256.key. If `quote_enabled=true`, you'll also see bootstrap-info.json (8 files total).
+
+**Comprehensive verification with Ansible:**
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-bootstrap.yml
+```
+
+This verifies:
+- All certificate files exist
+- Root CA is valid and self-signed
+- RPC certificate domain matches
+- Certificate chain is valid
+- K256 key is correct size (32 bytes)
+- Private keys have restrictive permissions (0600)
 
 ---
 
