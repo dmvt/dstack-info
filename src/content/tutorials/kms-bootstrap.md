@@ -94,7 +94,7 @@ Check that the KMS CVM is active and healthy.
 ```bash
 # Via VMM web interface at http://localhost:9080
 # Or via API:
-curl -s http://127.0.0.1:9080/api/instances | jq '.vms[] | select(.name=="kms") | {name, status}'
+curl -s http://127.0.0.1:9080/api/instances | jq '.instances[] | select(.name=="kms") | {name, status}'
 ```
 
 You should see the KMS instance with status "running".
@@ -262,7 +262,7 @@ Check if KMS CVM is running:
 
 ```bash
 # Check via VMM API
-curl -s http://127.0.0.1:9080/api/instances | jq '.vms[] | select(.name=="kms")'
+curl -s http://127.0.0.1:9080/api/instances | jq '.instances[] | select(.name=="kms")'
 
 # View CVM logs
 curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"

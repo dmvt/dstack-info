@@ -222,7 +222,7 @@ Watch the CVM startup and bootstrap process:
 
 ```bash
 # List all instances
-curl -s http://127.0.0.1:9080/api/instances | jq '.vms[] | {name, status}'
+curl -s http://127.0.0.1:9080/api/instances | jq '.instances[] | {name, status}'
 
 # View KMS logs
 curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"

@@ -85,7 +85,7 @@ Open http://localhost:9080 to see the VM list with status, ports, and actions.
 
 #### Via API
 ```bash
-curl -s http://127.0.0.1:9080/api/instances | jq '.vms[] | {name, status, uptime}'
+curl -s http://127.0.0.1:9080/api/instances | jq '.instances[] | {name, status, uptime}'
 ```
 
 Expected output:
@@ -373,7 +373,7 @@ If KMS port 9100 doesn't respond:
 
 ```bash
 # Check if CVM is running
-curl -s http://127.0.0.1:9080/api/instances | jq '.vms[] | {name, status}'
+curl -s http://127.0.0.1:9080/api/instances | jq '.instances[] | {name, status}'
 
 # Check processes inside CVM
 # Via CVM logs - internal commands not available via API
