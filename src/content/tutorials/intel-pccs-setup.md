@@ -80,12 +80,13 @@ Intel provides free API keys for accessing their attestation services. This is n
 
 1. Go to [Intel Trusted Services API Portal](https://api.portal.trustedservices.intel.com/)
 
-2. Click **Sign Up** or **Sign In** with your Intel account
+2. Click **Sign In**
 
-3. If creating a new account:
-   - Use a valid email address
-   - Complete the registration form
-   - Verify your email
+3. On the "Sign In or Create an Account" page, enter your email address:
+   - If you have an existing Intel account, you'll be prompted to sign in
+   - If you're new, you'll be guided through account creation
+
+4. Complete the sign-in or registration process and verify your email if required
 
 ### Subscribe to the Intel SGX/TDX Attestation API
 
