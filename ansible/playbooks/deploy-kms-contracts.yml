@@ -2,24 +2,17 @@
 # Ansible playbook to deploy KMS smart contracts to Sepolia testnet
 # Usage: ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-contracts.yml
 #
-# Required variables (via vault or -e flags):
-#   wallet_private_key  - Ethereum wallet private key (without 0x prefix)
-#   alchemy_api_key     - Alchemy API key for Sepolia RPC
+# Prerequisites:
+#   Wallet credentials stored in ~/.dstack/secrets/ (from blockchain-setup tutorial):
+#   - sepolia-private-key  - Ethereum wallet private key
+#   - sepolia-address      - Ethereum wallet address
 #
 # Optional variables:
 #   etherscan_api_key   - Etherscan API key for contract verification
 #   deploy_app_impl     - Deploy DstackApp implementation (default: true)
 #
-# Examples:
-#   # Using Ansible Vault (recommended for production)
-#   ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-contracts.yml \
-#     --ask-vault-pass
-#
-#   # Using command-line variables (for testing only)
-#   ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-contracts.yml \
-#     -e "wallet_private_key=your_key" -e "alchemy_api_key=your_api_key"
-#
 # This playbook:
+# - Reads wallet credentials from ~/.dstack/secrets/
 # - Verifies contracts are compiled
 # - Checks wallet balance
 # - Deploys DstackKms and DstackApp contracts
@@ -33,22 +26,50 @@
     # Use the connecting user's home directory
     user_home: "/home/{{ ansible_user }}"
     contract_dir: "{{ user_home }}/dstack/kms/auth-eth"
+    secrets_dir: "{{ user_home }}/.dstack/secrets"
     deploy_app_impl: true
-    # wallet_private_key and alchemy_api_key must be provided
+    # Use public demo RPC endpoint for Sepolia testnet
+    rpc_url: "https://eth-sepolia.g.alchemy.com/v2/demo"
 
   tasks:
-    - name: Check required variables are set
+    - name: Check secrets directory exists
+      ansible.builtin.stat:
+        path: "{{ secrets_dir }}"
+      register: secrets_dir_check
+
+    - name: Fail if secrets directory not found
       ansible.builtin.fail:
         msg: |
-          Required variable '{{ item }}' is not set.
+          Secrets directory not found at {{ secrets_dir }}
 
-          Use Ansible Vault or -e flag to provide wallet credentials:
-            ansible-playbook playbooks/deploy-kms-contracts.yml \
-              -e "wallet_private_key=..." -e "alchemy_api_key=..."
-      when: vars[item] is not defined or vars[item] | length == 0
-      loop:
-        - wallet_private_key
-        - alchemy_api_key
+          Complete the Blockchain Setup tutorial first:
+            https://dstack.info/tutorial/blockchain-setup
+      when: not secrets_dir_check.stat.exists
+
+    - name: Check private key file exists
+      ansible.builtin.stat:
+        path: "{{ secrets_dir }}/sepolia-private-key"
+      register: private_key_check
+
+    - name: Fail if private key not found
+      ansible.builtin.fail:
+        msg: |
+          Private key not found at {{ secrets_dir }}/sepolia-private-key
+
+          Complete the Blockchain Setup tutorial first:
+            https://dstack.info/tutorial/blockchain-setup
+      when: not private_key_check.stat.exists
+
+    - name: Read private key from secrets file
+      ansible.builtin.slurp:
+        src: "{{ secrets_dir }}/sepolia-private-key"
+      register: private_key_file
+      no_log: true
+
+    - name: Set wallet private key
+      ansible.builtin.set_fact:
+        wallet_private_key: "{{ private_key_file.content | b64decode | trim }}"
+      no_log: true
 
     - name: Check contract directory exists
       ansible.builtin.stat:
@@ -82,24 +103,21 @@
     - name: Check wallet balance
       ansible.builtin.shell: |
         cd {{ contract_dir }}
-        export PRIVATE_KEY="{{ wallet_private_key }}"
-        export ALCHEMY_API_KEY="{{ alchemy_api_key }}"
 
-        # Get balance using a simple script
-        npx hardhat run --network sepolia - << 'EOF'
-        async function main() {
-          const [signer] = await hre.ethers.getSigners();
-          const address = await signer.getAddress();
-          const balance = await hre.ethers.provider.getBalance(address);
-          const ethBalance = hre.ethers.formatEther(balance);
-          console.log(JSON.stringify({
-            address: address,
-            balance: ethBalance,
-            sufficient: parseFloat(ethBalance) >= 0.05
-          }));
-        }
-        main().catch(console.error);
-        EOF
+        # Get wallet address from private key and check balance
+        WALLET_ADDRESS=$(cast wallet address --private-key "{{ wallet_private_key }}" 2>/dev/null || echo "")
+        if [ -z "$WALLET_ADDRESS" ]; then
+          echo '{"error": "Invalid private key"}'
+          exit 1
+        fi
+
+        BALANCE_WEI=$(cast balance "$WALLET_ADDRESS" --rpc-url "{{ rpc_url }}" 2>/dev/null || echo "0")
+        BALANCE_ETH=$(echo "scale=6; $BALANCE_WEI / 1000000000000000000" | bc 2>/dev/null || echo "0")
+
+        # Check if balance is sufficient (0.05 ETH minimum)
+        SUFFICIENT=$(echo "$BALANCE_ETH >= 0.05" | bc 2>/dev/null || echo "0")
+
+        echo "{\"address\": \"$WALLET_ADDRESS\", \"balance\": \"$BALANCE_ETH\", \"sufficient\": $SUFFICIENT}"
       register: balance_check
       changed_when: false
       no_log: true  # Hide private key in logs
@@ -129,12 +147,12 @@
       ansible.builtin.shell: |
         cd {{ contract_dir }}
         export PRIVATE_KEY="{{ wallet_private_key }}"
-        export ALCHEMY_API_KEY="{{ alchemy_api_key }}"
         {% if etherscan_api_key is defined %}
         export ETHERSCAN_API_KEY="{{ etherscan_api_key }}"
         {% endif %}
 
         # Run deployment with automatic confirmation
+        # Note: hardhat.config.ts should use the PRIVATE_KEY env var and demo RPC
         echo "y" | npx hardhat kms:deploy {% if deploy_app_impl %}--with-app-impl {% endif %}--network sepolia
       register: deploy_result
       no_log: true  # Hide private key in logs
@@ -175,13 +193,12 @@
 
     - name: Verify contract exists on chain
       ansible.builtin.shell: |
-        curl -s -X POST https://eth-sepolia.g.alchemy.com/v2/{{ alchemy_api_key }} \
+        curl -s -X POST {{ rpc_url }} \
           -H "Content-Type: application/json" \
           -d '{"jsonrpc":"2.0","method":"eth_getCode","params":["{{ kms_contract_address }}","latest"],"id":1}' | \
           jq -r '.result'
       register: contract_code
       changed_when: false
-      no_log: true
 
     - name: Fail if contract not found on chain
       ansible.builtin.fail:
