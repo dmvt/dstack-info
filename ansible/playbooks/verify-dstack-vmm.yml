@@ -65,9 +65,9 @@
 
     - name: Warn if built binary not found
       ansible.builtin.debug:
-        msg: |
-          WARNING: Built binary not found at {{ dstack_repo_path }}/target/release/dstack-vmm
-          This is OK if you only installed via the build playbook.
+        msg:
+          - "WARNING: Built binary not found at {{ dstack_repo_path }}/target/release/dstack-vmm"
+          - "This is OK if you only installed via the build playbook."
       when: not built_binary_check.stat.exists
 
     - name: Get built binary info

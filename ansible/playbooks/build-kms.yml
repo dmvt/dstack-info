@@ -282,14 +282,14 @@
 
     - name: Warn if contract address not found
       ansible.builtin.debug:
-        msg: |
-          WARNING: KMS contract address not found.
-
-          Either:
-          1. Run contract deployment first:
-             ansible-playbook playbooks/deploy-kms-contracts.yml
-          2. Or pass the address explicitly:
-             -e "kms_contract_address=0x..."
+        msg:
+          - "WARNING: KMS contract address not found."
+          - ""
+          - "Either:"
+          - "1. Run contract deployment first:"
+          - "   ansible-playbook playbooks/deploy-kms-contracts.yml"
+          - "2. Or pass the address explicitly:"
+          - "   -e \"kms_contract_address=0x...\""
       when: kms_contract_address is not defined
 
     - name: Create auth-eth environment file

@@ -88,17 +88,9 @@
 
     - name: Display bootstrap status
       ansible.builtin.debug:
-        msg: |
-          {% if bootstrap_check.stat.exists %}
-          ⚠️  KMS appears to be already bootstrapped (root-ca.key exists)
-          {% if force_rebootstrap | bool %}
-          force_rebootstrap=true - Will backup and re-bootstrap
-          {% else %}
-          Set force_rebootstrap=true to re-bootstrap (will backup existing keys)
-          {% endif %}
-          {% else %}
-          KMS not yet bootstrapped - proceeding with bootstrap
-          {% endif %}
+        msg:
+          - "{% if bootstrap_check.stat.exists %}⚠️  KMS appears to be already bootstrapped (root-ca.key exists){% else %}KMS not yet bootstrapped - proceeding with bootstrap{% endif %}"
+          - "{% if bootstrap_check.stat.exists and (force_rebootstrap | bool) %}force_rebootstrap=true - Will backup and re-bootstrap{% elif bootstrap_check.stat.exists %}Set force_rebootstrap=true to re-bootstrap (will backup existing keys){% endif %}"
 
     - name: Fail if already bootstrapped and not forcing
       ansible.builtin.fail:

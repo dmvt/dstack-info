@@ -43,11 +43,11 @@
 
     - name: Warn if service not enabled
       ansible.builtin.debug:
-        msg: |
-          WARNING: VMM service is not enabled for boot.
-
-          Enable with:
-            sudo systemctl enable dstack-vmm
+        msg:
+          - "WARNING: VMM service is not enabled for boot."
+          - ""
+          - "Enable with:"
+          - "  sudo systemctl enable dstack-vmm"
       when: service_enabled.rc != 0
 
     - name: Check if service is running
@@ -80,16 +80,16 @@
 
     - name: Warn if socket not found
       ansible.builtin.debug:
-        msg: |
-          WARNING: VMM socket not found at {{ dstack_run_dir }}/vmm.sock
-
-          This may indicate:
-            - Service just started (wait a moment)
-            - Configuration error
-            - Permission issue
-
-          Check logs:
-            sudo journalctl -u dstack-vmm -n 50
+        msg:
+          - "WARNING: VMM socket not found at {{ dstack_run_dir }}/vmm.sock"
+          - ""
+          - "This may indicate:"
+          - "  - Service just started (wait a moment)"
+          - "  - Configuration error"
+          - "  - Permission issue"
+          - ""
+          - "Check logs:"
+          - "  sudo journalctl -u dstack-vmm -n 50"
       when: not socket_check.stat.exists
 
     - name: Check for recent errors in logs
@@ -101,12 +101,12 @@
 
     - name: Warn about recent errors
       ansible.builtin.debug:
-        msg: |
-          WARNING: Recent errors found in VMM logs:
-          {{ recent_errors.stdout }}
-
-          View full logs:
-            sudo journalctl -u dstack-vmm -n 100
+        msg:
+          - "WARNING: Recent errors found in VMM logs:"
+          - "{{ recent_errors.stdout }}"
+          - ""
+          - "View full logs:"
+          - "  sudo journalctl -u dstack-vmm -n 100"
       when: recent_errors.stdout != ""
 
     - name: Get service uptime
