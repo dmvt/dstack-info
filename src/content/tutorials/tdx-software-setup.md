@@ -54,7 +54,6 @@ ssh ubuntu@YOUR_SERVER_IP
 Canonical provides official scripts and tools for TDX setup in their GitHub repository.
 
 ```bash
-cd ~
 git clone -b main https://github.com/canonical/tdx.git
 cd tdx
 ```
@@ -115,15 +114,18 @@ Attestation provides cryptographic proof that:
 -   🛡️ **Industry standard** - Expected for enterprise confidential computing
 
 **Enable attestation now:**
-Edit the configuration file before running the setup:
 
 ```bash
-nano setup-tdx-config
-# Change: TDX_SETUP_ATTESTATION=0
-# To:     TDX_SETUP_ATTESTATION=1
+sed -i 's/TDX_SETUP_ATTESTATION=0/TDX_SETUP_ATTESTATION=1/' setup-tdx-config
 ```
 
-Save the file (Ctrl+O, Enter, Ctrl+X).
+Verify the change:
+
+```bash
+grep TDX_SETUP_ATTESTATION setup-tdx-config
+```
+
+Expected output: `TDX_SETUP_ATTESTATION=1`
 
 **Note:** You can skip attestation setup if you only want to test basic TDX functionality. However, for dstack deployments, attestation is required to verify confidential computing guarantees.
 
