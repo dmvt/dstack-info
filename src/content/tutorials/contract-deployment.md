@@ -69,7 +69,6 @@ The playbook will:
 ### Step 3: Run the Deployment Playbook
 
 ```bash
-cd ~/dstack-info/ansible
 ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-contracts.yml
 ```
 
