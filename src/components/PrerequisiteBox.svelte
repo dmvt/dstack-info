@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { loadProgress } from '../utils/progress';
+  import { loadProgress, markTutorialComplete } from '../utils/progress';
   import {
     buildTutorialMap,
     collectAllIncompletePrerequisites,
@@ -32,16 +32,44 @@
     incompletePrereqs = collectAllIncompletePrerequisites(prerequisites, tutorialMap, progress);
     isLoading = false;
   }
+
+  function markAllPrerequisitesComplete() {
+    if (!incompletePrereqs) return;
+
+    // Mark primary prerequisite complete
+    markTutorialComplete(incompletePrereqs.primary.slug);
+
+    // Mark all other prerequisites complete
+    for (const other of incompletePrereqs.others) {
+      markTutorialComplete(other.slug);
+    }
+
+    // Dispatch event to notify other components
+    window.dispatchEvent(new CustomEvent('tutorialProgressUpdate'));
+
+    // Update display
+    updatePrerequisiteDisplay();
+  }
 </script>
 
 {#if isLoading}
   <!-- Show nothing while loading to prevent flash -->
 {:else if incompletePrereqs}
   <div class="mb-8 p-6 bg-bg-card border border-border-default rounded-lg">
-    <h2 class="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
-      <i class="fa-solid fa-list-check text-lime-green"></i>
-      Prerequisites
-    </h2>
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-bold text-text-primary flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-lime-green"></i>
+        Prerequisites
+      </h2>
+      <button
+        on:click={markAllPrerequisitesComplete}
+        class="text-xs px-3 py-1.5 rounded border border-text-tertiary text-text-tertiary hover:border-lime-green hover:text-lime-green transition-colors duration-200 flex items-center gap-1.5"
+        title="Mark all prerequisites as complete"
+      >
+        <i class="fa-solid fa-check-double"></i>
+        Skip all
+      </button>
+    </div>
     <p class="text-text-secondary mb-4">
       Complete {incompletePrereqs.others.length > 0 ? 'these tutorials' : 'this tutorial'} before starting this one:
     </p>
