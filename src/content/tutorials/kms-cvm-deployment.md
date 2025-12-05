@@ -47,31 +47,15 @@ Before starting, ensure you have:
 
 For most users, the recommended approach is to use the Ansible playbook.
 
-### Step 1: Set Your KMS Domain
-
-Before deploying, configure the KMS domain in the deployment config:
-
-```bash
-# Edit the kms.toml in deployment directory
-nano ~/kms-deployment/kms.toml
-
-# Find and update this line:
-auto_bootstrap_domain = "kms.yourdomain.com"
-```
-
-Or use sed:
-
-```bash
-sed -i 's/auto_bootstrap_domain = ""/auto_bootstrap_domain = "kms.yourdomain.com"/' ~/kms-deployment/kms.toml
-```
-
-### Step 2: Run the Deployment Playbook
+### Step 1: Run the Deployment Playbook
 
 ```bash
 cd ~/dstack-info/ansible
 ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-cvm.yml \
   -e "kms_domain=kms.yourdomain.com"
 ```
+
+Replace `kms.yourdomain.com` with your actual KMS domain.
 
 The playbook will:
 1. **Verify prerequisites** - Docker image, config files, VMM running
@@ -81,7 +65,7 @@ The playbook will:
 5. **Verify bootstrap** - Check certificate files were generated
 6. **Retrieve TDX quote** - Confirm attestation is working
 
-### Step 3: Verify Deployment
+### Step 2: Verify Deployment
 
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-cvm.yml
