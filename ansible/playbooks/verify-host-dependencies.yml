@@ -1,0 +1,97 @@
+---
+# Verify Host System Dependencies
+# Usage: ansible-playbook playbooks/verify-host-dependencies.yml -i inventory/hosts.yml
+#
+# This playbook verifies that all required build dependencies are installed.
+
+- name: Verify Host System Dependencies
+  hosts: dstack_servers
+  become: yes
+
+  vars:
+    required_packages:
+      - build-essential
+      - chrpath
+      - diffstat
+      - lz4
+      - wireguard-tools
+      - xorriso
+      - git
+      - curl
+      - pkg-config
+      - libssl-dev
+
+  tasks:
+    - name: Check gcc is installed
+      ansible.builtin.command: gcc --version
+      register: gcc_check
+      changed_when: false
+      failed_when: gcc_check.rc != 0
+
+    - name: Check make is installed
+      ansible.builtin.command: make --version
+      register: make_check
+      changed_when: false
+      failed_when: make_check.rc != 0
+
+    - name: Check git is installed
+      ansible.builtin.command: git --version
+      register: git_check
+      changed_when: false
+      failed_when: git_check.rc != 0
+
+    - name: Check curl is installed
+      ansible.builtin.command: curl --version
+      register: curl_check
+      changed_when: false
+      failed_when: curl_check.rc != 0
+
+    - name: Check xorriso is installed
+      ansible.builtin.command: xorriso --version
+      register: xorriso_check
+      changed_when: false
+      failed_when: xorriso_check.rc != 0
+
+    - name: Check lz4 is installed
+      ansible.builtin.command: lz4 --version
+      register: lz4_check
+      changed_when: false
+      failed_when: false  # lz4 --version returns non-zero
+
+    - name: Check wireguard is installed
+      ansible.builtin.command: wg --version
+      register: wg_check
+      changed_when: false
+      failed_when: false  # wg --version returns non-zero even on success
+
+    - name: Check pkg-config is installed
+      ansible.builtin.command: pkg-config --version
+      register: pkgconfig_check
+      changed_when: false
+      failed_when: pkgconfig_check.rc != 0
+
+    - name: Check libssl-dev is installed
+      ansible.builtin.shell: dpkg -l | grep libssl-dev
+      register: libssl_check
+      changed_when: false
+      failed_when: libssl_check.rc != 0
+
+    - name: Display verification results
+      ansible.builtin.debug:
+        msg:
+          - "=============================================="
+          - "HOST DEPENDENCIES VERIFIED"
+          - "=============================================="
+          - ""
+          - "✓ GCC: {{ gcc_check.stdout_lines[0] }}"
+          - "✓ Make: {{ make_check.stdout_lines[0] }}"
+          - "✓ Git: {{ git_check.stdout_lines[0] }}"
+          - "✓ Curl: {{ curl_check.stdout_lines[0] | regex_search('curl [0-9.]+') }}"
+          - "✓ xorriso: installed"
+          - "✓ lz4: installed"
+          - "✓ wireguard-tools: installed"
+          - "✓ pkg-config: {{ pkgconfig_check.stdout }}"
+          - "✓ libssl-dev: installed"
+          - ""
+          - "All build dependencies are installed."
+          - "=============================================="
