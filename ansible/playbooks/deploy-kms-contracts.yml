@@ -191,8 +191,8 @@
         BALANCE_WEI=$(printf "%d" "$BALANCE_HEX" 2>/dev/null || echo "0")
         BALANCE_ETH=$(echo "scale=6; $BALANCE_WEI / 1000000000000000000" | bc 2>/dev/null || echo "0")
 
-        # Check if balance is sufficient (0.05 ETH minimum)
-        SUFFICIENT=$(echo "$BALANCE_ETH >= 0.05" | bc 2>/dev/null || echo "0")
+        # Check if balance is sufficient (0.005 ETH minimum, actual cost ~0.002 ETH)
+        SUFFICIENT=$(echo "$BALANCE_ETH >= 0.005" | bc 2>/dev/null || echo "0")
 
         echo "{\"balance\": \"$BALANCE_ETH\", \"sufficient\": $SUFFICIENT}"
       register: balance_check
@@ -212,7 +212,7 @@
       ansible.builtin.debug:
         msg: |
           WARNING: Wallet balance ({{ wallet_info.balance }} ETH) may be insufficient.
-          Deployment typically costs ~0.08 ETH on Sepolia.
+          Deployment typically costs ~0.002 ETH on Sepolia.
 
           Get testnet ETH from:
           - https://sepoliafaucet.com/

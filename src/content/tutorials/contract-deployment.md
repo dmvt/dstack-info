@@ -30,7 +30,7 @@ Before starting, ensure you have:
 - Completed [Smart Contract Compilation](/tutorial/smart-contract-compilation)
 - Completed [Blockchain Setup](/tutorial/blockchain-setup) with:
   - Ethereum wallet with private key stored locally
-  - Sepolia testnet ETH (at least 0.1 ETH)
+  - Sepolia testnet ETH (at least 0.01 ETH recommended)
 
 ## Quick Start: Deploy with Ansible
 
@@ -137,7 +137,7 @@ curl -s -X POST "https://eth-sepolia.g.alchemy.com/v2/demo" \
   jq -r '.result' | xargs printf "Balance: %d wei\n"
 ```
 
-You need at least 0.08 ETH (~80000000000000000 wei) for deployment.
+You need at least 0.01 ETH for deployment (actual cost ~0.002 ETH on Sepolia).
 
 If balance is insufficient, get Sepolia ETH from:
 - [PoW Faucet](https://sepolia-faucet.pk910.de/) (recommended - no requirements)
@@ -303,15 +303,17 @@ Each deployment creates a new contract at a new address.
 
 ## Cost Estimation
 
-Typical deployment costs on Sepolia:
+Typical deployment gas usage:
 
-| Operation | Gas | Cost (@ 20 gwei) |
-|-----------|-----|------------------|
-| DstackApp impl | ~1,500,000 | ~0.03 ETH |
-| DstackKms proxy | ~2,500,000 | ~0.05 ETH |
-| **Total** | ~4,000,000 | ~0.08 ETH |
+| Operation | Gas Used |
+|-----------|----------|
+| DstackApp implementation | ~1,100,000 |
+| DstackKms proxy | ~210,000 |
+| **Total** | ~1,300,000 |
 
-Note: Testnet gas is free (from faucets), mainnet costs real ETH.
+**Sepolia Testnet:** Gas prices are typically 1-2 gwei, so total deployment costs ~0.002 ETH. Testnet ETH is free from faucets.
+
+**Mainnet:** At 20 gwei, deployment would cost ~0.026 ETH. At 50 gwei, ~0.065 ETH. Check current gas prices before deploying.
 
 ## Next Steps
 
