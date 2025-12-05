@@ -7,8 +7,6 @@ totalSteps: 5
 lastUpdated: 2025-12-04
 prerequisites:
   - tdx-bios-configuration
-  - dns-configuration
-  - blockchain-setup
 tags:
   - host-setup
   - dependencies
