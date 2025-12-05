@@ -52,10 +52,16 @@ The playbook will:
 ### Step 2: Verify Build
 
 ```bash
-dstack-kms --help
-cat /etc/kms/kms.toml
-cat /etc/kms/auth-eth.env
+ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-build.yml
 ```
+
+The verification playbook checks:
+- KMS binary is installed and shows version
+- Configuration files exist and are valid TOML
+- Auth-eth service is built
+- Contract address is configured
+- RPC connectivity works
+- Contract exists on chain
 
 ---
 

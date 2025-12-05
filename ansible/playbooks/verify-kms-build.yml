@@ -1,0 +1,145 @@
+---
+# Ansible playbook to verify KMS build and configuration
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-build.yml
+#
+# This playbook verifies:
+# - KMS binary is installed and executable
+# - Configuration files exist and are valid
+# - Auth-eth service is built
+# - Contract address is configured
+
+- name: Verify KMS Build and Configuration
+  hosts: dstack_servers
+  become: false
+  vars:
+    user_home: "/home/{{ ansible_user }}"
+    dstack_repo_path: "{{ user_home }}/dstack"
+    kms_install_path: "/usr/local/bin/dstack-kms"
+    kms_config_dir: "/etc/kms"
+    kms_certs_dir: "/etc/kms/certs"
+
+  tasks:
+    - name: Check KMS binary exists
+      ansible.builtin.stat:
+        path: "{{ kms_install_path }}"
+      register: kms_binary
+
+    - name: Get KMS version
+      ansible.builtin.command:
+        cmd: "{{ kms_install_path }} --version"
+      register: kms_version
+      changed_when: false
+      when: kms_binary.stat.exists
+
+    - name: Check KMS configuration file exists
+      ansible.builtin.stat:
+        path: "{{ kms_config_dir }}/kms.toml"
+      register: kms_config
+
+    - name: Validate KMS configuration TOML
+      ansible.builtin.shell: |
+        python3 -c "import tomllib; tomllib.load(open('{{ kms_config_dir }}/kms.toml', 'rb'))"
+      register: toml_check
+      changed_when: false
+      failed_when: false
+      when: kms_config.stat.exists
+
+    - name: Check auth-eth environment file exists
+      ansible.builtin.stat:
+        path: "{{ kms_config_dir }}/auth-eth.env"
+      register: auth_eth_env
+
+    - name: Read auth-eth environment
+      ansible.builtin.slurp:
+        src: "{{ kms_config_dir }}/auth-eth.env"
+      register: auth_eth_content
+      when: auth_eth_env.stat.exists
+
+    - name: Parse auth-eth configuration
+      ansible.builtin.set_fact:
+        eth_rpc_url: "{{ auth_eth_content.content | b64decode | regex_search('ETH_RPC_URL=(.+)', '\\1') | first | default('NOT SET') }}"
+        kms_contract_addr: "{{ auth_eth_content.content | b64decode | regex_search('KMS_CONTRACT_ADDR=(.+)', '\\1') | first | default('NOT SET') }}"
+      when: auth_eth_env.stat.exists
+
+    - name: Check auth-eth build exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}/kms/auth-eth/dist/src/main.js"
+      register: auth_eth_build
+
+    - name: Check certificates directory exists
+      ansible.builtin.stat:
+        path: "{{ kms_certs_dir }}"
+      register: certs_dir
+
+    - name: Test RPC connectivity
+      ansible.builtin.shell: |
+        curl -s -X POST "{{ eth_rpc_url }}" \
+          -H "Content-Type: application/json" \
+          -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' | \
+          jq -r '.result'
+      register: rpc_test
+      changed_when: false
+      failed_when: false
+      when:
+        - auth_eth_env.stat.exists
+        - eth_rpc_url != 'NOT SET'
+
+    - name: Verify contract exists on chain
+      ansible.builtin.shell: |
+        curl -s -X POST "{{ eth_rpc_url }}" \
+          -H "Content-Type: application/json" \
+          -d '{"jsonrpc":"2.0","method":"eth_getCode","params":["{{ kms_contract_addr }}","latest"],"id":1}' | \
+          jq -r '.result'
+      register: contract_check
+      changed_when: false
+      failed_when: false
+      when:
+        - auth_eth_env.stat.exists
+        - kms_contract_addr != 'NOT SET'
+        - kms_contract_addr != 'YOUR_KMS_CONTRACT_ADDRESS'
+
+    - name: Display verification summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "KMS Build Verification"
+          - "============================================"
+          - ""
+          - "KMS Binary:"
+          - "  Path: {{ kms_install_path }}"
+          - "  Status: {{ '✓ Installed' if kms_binary.stat.exists else '✗ NOT FOUND' }}"
+          - "  Version: {{ kms_version.stdout | default('N/A') }}"
+          - ""
+          - "Configuration:"
+          - "  kms.toml: {{ '✓ Found' if kms_config.stat.exists else '✗ NOT FOUND' }}"
+          - "  TOML Valid: {{ '✓ Valid' if (toml_check.rc | default(1)) == 0 else '✗ Invalid or missing' }}"
+          - "  Certs Dir: {{ '✓ Found' if certs_dir.stat.exists else '✗ NOT FOUND' }}"
+          - ""
+          - "Auth-ETH:"
+          - "  Environment: {{ '✓ Found' if auth_eth_env.stat.exists else '✗ NOT FOUND' }}"
+          - "  Build: {{ '✓ Built' if auth_eth_build.stat.exists else '✗ NOT BUILT' }}"
+          - "  RPC URL: {{ eth_rpc_url | default('NOT SET') }}"
+          - "  Contract: {{ kms_contract_addr | default('NOT SET') }}"
+          - ""
+          - "Connectivity:"
+          - "  RPC: {{ '✓ Connected (block ' + rpc_test.stdout + ')' if (rpc_test.stdout | default('')) | length > 2 else '✗ Failed' }}"
+          - "  Contract: {{ '✓ Found on chain' if (contract_check.stdout | default('0x')) != '0x' and (contract_check.stdout | default('')) | length > 10 else '✗ Not found or not checked' }}"
+
+    - name: Fail if critical components missing
+      ansible.builtin.fail:
+        msg: |
+          KMS build verification failed.
+
+          Missing components:
+          {% if not kms_binary.stat.exists %}- KMS binary not installed{% endif %}
+          {% if not kms_config.stat.exists %}- kms.toml configuration missing{% endif %}
+          {% if not auth_eth_env.stat.exists %}- auth-eth.env configuration missing{% endif %}
+          {% if not auth_eth_build.stat.exists %}- auth-eth service not built{% endif %}
+
+          Run the build playbook:
+            ansible-playbook playbooks/build-kms.yml
+      when: >
+        not kms_binary.stat.exists or
+        not kms_config.stat.exists or
+        not auth_eth_env.stat.exists or
+        not auth_eth_build.stat.exists
