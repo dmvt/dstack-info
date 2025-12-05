@@ -43,16 +43,15 @@
     kms_certs_dir: "/etc/kms/certs"
     kms_run_dir: "/var/run/kms"
     kms_log_dir: "/var/log/kms"
-  environment:
-    RUSTUP_HOME: "{{ user_home }}/.rustup"
-    CARGO_HOME: "{{ user_home }}/.cargo"
-
     # Default configuration values
     kms_workers: 8
     kms_log_level: "info"
     kms_rpc_port: 9100
     auth_eth_port: 9200
     pccs_url: "https://api.trustedservices.intel.com/tdx/certification/v4"
+  environment:
+    RUSTUP_HOME: "{{ user_home }}/.rustup"
+    CARGO_HOME: "{{ user_home }}/.cargo"
 
   tasks:
     - name: Check dstack repository exists
