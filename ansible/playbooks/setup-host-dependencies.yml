@@ -94,16 +94,16 @@
 
     - name: Display installation summary
       debug:
-        msg: |
-          Host Dependencies Installed Successfully!
-
-          GCC: {{ gcc_version.stdout_lines[0] }}
-          Make: {{ make_version.stdout_lines[0] }}
-          Git: {{ git_version.stdout_lines[0] }}
-          Curl: {{ curl_version.stdout_lines[0] | regex_search('curl [0-9.]+') }}
-
-          All build dependencies are installed and ready.
-          Proceed to: Install Rust Toolchain
+        msg:
+          - "Host Dependencies Installed Successfully!"
+          - ""
+          - "GCC: {{ gcc_version.stdout_lines[0] }}"
+          - "Make: {{ make_version.stdout_lines[0] }}"
+          - "Git: {{ git_version.stdout_lines[0] }}"
+          - "Curl: {{ curl_version.stdout_lines[0] | regex_search('curl [0-9.]+') }}"
+          - ""
+          - "All build dependencies are installed and ready."
+          - "Proceed to: Install Rust Toolchain"
       tags:
         - verify
         - summary
