@@ -2,8 +2,8 @@
 title: "KMS Bootstrap Verification"
 description: "Verify KMS initialization and TDX attestation in the CVM"
 section: "KMS Deployment"
-stepNumber: 6
-totalSteps: 7
+stepNumber: 5
+totalSteps: 6
 lastUpdated: 2025-12-04
 prerequisites:
   - kms-cvm-deployment

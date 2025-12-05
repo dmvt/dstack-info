@@ -1,12 +1,11 @@
 ---
 title: "Intel PCCS Configuration"
 description: "Register for an Intel API key and configure PCCS for TDX attestation"
-section: "KMS Deployment"
+section: "Prerequisites"
 stepNumber: 3
-totalSteps: 7
+totalSteps: 3
 lastUpdated: 2025-12-05
 prerequisites:
-  - contract-deployment
   - tdx-status-verification
 tags:
   - intel

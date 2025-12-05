@@ -2,8 +2,8 @@
 title: "KMS CVM Deployment"
 description: "Deploy dstack KMS as a Confidential Virtual Machine for TDX attestation"
 section: "KMS Deployment"
-stepNumber: 5
-totalSteps: 7
+stepNumber: 4
+totalSteps: 6
 lastUpdated: 2025-12-05
 prerequisites:
   - kms-build-configuration

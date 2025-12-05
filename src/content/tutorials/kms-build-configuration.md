@@ -2,8 +2,8 @@
 title: "KMS Build & Configuration"
 description: "Build and configure the dstack Key Management Service"
 section: "KMS Deployment"
-stepNumber: 4
-totalSteps: 7
+stepNumber: 3
+totalSteps: 6
 lastUpdated: 2025-12-04
 prerequisites:
   - contract-deployment
