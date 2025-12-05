@@ -11,7 +11,7 @@ tags:
   - dstack
   - kms
   - cvm
-  - teepod
+  - vmm
   - monitoring
   - management
 difficulty: "intermediate"
@@ -20,7 +20,7 @@ estimatedTime: "15 minutes"
 
 # KMS Service Management
 
-This tutorial guides you through managing and monitoring the dstack Key Management Service (KMS) running inside a Confidential Virtual Machine (CVM). Unlike traditional systemd services, KMS operates within a TDX-protected CVM managed by teepod.
+This tutorial guides you through managing and monitoring the dstack Key Management Service (KMS) running inside a Confidential Virtual Machine (CVM). Unlike traditional systemd services, KMS operates within a TDX-protected CVM managed by the dstack VMM.
 
 ## Understanding the CVM Architecture
 
@@ -49,8 +49,8 @@ Both services run inside the same container, managed by a startup script.
 Before starting, ensure you have:
 
 - Completed [KMS Bootstrap Verification](/tutorial/kms-bootstrap)
-- KMS CVM running (`teepod list` shows kms)
-- Access to teepod command-line tool
+- KMS CVM running (check via VMM web interface or API)
+- Access to VMM web interface at http://localhost:9080
 
 ## Quick Start: Service Management with Ansible
 
@@ -78,16 +78,23 @@ ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-cvm.yml \
 
 ### View Running CVMs
 
-List all CVMs including KMS:
+List all CVMs including KMS using the VMM web interface or API:
 
+#### Via Web Interface
+Open http://localhost:9080 to see the VM list with status, ports, and actions.
+
+#### Via API
 ```bash
-teepod list
+curl -s http://127.0.0.1:9080/api/instances | jq '.vms[] | {name, status, uptime}'
 ```
 
 Expected output:
-```
-NAME    STATUS    PORTS           CREATED
-kms     running   9100:9100       2025-12-04 10:00:00
+```json
+{
+  "name": "kms",
+  "status": "running",
+  "uptime": "2h 30m"
+}
 ```
 
 ### Check KMS CVM Status
@@ -95,7 +102,7 @@ kms     running   9100:9100       2025-12-04 10:00:00
 Get detailed status for the KMS CVM:
 
 ```bash
-teepod status kms
+curl -s http://127.0.0.1:9080/api/instances/kms | jq '{status, vcpus, memory, ports}'
 ```
 
 ### View KMS Logs
@@ -103,31 +110,21 @@ teepod status kms
 View recent logs from inside the CVM:
 
 ```bash
-teepod logs kms
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
 ```
 
-For real-time log streaming:
+Or use the **Logs** button in the VMM web interface for interactive viewing.
+
+### KMS API Commands
+
+Query the KMS service directly:
 
 ```bash
-teepod logs kms -f
-```
+# Get KMS metadata (public keys and TDX quote)
+curl -s http://localhost:9100/prpc/KMS.GetMeta | jq .
 
-### Execute Commands Inside CVM
-
-Run commands inside the running KMS CVM:
-
-```bash
-# Check processes inside CVM
-teepod exec kms -- ps aux
-
-# View KMS configuration
-teepod exec kms -- cat /etc/kms/kms.toml
-
-# Check certificate files
-teepod exec kms -- ls -la /etc/kms/certs/
-
-# View auth-eth logs
-teepod exec kms -- cat /var/log/auth-eth.log
+# View CVM logs for startup/configuration info
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100"
 ```
 
 ---
@@ -136,33 +133,45 @@ teepod exec kms -- cat /var/log/auth-eth.log
 
 ### Stop KMS CVM
 
+Via VMM web interface: Click **Stop** on the KMS instance.
+
+Via API:
 ```bash
-teepod stop kms
+curl -X POST http://127.0.0.1:9080/api/instances/kms/stop
 ```
 
 ### Start KMS CVM
 
+Via VMM web interface: Click **Start** on the KMS instance.
+
+Via API:
 ```bash
-teepod start kms
+curl -X POST http://127.0.0.1:9080/api/instances/kms/start
 ```
 
 ### Restart KMS CVM
 
+Via VMM web interface: Click **Restart** on the KMS instance.
+
+Via API:
 ```bash
-teepod restart kms
+curl -X POST http://127.0.0.1:9080/api/instances/kms/restart
 ```
 
 ### Remove KMS CVM (Warning: Data Loss)
 
+Via VMM web interface: Click **Delete** on the KMS instance.
+
+Via API:
 ```bash
 # Stop the CVM first
-teepod stop kms
+curl -X POST http://127.0.0.1:9080/api/instances/kms/stop
 
-# Remove the CVM and its volumes
-teepod rm kms
+# Remove the CVM
+curl -X DELETE http://127.0.0.1:9080/api/instances/kms
 ```
 
-> **Warning:** Removing the CVM will delete the certificate volume. Always backup certificates before removing.
+> **Warning:** Removing the CVM will delete the certificate volume. Always backup bootstrap info before removing.
 
 ---
 
@@ -203,7 +212,9 @@ Verify ports are accessible:
 nc -zv localhost 9100
 
 # Check auth-eth port (inside CVM)
-teepod exec kms -- nc -zv localhost 9200
+# Via CVM logs - internal commands not available via API
+# curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
+# nc -zv localhost 9200
 ```
 
 ### Resource Usage
@@ -211,7 +222,7 @@ teepod exec kms -- nc -zv localhost 9200
 Check CVM resource usage:
 
 ```bash
-teepod stats kms
+curl -s http://127.0.0.1:9080/api/instances/kms | jq '{vcpus, memory}'
 ```
 
 ---
@@ -223,7 +234,7 @@ teepod stats kms
 If bootstrap failed, check the bootstrap log:
 
 ```bash
-teepod logs kms | grep -i bootstrap
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100" | grep -i bootstrap
 ```
 
 Look for:
@@ -236,7 +247,7 @@ Look for:
 Check authorization service logs:
 
 ```bash
-teepod logs kms | grep -i auth-eth
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100" | grep -i auth-eth
 ```
 
 Look for:
@@ -249,7 +260,7 @@ Look for:
 Check KMS server logs:
 
 ```bash
-teepod logs kms | grep -i "rpc\|rocket"
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100" | grep -i "rpc\|rocket"
 ```
 
 Look for:
@@ -296,44 +307,48 @@ To update Ethereum RPC or contract address:
 
 ## Backup and Recovery
 
-### Backup Certificates
+### Backup Bootstrap Information
 
-Create a backup of KMS certificates:
+Since KMS runs inside a CVM with TDX protection, private keys cannot be directly extracted (this is a security feature). Instead, backup the public bootstrap information:
 
 ```bash
 # Create backup directory
 mkdir -p ~/kms-backups
 
-# Copy certificates from CVM
-teepod cp kms:/etc/kms/certs/ ~/kms-backups/certs-$(date +%Y%m%d)/
+# Save bootstrap info (public keys and TDX quote) from KMS API
+curl -s http://localhost:9100/prpc/KMS.GetMeta > ~/kms-backups/kms-bootstrap-info-$(date +%Y%m%d).json
 
-# Create encrypted archive
-cd ~/kms-backups
-tar czf - certs-$(date +%Y%m%d)/ | \
-  gpg --symmetric --cipher-algo AES256 > kms-certs-$(date +%Y%m%d).tar.gz.gpg
+# Optionally encrypt the backup
+gpg --symmetric --cipher-algo AES256 ~/kms-backups/kms-bootstrap-info-$(date +%Y%m%d).json
 
-# Verify backup
-gpg --decrypt kms-certs-$(date +%Y%m%d).tar.gz.gpg | tar tzf -
+# Verify backup contents
+cat ~/kms-backups/kms-bootstrap-info-$(date +%Y%m%d).json | jq .
 ```
 
-### Restore Certificates
+> **Note:** Private keys remain inside the CVM's TDX-encrypted memory for security. The bootstrap info contains public keys and attestation quote, which are safe to backup externally.
 
-To restore certificates to a new CVM:
+### Certificate Persistence
 
-1. Decrypt and extract backup:
-   ```bash
-   gpg --decrypt kms-certs-YYYYMMDD.tar.gz.gpg | tar xzf -
-   ```
+KMS certificates persist in a Docker named volume (`kms-certs`) inside the CVM. To ensure persistence:
 
-2. Copy to CVM:
-   ```bash
-   teepod cp certs-YYYYMMDD/ kms:/etc/kms/certs/
-   ```
+1. **Container restarts**: Certificates survive container restarts automatically
+2. **CVM restarts**: Depending on VMM configuration, volumes may persist
+3. **Full redeployment**: Use `force_redeploy=false` to preserve existing volumes
 
-3. Restart KMS:
-   ```bash
-   teepod restart kms
-   ```
+### Restore from Backup
+
+If you need to restore KMS after data loss, the recommended approach is to redeploy:
+
+```bash
+# Redeploy KMS CVM (will re-bootstrap with new keys)
+ansible-playbook playbooks/deploy-kms-cvm.yml \
+  -e "kms_domain=kms.yourdomain.com" -e "force_redeploy=true"
+
+# Restart KMS via VMM API
+curl -X POST http://127.0.0.1:9080/api/instances/kms/restart
+```
+
+> **Warning:** Re-bootstrapping generates new keys. Any applications using the old KMS public keys will need to be updated.
 
 ---
 
@@ -341,10 +356,10 @@ To restore certificates to a new CVM:
 
 ### CVM Not Starting
 
-Check teepod logs:
+Check CVM logs via VMM:
 
 ```bash
-teepod logs kms
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
 ```
 
 Common issues:
@@ -358,16 +373,20 @@ If KMS port 9100 doesn't respond:
 
 ```bash
 # Check if CVM is running
-teepod list
+curl -s http://127.0.0.1:9080/api/instances | jq '.vms[] | {name, status}'
 
 # Check processes inside CVM
-teepod exec kms -- ps aux
+# Via CVM logs - internal commands not available via API
+# curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
+# ps aux
 
 # View recent logs
-teepod logs kms -n 50
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50" -n 50
 
 # Check if startup script completed
-teepod exec kms -- cat /var/log/startup.log
+# Via CVM logs - internal commands not available via API
+# curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
+# cat /var/log/startup.log
 ```
 
 ### Auth-ETH Connection Failed
@@ -376,13 +395,19 @@ If KMS can't reach auth-eth:
 
 ```bash
 # Check auth-eth is running inside CVM
-teepod exec kms -- curl localhost:9200/health
+# Via CVM logs - internal commands not available via API
+# curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
+# curl localhost:9200/health
 
 # Check environment variables loaded
-teepod exec kms -- cat /etc/kms/auth-eth.env
+# Via CVM logs - internal commands not available via API
+# curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
+# cat /etc/kms/auth-eth.env
 
 # Check network inside container
-teepod exec kms -- netstat -tlnp
+# Via CVM logs - internal commands not available via API
+# curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
+# netstat -tlnp
 ```
 
 ### TDX Quote Missing
@@ -391,13 +416,19 @@ If TDX quote is null:
 
 ```bash
 # Check quote_enabled setting
-teepod exec kms -- grep quote_enabled /etc/kms/kms.toml
+# Via CVM logs - internal commands not available via API
+# curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
+# grep quote_enabled /etc/kms/kms.toml
 
 # Check guest-agent socket
-teepod exec kms -- ls -la /var/run/dstack.sock
+# Via CVM logs - internal commands not available via API
+# curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
+# ls -la /var/run/dstack.sock
 
 # Check TDX is available in CVM
-teepod exec kms -- dmesg | grep -i tdx
+# Via CVM logs - internal commands not available via API
+# curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
+# dmesg | grep -i tdx
 ```
 
 ### Certificate Chain Issues
@@ -406,10 +437,14 @@ If certificate verification fails:
 
 ```bash
 # View certificate details
-teepod exec kms -- openssl x509 -in /etc/kms/certs/root-ca.crt -text -noout
+# Via CVM logs - internal commands not available via API
+# curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
+# openssl x509 -in /etc/kms/certs/root-ca.crt -text -noout
 
 # Verify chain
-teepod exec kms -- openssl verify \
+# Via CVM logs - internal commands not available via API
+# curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
+# openssl verify \
   -CAfile /etc/kms/certs/root-ca.crt \
   /etc/kms/certs/rpc.crt
 ```
@@ -436,7 +471,7 @@ Check KMS logs regularly for unauthorized access attempts:
 
 ```bash
 # Search for denied requests
-teepod logs kms | grep -i "denied\|unauthorized\|failed"
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100" | grep -i "denied\|unauthorized\|failed"
 ```
 
 ### Keep Images Updated
@@ -504,8 +539,7 @@ The quote should contain valid binary data, not null or empty.
 
 | Component | Purpose | Location |
 |-----------|---------|----------|
-| dstack-vmm | Manages CVM lifecycle | Host systemd service |
-| teepod | CVM deployment tool | Host CLI |
+| dstack-vmm | Manages CVM lifecycle, web UI, API | Host systemd service |
 | Ethereum RPC | Smart contract queries | External (Alchemy) |
 | Intel PCCS | Quote verification | External (Intel) |
 
@@ -522,7 +556,6 @@ The next phase is Gateway Deployment, which will enable external access to your 
 
 ## Additional Resources
 
-- [teepod Documentation](https://github.com/Dstack-TEE/dstack)
+- [dstack GitHub Repository](https://github.com/Dstack-TEE/dstack)
 - [Docker Documentation](https://docs.docker.com/)
 - [Intel TDX Attestation](https://www.intel.com/content/www/us/en/developer/tools/trust-domain-extensions/overview.html)
-- [dstack GitHub Repository](https://github.com/Dstack-TEE/dstack)

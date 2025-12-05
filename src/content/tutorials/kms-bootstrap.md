@@ -55,7 +55,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-cvm.yml
 ```
 
 The playbook verifies:
-1. **CVM is running** - teepod shows KMS container active
+1. **CVM is running** - VMM shows KMS instance active
 2. **RPC port accessible** - Port 9100 responds to requests
 3. **Bootstrap complete** - All certificate files generated
 4. **TDX quote present** - Attestation quote in metadata
@@ -89,13 +89,15 @@ If you prefer to verify manually, follow these steps.
 
 Check that the KMS CVM is active and healthy.
 
-#### Check teepod status
+#### Check CVM status via VMM
 
 ```bash
-teepod list
+# Via VMM web interface at http://localhost:9080
+# Or via API:
+curl -s http://127.0.0.1:9080/api/instances | jq '.vms[] | select(.name=="kms") | {name, status}'
 ```
 
-You should see the KMS container running.
+You should see the KMS instance with status "running".
 
 #### Test RPC connectivity
 
@@ -115,113 +117,62 @@ Expected response:
 
 The presence of `quote` and `eventlog` confirms TDX attestation is working.
 
-### Step 2: Verify Certificate Files
+### Step 2: Verify Bootstrap Completed
 
-Check that all required certificate files exist inside the CVM.
+The KMS API provides the public keys generated during bootstrap. If the API returns valid keys, bootstrap was successful.
 
-#### List certificate files
-
-```bash
-teepod exec kms -- ls -la /etc/kms/certs/
-```
-
-Expected output (8 files):
-```
-total 40
-drwxr-xr-x 2 root root 4096 Dec 04 10:35 .
-drwxr-xr-x 3 root root 4096 Dec 04 10:30 ..
--rw-r--r-- 1 root root  800 Dec 04 10:35 bootstrap-info.json
--rw-r--r-- 1 root root  615 Dec 04 10:35 root-ca.crt
--rw------- 1 root root  227 Dec 04 10:35 root-ca.key
--rw------- 1 root root   32 Dec 04 10:35 root-k256.key
--rw-r--r-- 1 root root  620 Dec 04 10:35 rpc.crt
--rw------- 1 root root  227 Dec 04 10:35 rpc.key
--rw-r--r-- 1 root root  615 Dec 04 10:35 tmp-ca.crt
--rw------- 1 root root  227 Dec 04 10:35 tmp-ca.key
-```
-
-### Step 3: Verify Root CA Certificate
-
-Check that the Root CA was generated correctly.
-
-#### View Root CA details
+#### Check KMS metadata
 
 ```bash
-teepod exec kms -- openssl x509 -in /etc/kms/certs/root-ca.crt -text -noout | head -20
+curl -s http://localhost:9100/prpc/KMS.GetMeta | jq '{ca_pubkey, k256_pubkey}'
 ```
 
-Expected output includes:
-```
-Certificate:
-    Data:
-        Version: 3 (0x2)
-        Serial Number: ...
-    Signature Algorithm: ecdsa-with-SHA256
-        Issuer: CN = Dstack KMS CA
-        Validity
-            Not Before: ...
-            Not After: ...
-        Subject: CN = Dstack KMS CA
-        Subject Public Key Info:
-            Public Key Algorithm: id-ecPublicKey
-                Public-Key: (256 bit)
+Expected output (keys should be present):
+```json
+{
+  "ca_pubkey": "0x02...",
+  "k256_pubkey": "0x03..."
+}
 ```
 
-#### Verify self-signed
+If these keys are present and non-empty, the certificate files were successfully generated inside the CVM.
+
+The certificates generated inside the CVM at `/etc/kms/certs/` include:
+- `root-ca.crt` / `root-ca.key` - Root Certificate Authority
+- `rpc.crt` / `rpc.key` - RPC server TLS certificate
+- `tmp-ca.crt` / `tmp-ca.key` - Temporary CA for mutual TLS
+- `root-k256.key` - Ethereum signing key (32 bytes)
+- `bootstrap-info.json` - Public keys and attestation quote
+
+### Step 3: Verify CA Public Key
+
+The CA public key in the API response confirms the Root CA was generated.
+
+#### Check CA public key format
 
 ```bash
-teepod exec kms -- openssl verify -CAfile /etc/kms/certs/root-ca.crt /etc/kms/certs/root-ca.crt
+# The ca_pubkey should be a compressed P256 public key (starts with 0x02 or 0x03)
+curl -s http://localhost:9100/prpc/KMS.GetMeta | jq -r '.ca_pubkey' | head -c 10
 ```
 
-Expected:
-```
-/etc/kms/certs/root-ca.crt: OK
-```
+Expected output starts with `0x02` or `0x03` (compressed elliptic curve point).
 
-### Step 4: Verify RPC Certificate
-
-Check that the RPC certificate matches your domain and is signed by the Root CA.
-
-#### View RPC certificate domain
-
-```bash
-teepod exec kms -- openssl x509 -in /etc/kms/certs/rpc.crt -noout -subject
-```
-
-Expected (your domain):
-```
-subject=CN = kms.yourdomain.com
-```
-
-#### Verify certificate chain
-
-```bash
-teepod exec kms -- openssl verify -CAfile /etc/kms/certs/root-ca.crt /etc/kms/certs/rpc.crt
-```
-
-Expected:
-```
-/etc/kms/certs/rpc.crt: OK
-```
-
-### Step 5: Verify K256 Key
+### Step 4: Verify K256 Public Key
 
 The K256 key is used for Ethereum signing operations.
 
-#### Check key size
+#### Check K256 public key format
 
 ```bash
-teepod exec kms -- stat --format="%s bytes" /etc/kms/certs/root-k256.key
+# The k256_pubkey should be a compressed secp256k1 public key
+curl -s http://localhost:9100/prpc/KMS.GetMeta | jq -r '.k256_pubkey' | head -c 10
 ```
 
-Expected:
-```
-32 bytes
-```
+Expected output starts with `0x02` or `0x03` (compressed elliptic curve point).
 
-A valid secp256k1 private key is exactly 32 bytes.
+The presence of a valid k256_pubkey confirms a 32-byte secp256k1 private key exists inside the CVM.
 
-### Step 6: Verify TDX Attestation Quote
+### Step 5: Verify TDX Attestation Quote
 
 The TDX quote is the cryptographic proof that KMS keys were generated inside a genuine Intel TDX environment.
 
@@ -233,11 +184,14 @@ curl -s http://localhost:9100/prpc/KMS.GetMeta | jq -r '.quote' | head -c 100
 
 You should see base64-encoded data (not null or empty).
 
-#### View bootstrap info
+#### Verify quote is present
 
 ```bash
-teepod exec kms -- cat /etc/kms/certs/bootstrap-info.json | jq .
+# Check quote length (should be substantial, typically 4000+ characters)
+curl -s http://localhost:9100/prpc/KMS.GetMeta | jq -r '.quote | length'
 ```
+
+A valid TDX quote is typically 4000+ characters when base64-encoded.
 
 Expected structure:
 ```json
@@ -287,16 +241,12 @@ With TDX attestation, you can prove to external parties that:
 
 Use this checklist to confirm bootstrap was successful:
 
-- [ ] KMS CVM is running (`teepod list` shows kms)
-- [ ] Port 9100 is accessible (`curl http://localhost:9100/`)
-- [ ] All 8 certificate files exist in `/etc/kms/certs/`
-- [ ] Root CA has CN = "Dstack KMS CA"
-- [ ] Root CA is self-signed (verify returns OK)
-- [ ] RPC certificate has your domain as CN
-- [ ] RPC certificate chain is valid (verify returns OK)
-- [ ] K256 key is exactly 32 bytes
-- [ ] TDX quote is present (not null or empty)
-- [ ] bootstrap-info.json contains all four fields
+- [ ] KMS CVM is running (VMM shows instance with status "running")
+- [ ] Port 9100 is accessible (`curl http://localhost:9100/prpc/KMS.GetMeta`)
+- [ ] CA public key is present (starts with `0x02` or `0x03`)
+- [ ] K256 public key is present (starts with `0x02` or `0x03`)
+- [ ] TDX quote is present (non-empty base64 string)
+- [ ] Eventlog is present (non-empty base64 string)
 
 ---
 
@@ -308,11 +258,14 @@ Use this checklist to confirm bootstrap was successful:
 Connection refused
 ```
 
-Check if KMS container is running:
+Check if KMS CVM is running:
 
 ```bash
-teepod list
-teepod logs kms
+# Check via VMM API
+curl -s http://127.0.0.1:9080/api/instances | jq '.vms[] | select(.name=="kms")'
+
+# View CVM logs
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
 ```
 
 If not running, redeploy:
@@ -321,16 +274,12 @@ If not running, redeploy:
 ansible-playbook playbooks/deploy-kms-cvm.yml -e "kms_domain=your.domain.com" -e "force_redeploy=true"
 ```
 
-### Certificate files missing
+### Bootstrap not completing
 
-```
-ls: cannot access '/etc/kms/certs/root-ca.crt': No such file or directory
-```
-
-Bootstrap may not have completed. Check logs:
+If the KMS API returns empty keys or errors, bootstrap may not have completed. Check logs:
 
 ```bash
-teepod logs kms | grep -i bootstrap
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100" | grep -i bootstrap
 ```
 
 Common causes:
@@ -348,21 +297,11 @@ Common causes:
 
 This indicates TDX attestation failed. Check:
 
-1. **quote_enabled in config**:
-   ```bash
-   teepod exec kms -- grep quote_enabled /etc/kms/kms.toml
-   ```
-   Should be `quote_enabled = true`
+1. **quote_enabled in config**: Ensure `quote_enabled = true` in your `kms.toml`
 
-2. **guest-agent socket**:
+2. **CVM logs for TDX errors**:
    ```bash
-   teepod exec kms -- ls -la /var/run/dstack.sock
-   ```
-   Socket must exist for quote generation.
-
-3. **TDX environment**:
-   ```bash
-   teepod exec kms -- dmesg | grep -i tdx
+   curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100" | grep -i "tdx\|quote"
    ```
    CVM must be running in actual TDX mode.
 
@@ -407,21 +346,19 @@ Inside the CVM, private keys are protected by:
 
 ### Backup Strategy
 
-After verifying bootstrap, backup the certificates:
+After verifying bootstrap, backup the bootstrap information (public keys and TDX quote):
 
 ```bash
-# Create local backup directory
-mkdir -p ~/kms-backup-$(date +%Y%m%d)
+# Save bootstrap info from KMS API
+curl -s http://localhost:9100/prpc/KMS.GetMeta > ~/kms-bootstrap-info-$(date +%Y%m%d).json
 
-# Copy certs from CVM
-teepod cp kms:/etc/kms/certs/ ~/kms-backup-$(date +%Y%m%d)/
-
-# Create encrypted archive
-tar czf - ~/kms-backup-$(date +%Y%m%d)/ | \
-  gpg --symmetric --cipher-algo AES256 > kms-backup-$(date +%Y%m%d).tar.gz.gpg
+# Optionally encrypt the backup
+gpg --symmetric --cipher-algo AES256 ~/kms-bootstrap-info-$(date +%Y%m%d).json
 
 # Store securely offline
 ```
+
+> **Note:** Private keys remain securely inside the CVM's encrypted memory. The bootstrap info contains only public keys and the TDX attestation quote, which are safe to backup externally.
 
 ### TDX Quote Publication
 

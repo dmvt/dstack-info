@@ -26,6 +26,12 @@
 #   host_reserved_vcpu - vCPUs to reserve for host OS (default: 4)
 #   host_reserved_mem_mb - Memory in MB to reserve for host OS (default: 16384)
 #
+#   API ACCESS SETTINGS:
+#   vmm_address        - VMM API address (default: 127.0.0.1:9080 for web UI)
+#                        Options: "127.0.0.1:9080" (HTTP API/web UI, recommended)
+#                                 "0.0.0.0:9080" (HTTP API, accessible from network)
+#                                 "unix:/var/run/dstack/vmm.sock" (Unix socket only)
+#
 #   OTHER SETTINGS:
 #   vmm_log_level      - Log level: debug, info, warn, error (default: info)
 #   vmm_kms_url        - KMS service URL (default: http://127.0.0.1:8081)
@@ -72,7 +78,8 @@
 
     # VMM Configuration defaults
     vmm_log_level: "info"
-    vmm_address: "unix:/var/run/dstack/vmm.sock"
+    # Default to HTTP API for web UI access. Use "unix:/var/run/dstack/vmm.sock" for socket-only.
+    vmm_address: "127.0.0.1:9080"
     vmm_kms_url: "http://127.0.0.1:8081"
 
     # CVM Configuration defaults

@@ -12,7 +12,7 @@ tags:
   - kms
   - cvm
   - tdx
-  - teepod
+  - vmm
   - deployment
 difficulty: "advanced"
 estimatedTime: "20 minutes"
@@ -41,7 +41,7 @@ Before starting, ensure you have:
 - Docker image `dstack-kms:latest` built
 - Deployment files in `~/kms-deployment/`
 - dstack VMM running (`systemctl status dstack-vmm`)
-- teepod available for CVM deployment
+- VMM web interface available at http://localhost:9080
 
 ## Quick Start: Deploy with Ansible
 
@@ -60,7 +60,7 @@ Replace `kms.yourdomain.com` with your actual KMS domain.
 The playbook will:
 1. **Verify prerequisites** - Docker image, config files, VMM running
 2. **Update kms.toml** with the domain for auto-bootstrap
-3. **Deploy KMS CVM** via teepod
+3. **Deploy KMS CVM** via VMM web interface
 4. **Wait for health check** - KMS RPC becomes available
 5. **Verify bootstrap** - Check certificate files were generated
 6. **Retrieve TDX quote** - Confirm attestation is working
@@ -77,7 +77,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-cvm.yml
 
 When you deploy KMS as a CVM, the following happens:
 
-1. **CVM Creation** - teepod creates a TDX-protected virtual machine
+1. **CVM Creation** - VMM creates a TDX-protected virtual machine
 2. **Container Start** - Docker container runs inside the CVM
 3. **Auto-Bootstrap** - KMS detects empty certs directory, generates root keys
 4. **TDX Quote** - KMS generates attestation quote proving TDX environment
@@ -161,29 +161,71 @@ address = "0.0.0.0"
 port = 9100
 ```
 
-### Step 3: Deploy via teepod
+### Step 3: Deploy via VMM Web Interface
 
-Use teepod to deploy the KMS container as a CVM:
+Deploy the KMS container as a CVM using the VMM Management Console.
+
+#### Option A: Web Interface (Recommended)
+
+1. Open the VMM Management Console in your browser:
+   ```
+   http://localhost:9080
+   ```
+
+2. Click **"Deploy a new instance"**
+
+3. Fill in the deployment form:
+   - **Name**: `kms`
+   - **vCPUs**: `2`
+   - **Memory**: `4 GB`
+   - **Storage**: `10 GB`
+   - **Docker Compose File**: Paste the contents of `~/kms-deployment/docker-compose.yml`
+
+4. Enable these features:
+   - **KMS**: Unchecked (this IS the KMS)
+   - **dstack Gateway**: Checked (for external access)
+
+5. Click **Deploy**
+
+#### Option B: API (for automation)
 
 ```bash
 cd ~/kms-deployment
 
-# Deploy the CVM
-teepod deploy docker-compose.yml
+# Deploy via VMM API
+curl -X POST http://127.0.0.1:9080/api/deploy \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_AUTH_TOKEN" \
+  -d @- << EOF
+{
+  "name": "kms",
+  "vcpu": 2,
+  "memory": 4096,
+  "disk_size": 10240,
+  "compose_file": "$(cat docker-compose.yml | base64 -w0)"
+}
+EOF
 ```
 
-> **Note:** The exact teepod command may vary depending on your dstack configuration. Consult your dstack documentation for the specific deployment command.
+> **Note:** Replace `YOUR_AUTH_TOKEN` with the token from your VMM configuration.
 
 ### Step 4: Monitor Deployment
 
 Watch the CVM startup and bootstrap process:
 
-```bash
-# Check teepod status
-teepod list
+#### Via Web Interface
 
-# View CVM logs
-teepod logs kms
+1. In the VMM Console, find the `kms` instance in the VM list
+2. Click **Logs** to view real-time startup logs
+
+#### Via API
+
+```bash
+# List all instances
+curl -s http://127.0.0.1:9080/api/instances | jq '.vms[] | {name, status}'
+
+# View KMS logs
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
 ```
 
 Look for these log messages indicating successful bootstrap:
@@ -305,7 +347,7 @@ The TDX quote can be verified by:
 | Memory Protection | OS-level only | TDX hardware encryption |
 | Key Security | File permissions | Hardware-protected memory |
 | Verification | Physical security | Cryptographic proof |
-| Deployment | systemd service | teepod CVM |
+| Deployment | systemd service | VMM-managed CVM |
 
 ---
 
@@ -332,13 +374,14 @@ Ensure VMM has TDX enabled and sufficient resources.
 Waiting for bootstrap to complete...
 ```
 
-Check if guest-agent is running inside the CVM:
+Check if guest-agent is running inside the CVM. Use the VMM web console to view the instance details, or check the logs:
 
 ```bash
-teepod exec kms -- ls -la /var/run/dstack.sock
+# View CVM logs via API
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100"
 ```
 
-The socket must exist for TDX quote generation.
+The `/var/run/dstack.sock` socket must exist inside the CVM for TDX quote generation.
 
 ### Port 9100 not accessible
 
@@ -352,8 +395,8 @@ Check CVM network configuration:
 # Verify port mapping in docker-compose.yml
 cat ~/kms-deployment/docker-compose.yml | grep ports -A2
 
-# Check if container is running inside CVM
-teepod exec kms -- docker ps
+# Check CVM status via VMM API
+curl -s http://127.0.0.1:9080/api/instances/kms | jq '{status, ports}'
 ```
 
 ### TDX quote not generated
@@ -365,12 +408,11 @@ teepod exec kms -- docker ps
 This indicates quote_enabled might be false, or guest-agent issues:
 
 ```bash
-# Check kms.toml configuration
-teepod exec kms -- cat /etc/kms/kms.toml | grep quote_enabled
-
-# Check guest-agent socket
-teepod exec kms -- ls -la /var/run/dstack.sock
+# Check CVM logs for TDX-related errors
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100" | grep -i "quote\|tdx"
 ```
+
+Verify your `kms.toml` has `quote_enabled = true` in the `[core.onboard]` section.
 
 ### Authentication errors from auth-eth
 
@@ -398,22 +440,21 @@ Ensure:
 CVM certificates are stored in a Docker named volume (`kms-certs`). This provides:
 
 - **Container restart persistence** - Certificates survive container restarts
-- **CVM restart consideration** - Depending on teepod configuration, volumes may or may not persist
+- **CVM restart consideration** - Depending on VMM configuration, volumes may or may not persist
 
 ### Backup Recommendations
 
-After successful bootstrap, backup the certificates:
+After successful bootstrap, backup the certificates by retrieving the bootstrap info:
 
 ```bash
-# Copy certs from CVM to host
-teepod cp kms:/etc/kms/certs/ ~/kms-certs-backup/
+# Save bootstrap info (contains public keys and quote)
+curl -s http://localhost:9100/prpc/KMS.GetMeta > ~/kms-bootstrap-info-$(date +%Y%m%d).json
 
-# Create encrypted backup
-tar czf - ~/kms-certs-backup/ | \
-  gpg --symmetric --cipher-algo AES256 > kms-backup-$(date +%Y%m%d).tar.gz.gpg
+# The private keys remain inside the CVM for security
+# For full backup, use the VMM console to export the CVM state
 ```
 
-Store backups securely offline.
+Store backup information securely offline.
 
 ---
 

@@ -78,7 +78,7 @@ The dstack KMS provides:
 | **kms.toml** | Configuration file for KMS settings |
 | **auth-eth.env** | Environment file with Ethereum RPC credentials |
 | **Docker image** | Containerized KMS for deployment in a CVM |
-| **docker-compose.yml** | Deployment manifest for teepod |
+| **docker-compose.yml** | Deployment manifest for VMM |
 
 > **Note:** KMS runs inside a Confidential Virtual Machine (CVM) to enable TDX attestation. The Docker image packages KMS for CVM deployment.
 
@@ -429,14 +429,14 @@ dstack-kms    latest    abc123def456   10 seconds ago   ~300MB
 
 ## Step 8: Create docker-compose.yml
 
-Create the deployment manifest for teepod.
+Create the deployment manifest for VMM deployment.
 
 ### Create docker-compose.yml
 
 ```bash
 cat > docker-compose.yml << 'EOF'
 # KMS Deployment Manifest for dstack CVM
-# Deploy with: teepod deploy docker-compose.yml
+# Deploy via VMM web interface at http://localhost:9080
 
 services:
   kms:

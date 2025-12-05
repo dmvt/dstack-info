@@ -402,7 +402,7 @@
       ansible.builtin.copy:
         content: |
           # KMS Deployment Manifest for dstack CVM
-          # Deploy with: teepod deploy docker-compose.yml
+          # Deploy via VMM web interface at http://localhost:9080
 
           services:
             kms:
