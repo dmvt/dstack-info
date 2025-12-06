@@ -352,6 +352,8 @@ Until the platform is registered with Intel, you cannot deploy CVMs that require
 
 For more information, see [Intel DCAP GitHub Issue #365](https://github.com/intel/SGXDataCenterAttestationPrimitives/issues/365).
 
+**For a comprehensive troubleshooting guide**, see [Intel Platform Registration Troubleshooting](/tutorial/intel-platform-registration).
+
 ### QGS returns TDX_ATTEST_ERROR_UNEXPECTED
 
 Check QCNL configuration:
