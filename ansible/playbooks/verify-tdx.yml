@@ -54,8 +54,8 @@
           Current kernel: {{ kernel_version.stdout }}
           Expected: 6.8.0-*-intel or newer
 
-          See tutorial: TDX Kernel Installation
-          https://dstack.info/tutorial/tdx-kernel-installation
+          See tutorial: TDX Software Installation
+          https://dstack.info/tutorial/tdx-software-installation
       when: "'intel' not in kernel_version.stdout"
 
     - name: Report TDX kernel is running
@@ -75,8 +75,8 @@
 
           The kvm_intel kernel module may not be loaded or configured for TDX.
 
-          See tutorial: TDX Kernel Installation
-          https://dstack.info/tutorial/tdx-kernel-installation
+          See tutorial: TDX Software Installation
+          https://dstack.info/tutorial/tdx-software-installation
       when: not tdx_param_file.stat.exists
 
     - name: Read kvm_intel tdx parameter value
@@ -176,11 +176,65 @@
         - tme_status.rc == 0
         - tme_enabled
 
-    - name: Final TDX verification summary
+    # SGX Verification (Required for KMS)
+    - name: Check SGX enclave device exists
+      stat:
+        path: /dev/sgx_enclave
+      register: sgx_enclave_device
+
+    - name: Check SGX provision device exists
+      stat:
+        path: /dev/sgx_provision
+      register: sgx_provision_device
+
+    - name: Set SGX enabled fact
+      set_fact:
+        sgx_enabled: "{{ sgx_enclave_device.stat.exists and sgx_provision_device.stat.exists }}"
+
+    - name: Warn if SGX not enabled
+      debug:
+        msg:
+          - "⚠ SGX devices not found (/dev/sgx_enclave, /dev/sgx_provision)"
+          - ""
+          - "SGX is REQUIRED for KMS attestation and local_key_provider bootstrap."
+          - "Without SGX, KMS cannot generate TDX attestation quotes."
+          - ""
+          - "Required BIOS settings:"
+          - "  - SW Guard Extensions (SGX): Enabled"
+          - "  - SGX Auto MP Registration: Enabled (CRITICAL)"
+          - ""
+          - "See tutorial: TDX & SGX BIOS Configuration"
+          - "https://dstack.info/tutorial/tdx-bios-configuration"
+      when: not sgx_enabled
+
+    - name: Report SGX is enabled
+      debug:
+        msg: "✓ SGX devices found (/dev/sgx_enclave, /dev/sgx_provision)"
+      when: sgx_enabled
+
+    - name: Test Intel PCCS connectivity
+      uri:
+        url: "https://api.trustedservices.intel.com/sgx/certification/v4/rootcacrl"
+        method: GET
+        return_content: no
+        status_code: [200]
+        timeout: 10
+      register: pccs_test
+      failed_when: false
+      when: sgx_enabled
+
+    - name: Report Intel PCCS connectivity
+      debug:
+        msg: "{{ '✓ Intel PCCS reachable' if pccs_test.status == 200 else '⚠ Intel PCCS not reachable (may affect attestation)' }}"
+      when:
+        - sgx_enabled
+        - pccs_test is defined
+
+    - name: Final TDX and SGX verification summary
       debug:
         msg:
           - "═══════════════════════════════════════════════════════════"
-          - "  ✓ Intel TDX is FULLY ENABLED and VERIFIED"
+          - "  ✓ Intel TDX & SGX VERIFICATION COMPLETE"
           - "═══════════════════════════════════════════════════════════"
           - ""
           - "Host: {{ ansible_hostname }}"
@@ -189,8 +243,10 @@
           - "CPU: TDX-capable"
           - "TDX Module: Initialized"
           - "TME: {{ 'Enabled' if (tme_status.rc == 0 and tme_enabled) else 'Unknown' }}"
+          - "SGX: {{ 'Enabled' if sgx_enabled else 'NOT ENABLED (required for KMS)' }}"
+          - "Intel PCCS: {{ 'Reachable' if (pccs_test is defined and pccs_test.status == 200) else 'Not tested or unreachable' }}"
           - ""
-          - "Your system is ready for TDX-based confidential computing!"
+          - "{{ 'Your system is ready for TDX-based confidential computing with KMS!' if sgx_enabled else 'WARNING: Enable SGX in BIOS before deploying KMS.' }}"
           - "═══════════════════════════════════════════════════════════"
       when:
         - tdx_enabled

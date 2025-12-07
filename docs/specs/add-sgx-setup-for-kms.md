@@ -1,6 +1,6 @@
 # SGX Setup for KMS Local Key Provider
 
-**Status:** APPROVED
+**Status:** IMPLEMENTED
 **Author:** Claude (with Dan Matthews)
 **Created:** 2025-12-07
 **Last Updated:** 2025-12-07
@@ -19,18 +19,18 @@ This spec adds SGX BIOS configuration tutorials and updates KMS deployment to en
 ## Requirements
 
 ### Must Have
-- [ ] Update `tdx-bios-configuration.md` to include full SGX settings (one BIOS session)
-- [ ] Consolidate `tdx-software-setup.md` + `tdx-kernel-installation.md` → `tdx-software-installation.md`
-- [ ] Consolidate `tdx-status-verification.md` + SGX verification → `tdx-sgx-verification.md`
-- [ ] Delete old tutorials: `tdx-software-setup.md`, `tdx-kernel-installation.md`, `tdx-status-verification.md`
-- [ ] Update Ansible playbook `verify-tdx.yml` to include SGX checks
-- [ ] Update `kms-build-configuration.md` to add SGX verification as prerequisite
-- [ ] Update `kms-cvm-deployment.md` with SGX verification step
+- [x] Update `tdx-bios-configuration.md` to include full SGX settings (one BIOS session)
+- [x] Consolidate `tdx-software-setup.md` + `tdx-kernel-installation.md` → `tdx-software-installation.md`
+- [x] Consolidate `tdx-status-verification.md` + SGX verification → `tdx-sgx-verification.md`
+- [x] Delete old tutorials: `tdx-software-setup.md`, `tdx-kernel-installation.md`, `tdx-status-verification.md`
+- [x] Update Ansible playbook `verify-tdx.yml` to include SGX checks
+- [x] Update `kms-build-configuration.md` to add SGX verification as prerequisite
+- [x] Update `kms-cvm-deployment.md` with SGX verification step
 - [ ] Test full flow on fresh OS install (173.231.234.133)
 
 ### Should Have
-- [ ] Add SGX troubleshooting section for common registration failures
-- [ ] Update any tutorials that reference the old tutorial names
+- [x] Add SGX troubleshooting section for common registration failures
+- [x] Update any tutorials that reference the old tutorial names
 
 ### Must NOT Have
 - Full SGX enclave development tutorial (out of scope)

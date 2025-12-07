@@ -530,7 +530,7 @@ ansible-playbook playbooks/PLAYBOOK_NAME.yml -i inventory/hosts.yml
 - TDX kernel modules loaded (`kvm_intel`, `tdx_guest`)
 - Attestation services (if applicable)
 
-**Usage:** See [TDX Status Verification Tutorial](https://dstack.info/tutorial/tdx-status-verification)
+**Usage:** See [TDX & SGX Verification Tutorial](https://dstack.info/tutorial/tdx-sgx-verification)
 
 **Exit codes:**
 - `0` - TDX fully enabled and verified
@@ -1193,7 +1193,7 @@ ansible-playbook playbooks/verify-gateway.yml -i inventory/hosts.yml
 - Enable SEAM module
 
 **3. "TDX kernel modules not loaded"**
-- Solution: See [TDX Kernel Installation](https://dstack.info/tutorial/tdx-kernel-installation)
+- Solution: See [TDX Software Installation](https://dstack.info/tutorial/tdx-software-installation)
 - Install Ubuntu's TDX-enabled kernel
 - Verify kernel parameters
 
