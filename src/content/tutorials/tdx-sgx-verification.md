@@ -28,6 +28,31 @@ Before starting, ensure you have:
 - Rebooted into the TDX-enabled kernel
 - SSH access to the server
 
+## Quick Start: Verify with Ansible
+
+> **Using Ansible?** Playbooks are in `~/dstack-info/ansible`. If you haven't set up Ansible yet, see [TDX Software Installation: Quick Start with Ansible](/tutorial/tdx-software-installation#quick-start-install-with-ansible) for initial setup.
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/verify-tdx.yml
+```
+
+The playbook verifies all TDX and SGX requirements automatically:
+- Ubuntu 24.04 LTS
+- TDX-enabled kernel running
+- TDX enabled in KVM
+- TDX module initialized
+- TME (Total Memory Encryption) enabled
+- SGX devices present
+- Intel PCCS connectivity
+
+If all checks pass, you'll see a summary confirming your system is ready for dstack.
+
+---
+
+## Manual Verification
+
+If you prefer to verify manually, or need to troubleshoot specific issues, follow the steps below.
+
 ## Part 1: Verify TDX Kernel
 
 First, confirm you're running the TDX-enabled kernel.
