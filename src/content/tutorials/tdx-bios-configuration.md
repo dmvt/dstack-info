@@ -71,12 +71,11 @@ Configure all settings in a single BIOS session to avoid multiple reboots.
 
 Navigate to: **Advanced → CPU Configuration** (or **Processor Configuration**)
 
-Find and **disable**:
+| Setting | Value | Notes |
+|---------|-------|-------|
+| **Limit CPU Physical Address to 46 bits** | **Disabled** | May also be labeled "Physical Address Limit" or "Hyper-V Physical Address Limit" |
 
-- ☐ **Limit CPU Physical Address to 46 bits**
-- May also be labeled: "Physical Address Limit", "Hyper-V Physical Address Limit", or "Address Width Limit"
-
-**Why this matters:** The 46-bit address limit prevents TME-MT from working. Intel MKTME needs the upper address bits for encryption key IDs. If you don't disable this first, TME-MT will be greyed out and unselectable.
+> **Why this matters:** The 46-bit address limit prevents TME-MT from working. Intel MKTME needs the upper address bits for encryption key IDs. If you don't disable this first, TME-MT will be greyed out and unselectable.
 
 > **Note:** If this setting doesn't exist on your system, it may already be disabled or not applicable. Proceed to the next step.
 
@@ -84,23 +83,23 @@ Find and **disable**:
 
 Navigate to: **Advanced → CPU Configuration → Memory Encryption** (or similar path)
 
-Enable these settings:
-
-- ☑ **Total Memory Encryption (TME)** - Base memory encryption
-- ☑ **Total Memory Encryption Multi-Tenant (TME-MT)** - Multi-key encryption for TDX
-- ☐ **TME-MT Memory Integrity** - **Disable this** (impacts performance)
-- **TME-MT/TDX Key Split** → Set to **1** or higher (allocates keys for TDX)
+| Setting | Value | Notes |
+|---------|-------|-------|
+| **Total Memory Encryption (TME)** | Enabled | Base memory encryption |
+| **Total Memory Encryption Multi-Tenant (TME-MT)** | Enabled | Multi-key encryption for TDX |
+| **TME-MT Memory Integrity** | **Disabled** | Impacts performance if enabled |
+| **TME-MT/TDX Key Split** | 1 (or higher) | Allocates keys for TDX |
 
 ### Step 2: Intel TDX Settings
 
 Navigate to: **Advanced → CPU Configuration** (may be under Security submenu)
 
-Enable these settings:
+| Setting | Value | Notes |
+|---------|-------|-------|
+| **Trust Domain Extension (TDX)** | Enabled | Main TDX enable |
+| **TDX Secure Arbitration Mode Loader (SEAM Loader)** | Enabled | Required for TDX module |
 
-- ☑ **Trust Domain Extension (TDX)** - Main TDX enable
-- ☑ **TDX Secure Arbitration Mode Loader (SEAM Loader)** - Required for TDX module
-
-You should see key allocation information:
+After enabling, you should see key allocation information:
 
 - **TME-MT Keys:** 31 (or similar)
 - **TDX Keys:** 32 (or similar)
