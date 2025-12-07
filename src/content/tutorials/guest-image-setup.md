@@ -1,12 +1,12 @@
 ---
 title: "Guest OS Image Setup"
 description: "Download and configure guest OS images for dstack CVM deployment"
-section: "First Application"
-stepNumber: 1
-totalSteps: 3
-lastUpdated: 2025-12-05
+section: "dstack Installation"
+stepNumber: 6
+totalSteps: 6
+lastUpdated: 2025-12-07
 prerequisites:
-  - gateway-service-setup
+  - vmm-service-setup
 tags:
   - dstack
   - cvm
@@ -44,10 +44,8 @@ These components are measured by TDX hardware during boot, creating a cryptograp
 
 Before starting, ensure you have:
 
-- Completed [Gateway Service Setup](/tutorial/gateway-service-setup)
+- Completed [VMM Service Setup](/tutorial/vmm-service-setup)
 - VMM service running (with web interface at http://localhost:9080)
-- KMS service running
-- Gateway service running
 - At least 10GB free disk space for images
 
 ## Step 1: Create Image Directory Structure

@@ -2,9 +2,9 @@
 title: "Attestation Verification"
 description: "Verify TDX attestation to prove your application runs in a genuine secure environment"
 section: "First Application"
-stepNumber: 3
-totalSteps: 3
-lastUpdated: 2025-12-02
+stepNumber: 2
+totalSteps: 2
+lastUpdated: 2025-12-07
 prerequisites:
   - hello-world-app
 tags:

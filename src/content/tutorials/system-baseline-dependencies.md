@@ -3,8 +3,8 @@ title: "System Baseline & Dependencies"
 description: "Update the host system and install required build dependencies for dstack"
 section: "dstack Installation"
 stepNumber: 1
-totalSteps: 5
-lastUpdated: 2025-12-04
+totalSteps: 6
+lastUpdated: 2025-12-07
 prerequisites:
   - tdx-bios-configuration
 tags:

@@ -3,8 +3,8 @@ title: "Clone & Build dstack-vmm"
 description: "Clone the dstack repository and build the Virtual Machine Monitor (VMM) component"
 section: "dstack Installation"
 stepNumber: 3
-totalSteps: 5
-lastUpdated: 2025-12-04
+totalSteps: 6
+lastUpdated: 2025-12-07
 prerequisites:
   - rust-toolchain-installation
 tags:

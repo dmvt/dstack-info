@@ -3,8 +3,8 @@ title: "Rust Toolchain Installation"
 description: "Install and configure the Rust programming language toolchain for building dstack components"
 section: "dstack Installation"
 stepNumber: 2
-totalSteps: 5
-lastUpdated: 2025-12-04
+totalSteps: 6
+lastUpdated: 2025-12-07
 prerequisites:
   - system-baseline-dependencies
 tags:

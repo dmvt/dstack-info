@@ -2,9 +2,9 @@
 title: "Hello World Application"
 description: "Deploy your first application to a dstack Confidential Virtual Machine"
 section: "First Application"
-stepNumber: 2
-totalSteps: 3
-lastUpdated: 2025-12-05
+stepNumber: 1
+totalSteps: 2
+lastUpdated: 2025-12-07
 prerequisites:
   - guest-image-setup
 tags:

@@ -3,8 +3,8 @@ title: "VMM Service Setup"
 description: "Configure dstack VMM to run as a systemd service with automatic startup"
 section: "dstack Installation"
 stepNumber: 5
-totalSteps: 5
-lastUpdated: 2025-12-04
+totalSteps: 6
+lastUpdated: 2025-12-07
 prerequisites:
   - vmm-configuration
 tags:

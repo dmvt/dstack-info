@@ -3,8 +3,8 @@ title: "VMM Configuration"
 description: "Configure the dstack Virtual Machine Monitor for your environment"
 section: "dstack Installation"
 stepNumber: 4
-totalSteps: 5
-lastUpdated: 2025-12-04
+totalSteps: 6
+lastUpdated: 2025-12-07
 prerequisites:
   - clone-build-dstack-vmm
   - dns-configuration

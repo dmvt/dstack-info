@@ -132,6 +132,26 @@
             sudo systemctl start dstack-vmm
       when: vmm_status.status.ActiveState | default('inactive') != 'active'
 
+    - name: Check guest images are installed
+      ansible.builtin.stat:
+        path: "/var/lib/dstack/images/dstack-{{ dstack_version }}/metadata.json"
+      register: guest_image
+      become: yes
+
+    - name: Fail if guest images missing
+      ansible.builtin.fail:
+        msg: |
+          Guest OS images not found for dstack-{{ dstack_version }}.
+
+          The VMM requires guest images to deploy CVMs.
+
+          Follow the tutorial:
+            https://dstack.info/tutorial/guest-image-setup
+
+          Or run the Ansible playbook:
+            ansible-playbook -i inventory/hosts.yml playbooks/setup-guest-images.yml
+      when: not guest_image.stat.exists
+
     - name: Update kms.toml with domain
       ansible.builtin.lineinfile:
         path: "{{ kms_deployment_dir }}/kms.toml"
