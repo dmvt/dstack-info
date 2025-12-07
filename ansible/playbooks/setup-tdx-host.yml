@@ -1,0 +1,216 @@
+---
+# Setup TDX Host Software Stack
+# Corresponds to: tdx-software-installation tutorial
+#
+# This playbook installs Canonical's TDX software stack including:
+#   - TDX-enabled kernel (linux-image-intel)
+#   - TDX-enabled QEMU, libvirt, OVMF
+#   - Attestation components (PCCS, QGS, etc.)
+#
+# Prerequisites:
+#   - BIOS configured for TDX and SGX (manual step)
+#   - Ubuntu 24.04 LTS freshly installed
+#   - SSH access as user with sudo privileges
+#
+# Usage:
+#   ansible-playbook playbooks/setup-tdx-host.yml -i inventory/hosts.yml
+#
+# After this playbook completes and the system reboots:
+#   ansible-playbook playbooks/verify-tdx.yml -i inventory/hosts.yml
+#
+# Idempotency:
+#   If already running TDX kernel, playbook exits immediately (no action taken)
+
+- name: Setup TDX Host Software Stack
+  hosts: dstack_servers
+  become: yes
+
+  vars:
+    tdx_repo_url: "https://github.com/canonical/tdx.git"
+    tdx_repo_version: "3.3"  # Pinned tag for reproducibility
+    tdx_repo_dest: "/home/{{ ansible_user }}/tdx"
+    tdx_enable_attestation: true
+
+  handlers:
+    - name: Reboot for TDX kernel
+      reboot:
+        msg: "Rebooting to load TDX-enabled kernel"
+        reboot_timeout: 300
+
+  tasks:
+    # =========================================================================
+    # Early Exit Check - Skip everything if TDX kernel already running
+    # =========================================================================
+
+    - name: Check current kernel version
+      command: uname -r
+      register: current_kernel
+      changed_when: false
+
+    - name: Set TDX already configured fact
+      set_fact:
+        tdx_already_configured: "{{ 'intel' in current_kernel.stdout }}"
+
+    - name: Report TDX already configured
+      debug:
+        msg:
+          - "============================================================"
+          - "  TDX kernel already running: {{ current_kernel.stdout }}"
+          - "============================================================"
+          - ""
+          - "  No action needed. System is already configured."
+          - "  Run verify-tdx.yml to confirm TDX is working:"
+          - ""
+          - "  ansible-playbook playbooks/verify-tdx.yml -i inventory/hosts.yml"
+          - "============================================================"
+      when: tdx_already_configured
+
+    - name: End play if TDX already configured
+      meta: end_play
+      when: tdx_already_configured
+
+    # =========================================================================
+    # Pre-flight Checks
+    # =========================================================================
+
+    - name: Verify Ubuntu 24.04 LTS
+      assert:
+        that:
+          - ansible_distribution == "Ubuntu"
+          - ansible_distribution_version == "24.04"
+        fail_msg: |
+          This playbook requires Ubuntu 24.04 LTS (Noble).
+          Current: {{ ansible_distribution }} {{ ansible_distribution_version }}
+        success_msg: "Running Ubuntu 24.04 LTS"
+
+    - name: Check TDX CPU capability
+      shell: grep -q tdx /proc/cpuinfo
+      register: tdx_cpu_check
+      failed_when: false
+      changed_when: false
+
+    - name: Warn if TDX CPU flags not found
+      debug:
+        msg:
+          - "WARNING: TDX CPU flags not found in /proc/cpuinfo"
+          - ""
+          - "This could mean:"
+          - "  1. BIOS TDX settings not configured (configure first)"
+          - "  2. CPU doesn't support TDX (check Intel ARK)"
+          - ""
+          - "Proceeding anyway - TDX kernel installation may still work"
+          - "if BIOS is properly configured."
+      when: tdx_cpu_check.rc != 0
+
+    # =========================================================================
+    # Clone Canonical TDX Repository
+    # =========================================================================
+
+    - name: Install git (required for cloning)
+      apt:
+        name: git
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Clone Canonical TDX repository
+      git:
+        repo: "{{ tdx_repo_url }}"
+        dest: "{{ tdx_repo_dest }}"
+        version: "{{ tdx_repo_version }}"
+        force: no
+      become_user: "{{ ansible_user }}"
+
+    - name: Verify repository contents
+      stat:
+        path: "{{ tdx_repo_dest }}/setup-tdx-host.sh"
+      register: setup_script
+      failed_when: not setup_script.stat.exists
+
+    # =========================================================================
+    # Configure TDX Settings
+    # =========================================================================
+
+    - name: Enable attestation in TDX config
+      lineinfile:
+        path: "{{ tdx_repo_dest }}/setup-tdx-config"
+        regexp: '^TDX_SETUP_ATTESTATION='
+        line: 'TDX_SETUP_ATTESTATION=1'
+      when: tdx_enable_attestation
+
+    - name: Verify attestation is enabled
+      shell: grep TDX_SETUP_ATTESTATION {{ tdx_repo_dest }}/setup-tdx-config
+      register: attestation_config
+      changed_when: false
+      when: tdx_enable_attestation
+
+    - name: Report attestation configuration
+      debug:
+        msg: "Attestation config: {{ attestation_config.stdout }}"
+      when: tdx_enable_attestation
+
+    # =========================================================================
+    # Run TDX Host Setup Script
+    # =========================================================================
+
+    - name: Run TDX host setup script
+      command: ./setup-tdx-host.sh
+      args:
+        chdir: "{{ tdx_repo_dest }}"
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+      register: tdx_setup_result
+      changed_when: "'linux-image' in tdx_setup_result.stdout or 'Setting up' in tdx_setup_result.stdout"
+      notify: Reboot for TDX kernel
+
+    - name: Display setup script output summary
+      debug:
+        msg:
+          - "TDX setup script completed"
+          - "Packages installed: {{ 'Yes' if tdx_setup_result.changed else 'Already installed' }}"
+
+    # =========================================================================
+    # Verify Kernel Installation
+    # =========================================================================
+
+    - name: Verify Intel kernel installed
+      find:
+        paths: /boot
+        patterns: 'vmlinuz-*-intel'
+      register: intel_kernel
+      failed_when: intel_kernel.files | length == 0
+
+    - name: Report installed Intel kernel
+      debug:
+        msg: "Intel kernel found: {{ intel_kernel.files[0].path | basename }}"
+
+    - name: Verify GRUB TDX configuration exists
+      stat:
+        path: /etc/default/grub.d/99-tdx-kernel.cfg
+      register: grub_tdx_config
+
+    - name: Report GRUB configuration status
+      debug:
+        msg: "{{ 'GRUB TDX config found' if grub_tdx_config.stat.exists else 'WARNING: GRUB TDX config not found' }}"
+
+    # =========================================================================
+    # Final Summary
+    # =========================================================================
+
+    - name: Display completion summary
+      debug:
+        msg:
+          - "============================================================"
+          - "  TDX Host Setup Complete"
+          - "============================================================"
+          - ""
+          - "  Installed kernel: {{ intel_kernel.files[0].path | basename }}"
+          - "  Attestation: {{ 'Enabled' if tdx_enable_attestation else 'Disabled' }}"
+          - "  GRUB config: {{ 'Configured' if grub_tdx_config.stat.exists else 'Not found' }}"
+          - ""
+          - "  System will reboot to load the TDX kernel."
+          - ""
+          - "  After reboot, verify TDX is working:"
+          - "  ansible-playbook playbooks/verify-tdx.yml -i inventory/hosts.yml"
+          - "============================================================"
+      when: tdx_setup_result.changed

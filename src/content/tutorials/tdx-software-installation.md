@@ -29,6 +29,35 @@ Before starting, ensure you have:
 - Ubuntu 24.04 LTS freshly installed
 - Internet connectivity for package downloads
 
+## Quick Start: Install with Ansible
+
+For automated installation, use the Ansible playbook:
+
+```bash
+cd ~/dstack-info/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/setup-tdx-host.yml
+```
+
+The playbook will:
+1. Clone Canonical's TDX repository (pinned to tag 3.3)
+2. Enable attestation components
+3. Run the TDX host setup script
+4. Verify kernel installation
+5. Reboot to load the TDX kernel
+
+After reboot, verify with:
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/verify-tdx.yml
+```
+
+> **Idempotency:** If already running the TDX kernel, the playbook exits immediately with no action.
+
+---
+
+## Manual Installation
+
+If you prefer to install manually, follow the steps below.
+
 ## Set Up Ubuntu User
 
 For this setup, you'll need an `ubuntu` user with passwordless sudo. If you're logged in as root or another user:

@@ -520,6 +520,37 @@ ansible-playbook playbooks/PLAYBOOK_NAME.yml -i inventory/hosts.yml
 
 ## Playbook Documentation
 
+### setup-tdx-host.yml
+
+**Purpose:** Install Canonical's TDX software stack (kernel, QEMU, libvirt, attestation)
+
+**What it does:**
+1. Checks if TDX kernel already running (exits early if so)
+2. Clones Canonical TDX repository (pinned to tag 3.3)
+3. Enables attestation in TDX config
+4. Runs `setup-tdx-host.sh` script
+5. Verifies Intel kernel installed
+6. Reboots to load TDX kernel (only if changes made)
+
+**Prerequisites:**
+- BIOS configured for TDX and SGX (manual step - see tutorial)
+- Ubuntu 24.04 LTS freshly installed
+- SSH access with sudo privileges
+
+**Usage:**
+```bash
+ansible-playbook playbooks/setup-tdx-host.yml -i inventory/hosts.yml
+```
+
+**After reboot, verify with:**
+```bash
+ansible-playbook playbooks/verify-tdx.yml -i inventory/hosts.yml
+```
+
+**Idempotency:** If already running TDX kernel (`intel` in `uname -r`), playbook exits immediately with no action.
+
+**See:** [TDX Software Installation Tutorial](https://dstack.info/tutorial/tdx-software-installation)
+
 ### verify-tdx.yml
 
 **Purpose:** Verify Intel TDX is properly enabled on the host system
