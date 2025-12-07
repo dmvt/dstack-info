@@ -43,7 +43,6 @@ The playbook verifies all TDX and SGX requirements automatically:
 - TDX module initialized
 - TME (Total Memory Encryption) enabled
 - SGX devices present
-- Intel PCCS connectivity
 
 If all checks pass, you'll see a summary confirming your system is ready for dstack.
 
@@ -240,44 +239,6 @@ dmesg | grep -i sgx
 
 This shows SGX Enclave Page Cache (EPC) memory is allocated.
 
-## Part 5: Verify SGX Registration (for KMS)
-
-SGX Auto MP Registration must have completed for KMS to work. This happens automatically on first boot after enabling the BIOS setting.
-
-### Test Intel PCCS Connectivity
-
-Verify your system can reach Intel's Provisioning Certification Service:
-
-```bash
-curl -s -o /dev/null -w "%{http_code}" https://api.trustedservices.intel.com/sgx/certification/v4/rootcacrl
-```
-
-**Expected output:**
-
-```
-200
-```
-
-A `200` response means Intel's attestation service is reachable.
-
-### Check PCCS Service (if attestation enabled)
-
-If you enabled attestation during software installation:
-
-```bash
-systemctl status pccs
-```
-
-**Expected:** Service should be running.
-
-### Check Quote Generation Service
-
-```bash
-systemctl status qgsd
-```
-
-**Expected:** Service should be running.
-
 ## Verification Summary
 
 Run this command for a quick status check:
@@ -294,10 +255,7 @@ echo "TDX Status:" && \
 (cat /sys/module/kvm_intel/parameters/tdx 2>/dev/null && echo " (KVM TDX enabled)") || echo "N (KVM TDX not available)" && \
 echo && \
 echo "SGX Devices:" && \
-ls /dev/sgx* 2>/dev/null || echo "Not found" && \
-echo && \
-echo "Intel PCCS:" && \
-curl -s -o /dev/null -w "%{http_code}\n" https://api.trustedservices.intel.com/sgx/certification/v4/rootcacrl
+ls /dev/sgx* 2>/dev/null || echo "Not found"
 ```
 
 **All checks should pass before proceeding to dstack deployment.**
@@ -321,24 +279,6 @@ curl -s -o /dev/null -w "%{http_code}\n" https://api.trustedservices.intel.com/s
 1. Ensure you're running the Intel kernel (`uname -r` shows `intel`)
 2. Check dmesg for TDX initialization errors
 3. Verify BIOS TDX settings
-
-### PCCS connectivity fails
-
-1. Check internet connectivity: `ping google.com`
-2. Check DNS resolution: `nslookup api.trustedservices.intel.com`
-3. Check firewall rules for HTTPS (port 443)
-
-### Attestation services not running
-
-```bash
-# Restart attestation services
-sudo systemctl restart qgsd
-sudo systemctl restart pccs
-
-# Check logs
-journalctl -u qgsd -n 50
-journalctl -u pccs -n 50
-```
 
 ## Next Steps
 

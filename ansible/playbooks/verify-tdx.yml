@@ -212,24 +212,6 @@
         msg: "✓ SGX devices found (/dev/sgx_enclave, /dev/sgx_provision)"
       when: sgx_enabled
 
-    - name: Test Intel PCCS connectivity
-      uri:
-        url: "https://api.trustedservices.intel.com/sgx/certification/v4/rootcacrl"
-        method: GET
-        return_content: no
-        status_code: [200]
-        timeout: 10
-      register: pccs_test
-      failed_when: false
-      when: sgx_enabled
-
-    - name: Report Intel PCCS connectivity
-      debug:
-        msg: "{{ '✓ Intel PCCS reachable' if pccs_test.status == 200 else '⚠ Intel PCCS not reachable (may affect attestation)' }}"
-      when:
-        - sgx_enabled
-        - pccs_test is defined
-
     - name: Final TDX and SGX verification summary
       debug:
         msg:
@@ -244,7 +226,6 @@
           - "TDX Module: Initialized"
           - "TME: {{ 'Enabled' if (tme_status.rc == 0 and tme_enabled) else 'Unknown' }}"
           - "SGX: {{ 'Enabled' if sgx_enabled else 'NOT ENABLED (required for KMS)' }}"
-          - "Intel PCCS: {{ 'Reachable' if (pccs_test is defined and pccs_test.status == 200) else 'Not tested or unreachable' }}"
           - ""
           - "{{ 'Your system is ready for TDX-based confidential computing with KMS!' if sgx_enabled else 'WARNING: Enable SGX in BIOS before deploying KMS.' }}"
           - "═══════════════════════════════════════════════════════════"
