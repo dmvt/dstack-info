@@ -53,10 +53,11 @@ If missing, go back to [Blockchain Setup](/tutorial/blockchain-setup) to create 
 
 ### Step 2: Upload Credentials to Server
 
+> **Using Ansible?** Playbooks are in `~/dstack-info/ansible`. If you haven't set up Ansible yet, see [TDX Software Installation: Quick Start with Ansible](/tutorial/tdx-software-installation#quick-start-install-with-ansible) for initial setup.
+
 The deployment playbook runs on the server, so it needs access to your wallet credentials. This playbook uploads them securely (skipping if they already exist on the server):
 
 ```bash
-cd ~/dstack-info/ansible
 ansible-playbook -i inventory/hosts.yml playbooks/upload-wallet-credentials.yml
 ```
 

@@ -91,7 +91,6 @@ Before using Ansible playbooks, you need:
 Once prerequisites are met:
 
 ```bash
-cd ~/dstack-info/ansible
 ansible-playbook -i inventory/hosts.yml playbooks/setup-tdx-host.yml
 ```
 

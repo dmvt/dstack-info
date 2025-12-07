@@ -54,12 +54,13 @@ Before starting, ensure you have:
 
 ## Quick Start: Service Management with Ansible
 
+> **Using Ansible?** Playbooks are in `~/dstack-info/ansible`. If you haven't set up Ansible yet, see [TDX Software Installation: Quick Start with Ansible](/tutorial/tdx-software-installation#quick-start-install-with-ansible) for initial setup.
+
 For most users, the recommended approach is to use Ansible playbooks.
 
 ### Check KMS Status
 
 ```bash
-cd ~/dstack-info/ansible
 ansible-playbook -i inventory/hosts.yml playbooks/verify-kms-cvm.yml
 ```
 

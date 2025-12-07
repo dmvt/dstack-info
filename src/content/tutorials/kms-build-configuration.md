@@ -35,12 +35,13 @@ Before starting, ensure you have:
 
 ## Quick Start: Build with Ansible
 
+> **Using Ansible?** Playbooks are in `~/dstack-info/ansible`. If you haven't set up Ansible yet, see [TDX Software Installation: Quick Start with Ansible](/tutorial/tdx-software-installation#quick-start-install-with-ansible) for initial setup.
+
 For most users, the recommended approach is to use the Ansible playbook.
 
 ### Step 1: Run the Build Playbook
 
 ```bash
-cd ~/dstack-info/ansible
 ansible-playbook -i inventory/hosts.yml playbooks/build-kms.yml
 ```
 
