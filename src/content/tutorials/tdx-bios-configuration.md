@@ -130,44 +130,7 @@ Enable these settings:
 2. Confirm save changes
 3. System will reboot
 
-## Verification (After Software Installation)
-
-BIOS settings cannot be fully verified until the TDX software stack and kernel are installed. After completing the next tutorial ([TDX Software Installation](/tutorial/tdx-software-installation)), you'll verify:
-
-- TME/MKTME enabled via `dmesg | grep -i tme`
-- TDX module loaded via `dmesg | grep -i tdx`
-- SGX devices present via `ls /dev/sgx*`
-- SGX registration status
-
-## Troubleshooting
-
-### TME-MT is greyed out
-
-**Cause:** Physical Address Limit is still enabled.
-
-**Solution:** Go to Advanced → CPU Configuration and disable "Limit CPU Physical Address to 46 bits", save, reboot, then return to enable TME-MT.
-
-### TDX option not visible
-
-**Cause:** TME-MT must be enabled first, or CPU doesn't support TDX.
-
-**Solution:**
-1. Ensure TME and TME-MT are enabled
-2. Verify your CPU supports TDX (check [TDX Hardware Verification](/tutorial/tdx-hardware-verification))
-
-### SGX Auto MP Registration not available
-
-**Cause:** SGX must be enabled first.
-
-**Solution:** Enable "SW Guard Extensions (SGX)" first, then the Auto MP Registration option should appear.
-
-### Settings don't persist after reboot
-
-**Cause:** BIOS battery issue or settings not saved properly.
-
-**Solution:**
-1. Ensure you're pressing F4 or explicitly selecting "Save & Exit"
-2. Check for BIOS firmware updates
+> **Having trouble?** See [TDX Troubleshooting](/tutorial/tdx-troubleshooting-next-steps) for common BIOS configuration issues like greyed-out options or settings not persisting.
 
 ## Next Steps
 

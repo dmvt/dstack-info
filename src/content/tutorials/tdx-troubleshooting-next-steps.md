@@ -107,6 +107,33 @@ If you see your TDX status checks and do NOT see `virt/tdx: module initialized` 
 - Update server BIOS/firmware
 - Check Intel and server vendor documentation for specific TDX requirements
 
+### Issue: TDX Option Not Visible in BIOS
+
+**Cause:** TME-MT must be enabled first, or CPU doesn't support TDX.
+
+**Solution:**
+1. Ensure TME and TME-MT are both enabled first
+2. Verify your CPU supports TDX (check [TDX Hardware Verification](/tutorial/tdx-hardware-verification))
+3. Update BIOS firmware if TDX should be supported
+
+### Issue: SGX Auto MP Registration Not Available
+
+**Cause:** SGX must be enabled first before the registration option appears.
+
+**Solution:**
+1. Enable "SW Guard Extensions (SGX)" first
+2. Save and reboot if necessary
+3. Return to BIOS - the Auto MP Registration option should now appear
+
+### Issue: BIOS Settings Don't Persist After Reboot
+
+**Cause:** BIOS battery issue, settings not saved properly, or BIOS reset.
+
+**Solution:**
+1. Ensure you're pressing F4 or explicitly selecting "Save & Exit"
+2. Check for BIOS firmware updates
+3. If settings keep resetting, the CMOS battery may need replacement
+
 ## What's Next?
 
 Now that TDX is enabled on your host, you can:
