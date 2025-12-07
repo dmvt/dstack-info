@@ -1,6 +1,6 @@
 # TDX Software Installation via Ansible
 
-**Status:** APPROVED
+**Status:** IMPLEMENTED
 **Author:** Claude (with Dan Matthews)
 **Created:** 2025-12-07
 **Last Updated:** 2025-12-07
