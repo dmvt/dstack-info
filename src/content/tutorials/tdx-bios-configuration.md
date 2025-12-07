@@ -1,204 +1,183 @@
 ---
-title: "TDX BIOS Configuration"
-description: "Configure BIOS settings to enable TDX and verify successful enablement"
+title: "TDX & SGX BIOS Configuration"
+description: "Configure BIOS settings for TDX and SGX, including Auto MP Registration for KMS attestation"
 section: "Host Setup"
-stepNumber: 5
-totalSteps: 5
+stepNumber: 2
+totalSteps: 4
 prerequisites:
-  - tdx-status-verification
+  - tdx-hardware-verification
 tags:
-    - "tdx"
-    - "bios"
-    - "configuration"
-    - "tme"
-    - "hardware-enablement"
+  - tdx
+  - sgx
+  - bios
+  - configuration
+  - tme
+  - attestation
 difficulty: "intermediate"
 estimatedTime: "20 minutes"
-lastUpdated: 2025-10-31
+lastUpdated: 2025-12-07
 ---
 
-# TDX BIOS Configuration
+# TDX & SGX BIOS Configuration
 
-This tutorial covers configuring BIOS settings to enable TDX hardware features and verifying successful enablement.
+This tutorial covers configuring BIOS settings to enable both TDX (Trust Domain Extensions) and SGX (Software Guard Extensions). Both are required for running dstack with KMS attestation.
 
-## Configure BIOS for TDX
+## Why Both TDX and SGX?
 
-At this point, you have the TDX-enabled kernel and software stack installed, but TDX hardware features are still **disabled in BIOS**. You need to configure BIOS settings to enable TDX.
+| Technology | Purpose |
+|------------|---------|
+| **TDX** | Provides hardware-isolated virtual machines (Trust Domains) with encrypted memory |
+| **SGX** | Required for KMS attestation - generates cryptographic quotes proving your platform is genuine Intel hardware |
 
-### Required BIOS Settings
+**Important:** SGX Auto MP Registration must be enabled for the KMS to bootstrap with the local key provider. Without this, KMS cannot generate valid attestation quotes.
 
-Access your server's BIOS/UEFI (via IPMI/iLO/iDRAC or physical access) and enable:
+## Access BIOS/UEFI
 
-#### 0. Prerequisites: Disable Physical Address Limit (IMPORTANT!)
+You'll need to access your server's BIOS setup utility.
 
-**Before enabling TME-MT, you must first disable the CPU physical address limit:**
+### Option 1: IPMI/BMC (Remote Management)
 
-Navigate to: **Advanced → CPU Configuration** (or **Processor Configuration**)
+Most servers have remote management interfaces:
 
-Find and **disable**:
+- Dell: iDRAC
+- HP: iLO
+- Supermicro: IPMI
+- Lenovo: XClarity
+- OpenMetal: Central Dashboard → IPMI Console
 
--   ☐ **Limit CPU Physical Address to 46 bits**
--   May also be labeled: "Physical Address Limit", "Hyper-V Physical Address Limit", or "Address Width Limit"
-
-**Why this matters:** The 46-bit address limit prevents TME-MT from working. Intel MKTME needs the upper address bits for encryption key IDs. If you don't disable this first, TME-MT will be greyed out and unselectable.
-
-After disabling, save and reboot, then re-enter BIOS to continue with the following settings:
-
-#### 1. Memory Encryption Settings
-
-Navigate to: **Advanced → CPU Configuration → Memory Encryption**
-
-Enable these settings:
-
--   ☑ **Total Memory Encryption (TME)**
--   ☑ **Total Memory Encryption Multi-Tenant (TME-MT)**
--   ☐ **TME-MT Memory Integrity** (Disable this)
--   **TME/TME-MT Key Split** → Set to non-zero value (e.g., 50/50 or as recommended by your server vendor)
-
-#### 2. Intel TDX Settings
-
-Navigate to: **Advanced → CPU Configuration → Security**
-
-Enable these settings:
-
--   ☑ **Intel Trust Domain Extensions (TDX)**
--   ☑ **TDX SEAM Loader** (Secure Arbitration Mode Loader)
-
-#### 3. Intel SGX Settings (Optional but Recommended)
-
-If available:
-
--   ☑ **Intel Software Guard Extensions (SGX)**
-
-### BIOS Access Methods
-
-**Option 1: IPMI/BMC (Remote Management)**
-
-Most servers have remote management:
-
--   Dell: iDRAC
--   HP: iLO
--   Supermicro: IPMI
--   Lenovo: XClarity
-
-Access the web interface or use CLI:
+Access the web interface and use the remote console/KVM feature, or use CLI:
 
 ```bash
 # Example with ipmitool (if you have IPMI credentials)
 ipmitool -I lanplus -H YOUR_BMC_IP -U admin -P password sol activate
 ```
 
-**Option 2: Physical Access**
+### Option 2: Physical Access
 
 1. Reboot server
 2. Press appropriate key during POST:
-    - Dell: F2
-    - HP: F9 or F10
-    - Supermicro: Delete
-    - Most others: F2 or Delete
+   - Dell: F2
+   - HP: F9 or F10
+   - Supermicro: Delete
+   - Most others: F2 or Delete
 
-### Save and Reboot
+## Required BIOS Settings
 
-After enabling all TDX-related BIOS settings:
+Configure all settings in a single BIOS session to avoid multiple reboots.
 
-1. **Save changes** (usually F10)
-2. **Reboot the server**
+### Step 0: Disable Physical Address Limit (IMPORTANT!)
 
-## Step 9: Verify TDX is Enabled
+**Before enabling TME-MT, you must first disable the CPU physical address limit.**
 
-After rebooting from BIOS configuration, verify TDX is now enabled:
+Navigate to: **Advanced → CPU Configuration** (or **Processor Configuration**)
 
-### 1. Check TME/MKTME Status
+Find and **disable**:
 
-```bash
-dmesg | grep -i tme
-```
+- ☐ **Limit CPU Physical Address to 46 bits**
+- May also be labeled: "Physical Address Limit", "Hyper-V Physical Address Limit", or "Address Width Limit"
 
-**Expected output (TME and MKTME enabled):**
+**Why this matters:** The 46-bit address limit prevents TME-MT from working. Intel MKTME needs the upper address bits for encryption key IDs. If you don't disable this first, TME-MT will be greyed out and unselectable.
 
-```
-[    0.000000] x86/tme: enabled by BIOS
-[    0.000000] x86/mktme: enabled by BIOS
-[    0.000000] x86/mktme: 63 KeyIDs available
-```
+> **Note:** If this setting doesn't exist on your system, it may already be disabled or not applicable. Proceed to the next step.
 
-**What this means:**
+### Step 1: Memory Encryption Settings
 
--   ✅ TME (Total Memory Encryption) is active
--   ✅ MKTME (Multi-Key TME) is active - this is TME-MT working
--   ✅ 63 KeyIDs available means you can run up to 63 isolated Trust Domains simultaneously
+Navigate to: **Advanced → CPU Configuration → Memory Encryption** (or similar path)
 
-### 2. Check TDX Initialization
+Enable these settings:
 
-```bash
-dmesg | grep -i tdx
-```
+- ☑ **Total Memory Encryption (TME)** - Base memory encryption
+- ☑ **Total Memory Encryption Multi-Tenant (TME-MT)** - Multi-key encryption for TDX
+- ☐ **TME-MT Memory Integrity** - **Disable this** (impacts performance)
+- **TME-MT/TDX Key Split** → Set to **1** or higher (allocates keys for TDX)
 
-**Expected output (TDX enabled with attestation):**
+### Step 2: Intel TDX Settings
 
-```
-[   58.680744] virt/tdx: BIOS enabled: private KeyID range [32, 64)
-[   58.681739] virt/tdx: Disable ACPI S3. Turn off TDX in the BIOS to use ACPI S3.
-[  245.715035] virt/tdx: TDX module: attributes 0x0, vendor_id 0x8086, major_version 1, minor_version 5, build_date 20240725, build_num 784
-[  245.715041] virt/tdx: CMR: [0x100000, 0x77800000)
-[  245.715044] virt/tdx: CMR: [0x100000000, 0x407a000000)
-[  245.715046] virt/tdx: CMR: [0x4080000000, 0x807c000000)
-[  245.715048] virt/tdx: CMR: [0x8080000000, 0xc07c000000)
-[  245.715049] virt/tdx: CMR: [0xc080000000, 0x1007c000000)
-[  249.751098] virt/tdx: 4202516 KB allocated for PAMT
-[  249.751110] virt/tdx: module initialized
-```
+Navigate to: **Advanced → CPU Configuration** (may be under Security submenu)
 
-**What this means:**
+Enable these settings:
 
--   ✅ TDX module version 1.5 loaded successfully
--   ✅ Private KeyIDs allocated for TDX guests (32-64)
--   ✅ CMR (Convertible Memory Regions) configured - these are memory ranges available for TDX
--   ✅ PAMT (Physical Address Metadata Table) allocated (~4.2 GB for tracking TD memory)
--   ✅ **Module initialized** - TDX is fully operational
+- ☑ **Trust Domain Extension (TDX)** - Main TDX enable
+- ☑ **TDX Secure Arbitration Mode Loader (SEAM Loader)** - Required for TDX module
 
-**Note:** ACPI S3 (suspend-to-RAM) is disabled when TDX is enabled. This is expected behavior.
+You should see key allocation information:
 
-### 3. Check TDX Parameter
+- **TME-MT Keys:** 31 (or similar)
+- **TDX Keys:** 32 (or similar)
 
-```bash
-cat /sys/module/kvm_intel/parameters/tdx
-```
+### Step 3: Intel SGX Settings (REQUIRED for KMS)
 
-**Expected output:**
+**SGX is required for KMS attestation**, even on TDX systems. The KMS uses SGX to generate attestation quotes that prove your platform is genuine Intel hardware registered with Intel's Provisioning Certification Service.
 
-```
-Y
-```
+Navigate to: **Advanced → CPU Configuration → Software Guard Extension (SGX)**
 
-✅ This confirms KVM has TDX support enabled.
+Enable these settings:
 
-### 4. Check TDX Host CPU Flags
+| Setting | Value | Notes |
+|---------|-------|-------|
+| **SW Guard Extensions (SGX)** | Enabled | Main SGX enable |
+| **SGX Auto MP Registration** | **Enabled** | **CRITICAL** - Registers platform with Intel |
+| SGX Factory Reset | Disabled | Don't reset SGX keys |
+| **SGX QoS** | Enabled | Quality of Service |
+| **PRM Size for SGX** | Auto | Memory allocation (or specific size) |
+| **Select Owner EPOCH Input Type** | SGX Owner EPOCH activated | |
+| **SGXLEPUBKEYHASHx Write Enable** | Enabled | Allows launch enclave configuration |
 
-```bash
-grep -o 'tdx[^ ]*' /proc/cpuinfo | sort -u
-```
+> **Why SGX Auto MP Registration is critical:** This setting enables automatic registration of your platform with Intel's Provisioning Certification Service (PCS). On first boot after enabling this setting, your system will register with Intel and obtain Platform Certification Keys (PCKs). Without this registration, the KMS cannot generate valid attestation quotes, and the local_key_provider will fail to bootstrap.
 
-**Expected output (TDX host):**
+### Step 4: Save and Exit
 
-```
-tdx_host_platform
-tdx_pw_mce
-```
+1. Press **F4** (or navigate to Save & Exit)
+2. Confirm save changes
+3. System will reboot
 
-**What this means:**
+## Verification (After Software Installation)
 
--   ✅ `tdx_host_platform` - Your CPU is running as a TDX host (correct!)
--   ✅ `tdx_pw_mce` - TDX Power Management and Machine Check Exception support
+BIOS settings cannot be fully verified until the TDX software stack and kernel are installed. After completing the next tutorial ([TDX Software Installation](/tutorial/tdx-software-installation)), you'll verify:
 
-**Note:** The `tdx_guest` flag appears inside TDX guest VMs, not on the host. If you see `tdx_host_platform`, your host is configured correctly.
+- TME/MKTME enabled via `dmesg | grep -i tme`
+- TDX module loaded via `dmesg | grep -i tdx`
+- SGX devices present via `ls /dev/sgx*`
+- SGX registration status
+
+## Troubleshooting
+
+### TME-MT is greyed out
+
+**Cause:** Physical Address Limit is still enabled.
+
+**Solution:** Go to Advanced → CPU Configuration and disable "Limit CPU Physical Address to 46 bits", save, reboot, then return to enable TME-MT.
+
+### TDX option not visible
+
+**Cause:** TME-MT must be enabled first, or CPU doesn't support TDX.
+
+**Solution:**
+1. Ensure TME and TME-MT are enabled
+2. Verify your CPU supports TDX (check [TDX Hardware Verification](/tutorial/tdx-hardware-verification))
+
+### SGX Auto MP Registration not available
+
+**Cause:** SGX must be enabled first.
+
+**Solution:** Enable "SW Guard Extensions (SGX)" first, then the Auto MP Registration option should appear.
+
+### Settings don't persist after reboot
+
+**Cause:** BIOS battery issue or settings not saved properly.
+
+**Solution:**
+1. Ensure you're pressing F4 or explicitly selecting "Save & Exit"
+2. Check for BIOS firmware updates
 
 ## Next Steps
 
-Continue to **Appendix A: TDX Troubleshooting & Next Steps** for:
+After saving BIOS settings and rebooting, continue to:
 
--   Troubleshooting common TDX issues
--   What to do after TDX is enabled
--   Testing TDX functionality
--   Deploying dstack
--   Additional resources and documentation
+- [TDX Software Installation](/tutorial/tdx-software-installation) - Install the TDX kernel and software stack
+
+## Additional Resources
+
+- [Intel TDX Documentation](https://www.intel.com/content/www/us/en/developer/tools/trust-domain-extensions/overview.html)
+- [Intel SGX Documentation](https://www.intel.com/content/www/us/en/developer/tools/software-guard-extensions/overview.html)
+- [Canonical TDX Repository](https://github.com/canonical/tdx)

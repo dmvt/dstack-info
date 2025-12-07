@@ -12,7 +12,7 @@ tags:
   - "resources"
 difficulty: "intermediate"
 estimatedTime: "15 minutes"
-lastUpdated: 2025-10-31
+lastUpdated: 2025-12-07
 ---
 
 # TDX Troubleshooting & Next Steps
@@ -183,7 +183,8 @@ Your server is now ready to run Intel TDX Trust Domains!
 - TME-MT enabled
 - TDX enabled
 - SEAM Loader enabled
-- SGX enabled (optional)
+- SGX enabled (required for KMS attestation)
+- SGX Auto MP Registration enabled (required for KMS)
 - **Physical Address Limit: DISABLED** (critical for TME-MT)
 
 ## Getting Help

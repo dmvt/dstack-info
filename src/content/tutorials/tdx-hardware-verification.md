@@ -3,8 +3,8 @@ title: "TDX Hardware Verification"
 description: "Verify your hardware supports Intel TDX and check memory configuration requirements"
 section: "Host Setup"
 stepNumber: 1
-totalSteps: 5
-lastUpdated: 2025-10-31
+totalSteps: 4
+lastUpdated: 2025-12-07
 
 tags:
   - "tdx"
@@ -119,7 +119,7 @@ Once you've verified your hardware meets all TDX requirements:
 - Ubuntu 24.04 LTS installed
 - Memory configuration meets requirements (minimum 2 channels per socket)
 
-You're ready to proceed to **Part 2: TDX Software Setup** where you'll install Canonical's TDX software stack.
+You're ready to proceed to [TDX & SGX BIOS Configuration](/tutorial/tdx-bios-configuration) where you'll configure BIOS settings for TDX and SGX.
 
 ## Additional Resources
 

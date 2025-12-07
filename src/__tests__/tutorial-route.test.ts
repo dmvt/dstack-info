@@ -59,7 +59,7 @@ describe('Tutorial Route Heading Extraction', () => {
   });
 
   it('should generate unique anchor IDs within a tutorial', () => {
-    const tutorialPath = path.join(TUTORIALS_DIR, 'tdx-software-setup.md');
+    const tutorialPath = path.join(TUTORIALS_DIR, 'tdx-software-installation.md');
     const content = fs.readFileSync(tutorialPath, 'utf-8');
     const bodyMatch = content.match(/^---\n[\s\S]*?\n---\n([\s\S]*)$/);
 
@@ -76,7 +76,7 @@ describe('Tutorial Route Heading Extraction', () => {
   });
 
   it('should extract correct heading levels', () => {
-    const tutorialPath = path.join(TUTORIALS_DIR, 'tdx-kernel-installation.md');
+    const tutorialPath = path.join(TUTORIALS_DIR, 'tdx-sgx-verification.md');
     const content = fs.readFileSync(tutorialPath, 'utf-8');
     const bodyMatch = content.match(/^---\n[\s\S]*?\n---\n([\s\S]*)$/);
 
@@ -135,7 +135,7 @@ describe('Tutorial Route Heading Extraction', () => {
   });
 
   it('should maintain heading order', () => {
-    const tutorialPath = path.join(TUTORIALS_DIR, 'tdx-status-verification.md');
+    const tutorialPath = path.join(TUTORIALS_DIR, 'tdx-bios-configuration.md');
     const content = fs.readFileSync(tutorialPath, 'utf-8');
     const bodyMatch = content.match(/^---\n[\s\S]*?\n---\n([\s\S]*)$/);
 
