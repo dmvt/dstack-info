@@ -31,7 +31,64 @@ Before starting, ensure you have:
 
 ## Quick Start: Install with Ansible
 
-For automated installation, use the Ansible playbook:
+Throughout these tutorials, you'll see "Quick Start with Ansible" sections that offer an automated alternative to manual steps. **Ansible** is an infrastructure automation tool that lets you run the same commands across multiple servers with a single command. It's useful if you:
+
+- Want repeatable, consistent installations
+- Plan to manage multiple TDX servers
+- Prefer automation over manual steps
+
+If you're setting up a single server and want to understand each step, skip to [Manual Installation](#manual-installation) below.
+
+### Prerequisites for Ansible
+
+Before using Ansible playbooks, you need:
+
+1. **Ubuntu user on the server** - The playbooks expect an `ubuntu` user with passwordless sudo. If you haven't set this up yet, follow the [Set Up Ubuntu User](#set-up-ubuntu-user) section below first, then return here.
+
+2. **Ansible installed locally** - Install on your local machine (not the server):
+   ```bash
+   # Ubuntu/Debian
+   sudo apt update && sudo apt install ansible
+
+   # macOS
+   brew install ansible
+   ```
+
+3. **Repository cloned locally** - Clone and configure the inventory:
+   ```bash
+   cd ~
+   git clone https://github.com/dmvt/dstack-info.git
+   cd dstack-info/ansible
+
+   # Create inventory from example
+   cp inventory/hosts.example.yml inventory/hosts.yml
+
+   # Edit with your server IP
+   nano inventory/hosts.yml
+   ```
+
+   Set your server's IP address in the inventory file:
+   ```yaml
+   all:
+     children:
+       dstack_servers:
+         hosts:
+           tdx-host:
+             ansible_host: YOUR_SERVER_IP  # Replace with actual IP
+             ansible_user: ubuntu
+   ```
+
+4. **Test the connection**:
+   ```bash
+   ansible all -m ping -i inventory/hosts.yml
+   ```
+   You should see `"pong"` in the response.
+
+> **Need more details?** See [Appendix B: Ansible TDX Automation Setup](/tutorial/ansible-tdx-automation) for comprehensive Ansible setup instructions, troubleshooting, and understanding playbook output.
+
+### Run the Playbook
+
+Once prerequisites are met:
 
 ```bash
 cd ~/dstack-info/ansible
@@ -39,24 +96,23 @@ ansible-playbook -i inventory/hosts.yml playbooks/setup-tdx-host.yml
 ```
 
 The playbook will:
-1. Clone Canonical's TDX repository (pinned to tag 3.3)
-2. Enable attestation components
-3. Run the TDX host setup script
-4. Verify kernel installation
-5. Reboot to load the TDX kernel
+1. Check if TDX kernel is already running (exits early if so)
+2. Clone Canonical's TDX repository (pinned to tag 3.3)
+3. Enable attestation components
+4. Run the TDX host setup script
+5. Verify kernel installation
+6. Reboot to load the TDX kernel
 
-After reboot, verify with:
+After the server reboots, verify TDX is working:
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/verify-tdx.yml
 ```
-
-> **Idempotency:** If already running the TDX kernel, the playbook exits immediately with no action.
 
 ---
 
 ## Manual Installation
 
-If you prefer to install manually, follow the steps below.
+If you prefer to install manually, or need to set up the ubuntu user first, follow the steps below.
 
 ## Set Up Ubuntu User
 
