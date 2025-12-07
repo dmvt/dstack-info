@@ -26,7 +26,7 @@ This spec adds SGX BIOS configuration tutorials and updates KMS deployment to en
 - [x] Update Ansible playbook `verify-tdx.yml` to include SGX checks
 - [x] Update `kms-build-configuration.md` to add SGX verification as prerequisite
 - [x] Update `kms-cvm-deployment.md` with SGX verification step
-- [ ] Test full flow on fresh OS install (173.231.234.133)
+- [x] Test full flow on fresh OS install (173.231.234.133)
 
 ### Should Have
 - [x] Add SGX troubleshooting section for common registration failures

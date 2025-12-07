@@ -14,22 +14,22 @@ This contributes to the broader goal of having every tutorial step automatable v
 ## Requirements
 
 ### Must Have
-- [ ] Create `setup-tdx-host.yml` playbook that:
-  - [ ] Clones Canonical TDX repository to `~/tdx`
-  - [ ] Enables attestation in `setup-tdx-config` (`TDX_SETUP_ATTESTATION=1`)
-  - [ ] Runs `setup-tdx-host.sh` script
-  - [ ] Verifies Intel kernel was installed (`/boot/vmlinuz*intel` exists)
-  - [ ] Verifies GRUB configuration (`/etc/default/grub.d/99-tdx-kernel.cfg` exists)
-  - [ ] Triggers reboot only if changes were made
-- [ ] Playbook is idempotent (safe to run multiple times)
-- [ ] Update `ansible/README.md` with playbook documentation
-- [ ] Update tutorial to reference Ansible quick start option
+- [x] Create `setup-tdx-host.yml` playbook that:
+  - [x] Clones Canonical TDX repository to `~/tdx`
+  - [x] Enables attestation in `setup-tdx-config` (`TDX_SETUP_ATTESTATION=1`)
+  - [x] Runs `setup-tdx-host.sh` script
+  - [x] Verifies Intel kernel was installed (`/boot/vmlinuz*intel` exists)
+  - [x] Verifies GRUB configuration (`/etc/default/grub.d/99-tdx-kernel.cfg` exists)
+  - [x] Triggers reboot only if changes were made
+- [x] Playbook is idempotent (safe to run multiple times)
+- [x] Update `ansible/README.md` with playbook documentation
+- [x] Update tutorial to reference Ansible quick start option
 
 ### Should Have
-- [ ] Register a handler for reboot to consolidate reboot logic
-- [ ] Add pre-flight check for Ubuntu 24.04 LTS
-- [ ] Add pre-flight check that BIOS configuration appears complete (TDX CPU flags present)
-- [ ] Support configurable attestation setting via variable (default: enabled)
+- [x] Register a handler for reboot to consolidate reboot logic
+- [x] Add pre-flight check for Ubuntu 24.04 LTS
+- [x] Add pre-flight check that BIOS configuration appears complete (TDX CPU flags present)
+- [x] Support configurable attestation setting via variable (default: enabled)
 
 ### Must NOT Have
 - Post-reboot verification (that's `verify-tdx.yml`'s job)
