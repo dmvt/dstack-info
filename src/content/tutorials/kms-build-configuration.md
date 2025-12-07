@@ -4,9 +4,10 @@ description: "Build and configure the dstack Key Management Service"
 section: "KMS Deployment"
 stepNumber: 3
 totalSteps: 6
-lastUpdated: 2025-12-04
+lastUpdated: 2025-12-07
 prerequisites:
   - contract-deployment
+  - tdx-sgx-verification
 tags:
   - dstack
   - kms
@@ -26,8 +27,11 @@ This tutorial guides you through building and configuring the dstack Key Managem
 Before starting, ensure you have:
 
 - Completed [Contract Deployment](/tutorial/contract-deployment) with deployed KMS contract
+- Completed [TDX & SGX Verification](/tutorial/tdx-sgx-verification) - **SGX must be verified before KMS deployment**
 - Completed [Rust Toolchain Installation](/tutorial/rust-toolchain-installation)
 - dstack repository cloned to ~/dstack
+
+> **Important:** The KMS uses a `local_key_provider` that requires SGX to generate TDX attestation quotes. Without SGX properly configured (including Auto MP Registration in BIOS), KMS cannot bootstrap and will fail to generate cryptographic proofs of its TDX environment.
 
 ## Quick Start: Build with Ansible
 

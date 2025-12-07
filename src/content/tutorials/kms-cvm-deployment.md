@@ -4,7 +4,7 @@ description: "Deploy dstack KMS as a Confidential Virtual Machine for TDX attest
 section: "KMS Deployment"
 stepNumber: 4
 totalSteps: 6
-lastUpdated: 2025-12-04
+lastUpdated: 2025-12-07
 prerequisites:
   - kms-build-configuration
 tags:
@@ -38,10 +38,13 @@ Running KMS inside a CVM provides significant security benefits:
 Before starting, ensure you have:
 
 - Completed [KMS Build & Configuration](/tutorial/kms-build-configuration)
+- Completed [TDX & SGX Verification](/tutorial/tdx-sgx-verification) - SGX must be working for attestation
 - Docker image `dstack-kms:latest` built
 - Deployment files in `~/kms-deployment/`
 - dstack VMM running (`systemctl status dstack-vmm`)
 - VMM web interface available at http://localhost:9080
+
+> **Why SGX is required:** The KMS uses Intel SGX to generate TDX attestation quotes via the `local_key_provider`. SGX Auto MP Registration must be enabled in BIOS so your platform is registered with Intel's Provisioning Certification Service (PCS). Without this registration, KMS cannot generate valid attestation quotes, and bootstrap will fail.
 
 ## Quick Start: Deploy with Ansible
 
@@ -405,14 +408,26 @@ curl -s http://127.0.0.1:9080/api/instances/kms | jq '{status, ports}'
 "quote": null
 ```
 
-This indicates quote_enabled might be false, or guest-agent issues:
+This indicates quote_enabled might be false, guest-agent issues, or **SGX not properly configured**:
 
 ```bash
 # Check CVM logs for TDX-related errors
-curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100" | grep -i "quote\|tdx"
+curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100" | grep -i "quote\|tdx\|sgx"
 ```
 
-Verify your `kms.toml` has `quote_enabled = true` in the `[core.onboard]` section.
+**Common causes:**
+
+1. **SGX not enabled in BIOS** - Verify SGX devices exist on host:
+   ```bash
+   ls -la /dev/sgx*
+   ```
+   If missing, configure SGX in BIOS. See [TDX & SGX BIOS Configuration](/tutorial/tdx-bios-configuration).
+
+2. **SGX Auto MP Registration not enabled** - Without this BIOS setting, your platform isn't registered with Intel's PCS, and attestation quotes cannot be verified. Re-enter BIOS and enable "SGX Auto MP Registration".
+
+3. **quote_enabled is false** - Verify your `kms.toml` has `quote_enabled = true` in the `[core.onboard]` section.
+
+4. **Guest-agent not running** - The `/var/run/dstack.sock` socket must exist inside the CVM.
 
 ### Authentication errors from auth-eth
 

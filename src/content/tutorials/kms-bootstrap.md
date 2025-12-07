@@ -4,7 +4,7 @@ description: "Verify KMS initialization and TDX attestation in the CVM"
 section: "KMS Deployment"
 stepNumber: 5
 totalSteps: 6
-lastUpdated: 2025-12-04
+lastUpdated: 2025-12-07
 prerequisites:
   - kms-cvm-deployment
 tags:
@@ -295,15 +295,25 @@ Common causes:
 }
 ```
 
-This indicates TDX attestation failed. Check:
+This indicates TDX attestation failed. The KMS uses SGX to generate TDX attestation quotes.
 
-1. **quote_enabled in config**: Ensure `quote_enabled = true` in your `kms.toml`
+**Check the following:**
 
-2. **CVM logs for TDX errors**:
+1. **SGX is enabled and registered**: Verify SGX devices exist on host:
    ```bash
-   curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100" | grep -i "tdx\|quote"
+   ls -la /dev/sgx*
    ```
-   CVM must be running in actual TDX mode.
+   If missing, SGX is not enabled in BIOS. See [TDX & SGX BIOS Configuration](/tutorial/tdx-bios-configuration).
+
+2. **SGX Auto MP Registration is enabled**: Without this BIOS setting, your platform isn't registered with Intel's Provisioning Certification Service (PCS), and attestation quotes cannot be generated. Re-enter BIOS and enable "SGX Auto MP Registration", then reboot.
+
+3. **quote_enabled in config**: Ensure `quote_enabled = true` in your `kms.toml`
+
+4. **CVM logs for TDX/SGX errors**:
+   ```bash
+   curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100" | grep -i "tdx\|quote\|sgx"
+   ```
+   CVM must be running in actual TDX mode with SGX available.
 
 ### Certificate chain invalid
 
