@@ -51,3 +51,4 @@ temp/
 
 # Obsidian
 .obsidian/
+.claude/
