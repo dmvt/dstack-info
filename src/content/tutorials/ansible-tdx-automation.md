@@ -196,16 +196,54 @@ ansible_python_interpreter: /usr/bin/python3
 
 ## Available Playbooks
 
+### Phase 1: Host Setup
+
 | Playbook | Purpose |
 |----------|---------|
 | `setup-tdx-host.yml` | Install TDX software stack |
 | `verify-tdx.yml` | Verify TDX & SGX are working |
+| `verify-dns.yml` | Verify DNS configuration |
+| `verify-blockchain.yml` | Verify wallet setup |
+
+### Phase 2: dstack Installation
+
+| Playbook | Purpose |
+|----------|---------|
 | `setup-host-dependencies.yml` | Install build dependencies |
-| `setup-rust-toolchain.yml` | Install Rust |
+| `setup-rust-toolchain.yml` | Install Rust toolchain |
 | `build-dstack-vmm.yml` | Build VMM from source |
+| `setup-vmm-config.yml` | Create VMM configuration |
 | `setup-vmm-service.yml` | Configure VMM systemd service |
 
-See the [Ansible README](https://github.com/dmvt/dstack-info/tree/main/ansible) for the complete list.
+### Phase 3: KMS Deployment
+
+| Playbook | Purpose |
+|----------|---------|
+| `compile-kms-contracts.yml` | Compile smart contracts |
+| `upload-wallet-credentials.yml` | Upload wallet to server |
+| `deploy-kms-contracts.yml` | Deploy contracts to Sepolia |
+| `build-kms.yml` | Build KMS binary |
+| `deploy-kms-cvm.yml` | Deploy KMS as CVM |
+| `verify-kms-cvm.yml` | Verify KMS CVM running |
+
+### Phase 4: Gateway Deployment
+
+| Playbook | Purpose |
+|----------|---------|
+| `setup-gateway-ssl.yml` | Setup SSL certificates |
+| `build-gateway.yml` | Build and configure gateway |
+| `setup-gateway-service.yml` | Setup gateway systemd service |
+| `verify-gateway.yml` | Verify gateway deployment |
+
+### Phase 5: Application Deployment
+
+| Playbook | Purpose |
+|----------|---------|
+| `setup-guest-images.yml` | Prepare guest OS images |
+| `deploy-hello-world.yml` | Deploy hello world app |
+| `verify-attestation.yml` | Verify TDX attestation |
+
+See the [Ansible README](https://github.com/dmvt/dstack-info/tree/main/ansible) for detailed documentation.
 
 ## Additional Resources
 

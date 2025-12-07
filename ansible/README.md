@@ -15,29 +15,50 @@ The Ansible automation in this repository serves two purposes:
 ansible/
 ├── README.md                    # This file
 ├── playbooks/
-│   ├── verify-tdx.yml              # Verify TDX host is properly configured (Phase 1.1)
-│   ├── verify-dns.yml              # Verify DNS configuration for dstack (Phase 1.2)
-│   ├── verify-blockchain.yml       # Verify blockchain wallet setup (Phase 1.3)
-│   ├── setup-host-dependencies.yml # Install build dependencies (Phase 2.1)
-│   ├── setup-rust-toolchain.yml    # Install Rust toolchain (Phase 2.2)
-│   ├── verify-rust-toolchain.yml   # Verify Rust toolchain installation (Phase 2.2)
-│   ├── build-dstack-vmm.yml        # Clone and build dstack-vmm (Phase 2.3)
-│   ├── verify-dstack-vmm.yml       # Verify dstack-vmm installation (Phase 2.3)
-│   ├── setup-vmm-config.yml        # Create VMM configuration (Phase 2.4)
-│   ├── verify-vmm-config.yml       # Verify VMM configuration (Phase 2.4)
-│   ├── setup-vmm-service.yml       # Setup VMM systemd service (Phase 2.5)
-│   ├── verify-vmm-service.yml      # Verify VMM service is running (Phase 2.5)
-│   ├── compile-kms-contracts.yml   # Compile KMS smart contracts (Phase 3.1)
-│   ├── deploy-kms-contracts.yml    # Deploy contracts to Sepolia (Phase 3.2)
-│   ├── build-kms.yml               # Build and configure KMS (Phase 3.3)
-│   ├── bootstrap-kms.yml           # Bootstrap KMS with root keys (Phase 3.4)
-│   ├── setup-kms-services.yml      # Setup KMS systemd services (Phase 3.5)
-│   ├── verify-kms-services.yml     # Verify KMS services running (Phase 3.5)
-│   ├── verify-kms-contracts.yml    # Verify KMS contracts deployed (Phase 3.2)
-│   ├── setup-gateway-ssl.yml       # Setup SSL certificates (Phase 4.1)
-│   ├── build-gateway.yml           # Build and configure gateway (Phase 4.2)
-│   ├── setup-gateway-service.yml   # Setup gateway systemd service (Phase 4.3)
-│   └── verify-gateway.yml          # Verify gateway deployment (Phase 4)
+│   │
+│   │ # Phase 1: Host Setup
+│   ├── setup-tdx-host.yml          # Install TDX software stack
+│   ├── verify-tdx.yml              # Verify TDX & SGX are working
+│   ├── verify-dns.yml              # Verify DNS configuration
+│   ├── verify-blockchain.yml       # Verify blockchain wallet setup
+│   │
+│   │ # Phase 2: dstack Installation
+│   ├── setup-host-dependencies.yml # Install build dependencies
+│   ├── verify-host-dependencies.yml# Verify build dependencies
+│   ├── setup-rust-toolchain.yml    # Install Rust toolchain
+│   ├── verify-rust-toolchain.yml   # Verify Rust installation
+│   ├── build-dstack-vmm.yml        # Clone and build dstack-vmm
+│   ├── verify-dstack-vmm.yml       # Verify dstack-vmm installation
+│   ├── setup-vmm-config.yml        # Create VMM configuration
+│   ├── verify-vmm-config.yml       # Verify VMM configuration
+│   ├── setup-vmm-service.yml       # Setup VMM systemd service
+│   ├── verify-vmm-service.yml      # Verify VMM service running
+│   │
+│   │ # Phase 3: KMS Deployment
+│   ├── compile-kms-contracts.yml   # Compile KMS smart contracts
+│   ├── upload-wallet-credentials.yml # Upload wallet to server
+│   ├── deploy-kms-contracts.yml    # Deploy contracts to Sepolia
+│   ├── verify-kms-contracts.yml    # Verify contracts deployed
+│   ├── build-kms.yml               # Build KMS binary
+│   ├── verify-kms-build.yml        # Verify KMS build
+│   ├── deploy-kms-cvm.yml          # Deploy KMS as CVM
+│   ├── verify-kms-cvm.yml          # Verify KMS CVM running
+│   ├── verify-kms-bootstrap.yml    # Verify KMS bootstrap
+│   ├── setup-kms-services.yml      # Setup KMS services (legacy)
+│   ├── verify-kms-services.yml     # Verify KMS services
+│   │
+│   │ # Phase 4: Gateway Deployment
+│   ├── setup-gateway-ssl.yml       # Setup SSL certificates
+│   ├── build-gateway.yml           # Build and configure gateway
+│   ├── setup-gateway-service.yml   # Setup gateway systemd service
+│   ├── verify-gateway.yml          # Verify gateway deployment
+│   │
+│   │ # Phase 5: Application Deployment
+│   ├── setup-guest-images.yml      # Prepare guest OS images
+│   ├── deploy-hello-world.yml      # Deploy hello world app
+│   ├── verify-attestation.yml      # Verify TDX attestation
+│   └── verify-deployment.yml       # Verify full deployment
+│
 ├── inventory/
 │   └── hosts.example.yml       # Example inventory template
 └── group_vars/
