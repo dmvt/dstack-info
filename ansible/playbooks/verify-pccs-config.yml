@@ -79,10 +79,10 @@
 
     - name: Warn if PCCS not responding
       ansible.builtin.debug:
-        msg: |
-          WARNING: PCCS health endpoint not responding.
-          This may be normal if no certificates have been cached yet.
-          The first CVM deployment will trigger certificate fetching.
+        msg:
+          - "WARNING: PCCS health endpoint not responding."
+          - "This may be normal if no certificates have been cached yet."
+          - "The first CVM deployment will trigger certificate fetching."
       when: pccs_health.failed | default(false)
 
     - name: Check for recent PCCS errors
@@ -93,11 +93,11 @@
 
     - name: Display PCCS errors if any
       ansible.builtin.debug:
-        msg: |
-          Recent PCCS errors detected:
-          {{ pccs_errors.stdout }}
-
-          Check full logs with: sudo journalctl -u pccs -n 100
+        msg:
+          - "Recent PCCS errors detected:"
+          - "{{ pccs_errors.stdout }}"
+          - ""
+          - "Check full logs with: sudo journalctl -u pccs -n 100"
       when: pccs_errors.stdout != ""
 
     - name: Check for recent QGSD errors
@@ -108,29 +108,29 @@
 
     - name: Display QGSD errors if any
       ansible.builtin.debug:
-        msg: |
-          Recent QGSD errors detected:
-          {{ qgsd_errors.stdout }}
-
-          Check full logs with: sudo journalctl -u qgsd -n 100
+        msg:
+          - "Recent QGSD errors detected:"
+          - "{{ qgsd_errors.stdout }}"
+          - ""
+          - "Check full logs with: sudo journalctl -u qgsd -n 100"
       when: qgsd_errors.stdout != ""
+
+    - name: Set verification status
+      ansible.builtin.set_fact:
+        verification_status: "{{ 'READY for CVM deployment' if (pccs_errors.stdout == '' and qgsd_errors.stdout == '') else 'CHECK LOGS - errors detected' }}"
 
     - name: PCCS configuration verification summary
       ansible.builtin.debug:
-        msg: |
-          ========================================
-          PCCS Configuration Verification Summary
-          ========================================
-
-          PCCS Service:     {{ 'Running' if pccs_status.status.ActiveState == 'active' else 'NOT RUNNING' }}
-          API Key:          {{ 'Configured' if api_key_check.rc == 0 else 'NOT CONFIGURED' }}
-          QGSD Service:     {{ 'Running' if qgsd_status.status.ActiveState == 'active' else 'NOT RUNNING' }}
-          PCCS Health:      {{ 'OK' if not (pccs_health.failed | default(false)) else 'Check logs' }}
-
-          {% if pccs_errors.stdout == "" and qgsd_errors.stdout == "" %}
-          Status: READY for CVM deployment
-          {% else %}
-          Status: CHECK LOGS - errors detected
-          {% endif %}
-
-          ========================================
+        msg:
+          - "========================================"
+          - "PCCS Configuration Verification Summary"
+          - "========================================"
+          - ""
+          - "PCCS Service:  {{ 'Running' if pccs_status.status.ActiveState == 'active' else 'NOT RUNNING' }}"
+          - "API Key:       {{ 'Configured' if api_key_check.rc == 0 else 'NOT CONFIGURED' }}"
+          - "QGSD Service:  {{ 'Running' if qgsd_status.status.ActiveState == 'active' else 'NOT RUNNING' }}"
+          - "PCCS Health:   {{ 'OK' if not (pccs_health.failed | default(false)) else 'Check logs' }}"
+          - ""
+          - "Status: {{ verification_status }}"
+          - ""
+          - "========================================"

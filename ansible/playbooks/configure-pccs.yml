@@ -87,22 +87,34 @@
         host: 127.0.0.1
         timeout: 30
 
+    - name: Wait additional time for PCCS to initialize
+      ansible.builtin.pause:
+        seconds: 5
+
     - name: Verify PCCS is responding
       ansible.builtin.uri:
         url: http://127.0.0.1:8081/sgx/certification/v4/rootcacrl
         return_content: false
         status_code: [200, 404]  # 404 is OK if no cached certs yet
       register: pccs_health
-      ignore_errors: true
+      retries: 3
+      delay: 5
+      until: pccs_health.status in [200, 404]
 
     - name: Display configuration result
       ansible.builtin.debug:
-        msg: |
-          PCCS configuration complete!
-
-          - API key: Configured
-          - Service: Running on port 8081
-          - Status: {{ 'Healthy' if pccs_health.status in [200, 404] else 'Check logs' }}
-
-          Next step: Verify attestation with
-            ansible-playbook -i inventory/hosts.yml playbooks/verify-attestation.yml
+        msg:
+          - "============================================"
+          - "PCCS Configuration Complete!"
+          - "============================================"
+          - ""
+          - "API Key: Configured"
+          - "Service: Running on port 8081"
+          - "Health: Responding"
+          - ""
+          - "Next Steps:"
+          - "  Verify infrastructure:"
+          - "    ansible-playbook -i inventory/hosts.yml playbooks/verify-pccs-config.yml"
+          - ""
+          - "  Deploy KMS CVM:"
+          - "    ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-cvm.yml -e kms_domain=..."
