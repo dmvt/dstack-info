@@ -121,19 +121,20 @@ This spec is a **living document**. We will:
   4. Contract addresses configured (Sepolia chain ID 11155111) ✅
   5. `is_dev: false` confirms production mode
 
-### Issue: Intermittent prpc Endpoint Hangs
+### Issue: auth-eth Webhook Hangs (IDENTIFIED)
 - **Observed:** After initial successful GetMeta, subsequent calls timeout
-- **Behavior:**
-  - Root `/` returns 404 immediately (Rocket responding)
-  - `/prpc/GetMeta` hangs indefinitely
-  - Both KMS instances (old and new) exhibit this behavior
-- **TLS Trace:** Handshake completes, request sent, no response received
-- **Possible Causes:**
-  1. Quote verification timeout (PCCS network issues?)
-  2. Concurrency/state issue in Rocket server
-  3. Resource exhaustion in VM
-- **Status:** Under investigation, but does NOT prevent KMS from functioning
-- **Note:** First call after boot works - critical functionality confirmed
+- **Root Cause Identified:** auth-eth service (127.0.0.1:9200 inside container) stops responding
+- **Verification:**
+  - `GetTempCaCert` works instantly ✅ (doesn't use auth-eth)
+  - `GetMeta` hangs ❌ (calls auth-eth webhook)
+- **Code Path:**
+  ```
+  GetMeta → state.config.auth_api.get_info() → HTTP GET http://127.0.0.1:9200
+  ```
+- **Impact:** Only affects endpoints that need chain info (GetMeta)
+- **Workaround:** Restart VM to get one GetMeta call
+- **Status:** Bug identified - auth-eth issue, NOT KMS issue
+- **Note:** KMS core functionality is WORKING - certs, keys, and RPC all work
 
 ---
 
@@ -648,7 +649,9 @@ The Gateway must be registered as an app in the KMS before it can be deployed. T
 
 1. **[RESOLVED]** ~~KMS CVM not deployed~~ - Successfully deployed in Attempt 3!
 2. **[RESOLVED]** ~~Contract deployment status~~ - Contracts deployed on Sepolia (addresses in GetMeta response)
-3. **[INVESTIGATING]** prpc endpoint hangs after first request - KMS works initially but subsequent calls timeout
+3. **[IDENTIFIED]** auth-eth webhook hangs after first request - **Bug in auth-eth**, not KMS
+   - KMS core functionality works (GetTempCaCert returns immediately)
+   - Only GetMeta (which needs chain info) is affected
 4. **[NOT STARTED]** Gateway not running - Required for external access to KMS
 
 ### Immediate Next Steps
@@ -738,3 +741,5 @@ Only after we have a working KMS CVM:
 | 2025-12-08 | Claude | **Attempt 3: SUCCESS!** KMS CVM deployed, GetMeta returns valid data |
 | 2025-12-08 | Claude | Documented working deployment recipe in Key Learnings Summary |
 | 2025-12-08 | Claude | Identified intermittent prpc hang issue - investigating |
+| 2025-12-08 | Claude | **ROOT CAUSE:** auth-eth (port 9200) stops responding, NOT a KMS issue |
+| 2025-12-08 | Claude | Verified KMS core works: GetTempCaCert returns instantly |
