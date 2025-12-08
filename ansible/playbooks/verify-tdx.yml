@@ -132,7 +132,7 @@
           See tutorial: TDX BIOS Configuration
           https://dstack.info/tutorial/tdx-bios-configuration
 
-          Also check: TDX Troubleshooting & Next Steps
+          See also: TDX Troubleshooting
           https://dstack.info/tutorial/tdx-troubleshooting-next-steps
       when:
         - tdx_enabled

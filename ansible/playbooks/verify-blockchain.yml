@@ -211,10 +211,6 @@
           - "Wallet: {{ wallet_address }}"
           - "Balance: {{ balance_eth }} ETH"
           - "Status: Ready ✅"
-          - ""
-          - "Next Steps:"
-          - "  1. Proceed to KMS deployment (Phase 3)"
-          - "  2. See: https://dstack.info/tutorial/kms-deployment"
           - "═══════════════════════════════════════════════════════════════"
       when: balance_sufficient
 

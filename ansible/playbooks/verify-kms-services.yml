@@ -189,6 +189,3 @@
           - "  sudo systemctl status dstack-kms"
           - "  sudo journalctl -u dstack-auth-eth -f"
           - "  sudo journalctl -u dstack-kms -f"
-          - ""
-          - "Next step: Deploy dstack gateway"
-          - "  See: https://dstack.info/tutorial/gateway-setup"

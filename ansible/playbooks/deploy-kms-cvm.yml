@@ -336,9 +336,6 @@
           - ""
           - "Test Endpoints:"
           - "  Metadata: curl http://localhost:{{ kms_rpc_port }}/prpc/KMS.GetMeta"
-          - ""
-          - "Next Steps:"
-          - "  Verify: ansible-playbook playbooks/verify-kms-cvm.yml"
 
     - name: Fail if bootstrap not complete
       ansible.builtin.fail:

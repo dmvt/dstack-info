@@ -592,7 +592,3 @@
           - "  Directory: {{ user_home }}/kms-deployment/"
           - "  Image: dstack-kms:latest"
           - "  Manifest: docker-compose.yml"
-          - ""
-          - "Next Steps:"
-          - "  1. Set auto_bootstrap_domain in ~/kms-deployment/kms.toml"
-          - "  2. Deploy KMS CVM: ansible-playbook playbooks/deploy-kms-cvm.yml"
