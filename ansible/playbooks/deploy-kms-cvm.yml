@@ -168,6 +168,21 @@
 
     - name: Handle existing CVM
       block:
+        - name: Stop existing KMS CVM (force redeploy)
+          ansible.builtin.uri:
+            url: "http://127.0.0.1:{{ vmm_http_port }}/prpc/StopVm?json"
+            method: POST
+            body_format: json
+            body:
+              id: "{{ kms_vm_id }}"
+          when: force_redeploy | bool
+          failed_when: false
+
+        - name: Wait for VM to stop
+          ansible.builtin.pause:
+            seconds: 10
+          when: force_redeploy | bool
+
         - name: Delete existing KMS CVM (force redeploy)
           ansible.builtin.uri:
             url: "http://127.0.0.1:{{ vmm_http_port }}/prpc/RemoveVm?json"
@@ -194,6 +209,7 @@
       when: kms_exists | default(false)
 
     # Generate docker-compose for CVM deployment
+    # Note: /var/run/dstack.sock is required for TDX quote generation
     - name: Generate docker-compose content
       ansible.builtin.set_fact:
         compose_content: |
@@ -203,6 +219,7 @@
               ports:
                 - "9100:9100"
               volumes:
+                - /var/run/dstack.sock:/var/run/dstack.sock
                 - kms-certs:/etc/kms/certs
               environment:
                 - RUST_LOG=info
@@ -266,20 +283,20 @@
 
     - name: Wait for KMS bootstrap to complete
       ansible.builtin.uri:
-        url: "http://localhost:{{ kms_rpc_port }}/prpc/KMS.GetMeta"
+        url: "https://localhost:{{ kms_rpc_port }}/prpc/KMS.GetMeta"
         method: GET
         return_content: yes
         status_code: 200
+        validate_certs: false
       register: kms_meta
       until: kms_meta.status == 200
       retries: 30
       delay: 5
       failed_when: false
 
-    - name: Check bootstrap info contains TDX quote
+    - name: Check bootstrap info
       ansible.builtin.set_fact:
-        has_quote: "{{ (kms_meta.json.quote | default('')) | length > 10 }}"
-        ca_pubkey: "{{ kms_meta.json.ca_pubkey | default('NOT AVAILABLE') }}"
+        has_ca_cert: "{{ (kms_meta.json.ca_cert | default('')) | length > 10 }}"
         k256_pubkey: "{{ kms_meta.json.k256_pubkey | default('NOT AVAILABLE') }}"
       when: kms_meta.status == 200
 
@@ -297,14 +314,12 @@
           - "Status:"
           - "  CVM Running: {{ 'Yes' if port_check is success else 'No' }}"
           - "  Bootstrap: {{ 'Complete' if kms_meta.status | default(0) == 200 else 'In Progress' }}"
-          - "  TDX Quote: {{ 'Present' if has_quote | default(false) else 'Not Available' }}"
+          - "  CA Certificate: {{ 'Generated' if has_ca_cert | default(false) else 'Not Available' }}"
           - ""
-          - "Public Keys:"
-          - "  CA: {{ (ca_pubkey | default('N/A'))[:50] }}..."
-          - "  K256: {{ (k256_pubkey | default('N/A'))[:50] }}..."
+          - "K256 Public Key: {{ (k256_pubkey | default('N/A'))[:50] }}..."
           - ""
-          - "Test Endpoints:"
-          - "  Metadata: curl http://localhost:{{ kms_rpc_port }}/prpc/KMS.GetMeta"
+          - "Test Endpoints (note: uses HTTPS with self-signed cert):"
+          - "  Metadata: curl -k https://localhost:{{ kms_rpc_port }}/prpc/KMS.GetMeta"
 
     - name: Fail if bootstrap not complete
       ansible.builtin.fail:
