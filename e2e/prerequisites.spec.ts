@@ -34,9 +34,9 @@ test.describe('Prerequisite Box Display Logic', () => {
       const progress = {
         // TDX chain (might be required if appendix exclusion isn't applied)
         'tdx-hardware-verification': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-software-setup': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-kernel-installation': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-status-verification': { completed: true, timestamp: new Date().toISOString() },
+        'tdx-software-installation': { completed: true, timestamp: new Date().toISOString() },
+        'tdx-sgx-verification': { completed: true, timestamp: new Date().toISOString() },
+        'kms-cvm-deployment': { completed: true, timestamp: new Date().toISOString() },
         'tdx-bios-configuration': { completed: true, timestamp: new Date().toISOString() },
         'tdx-troubleshooting-next-steps': { completed: true, timestamp: new Date().toISOString() },
         // Prerequisites section
@@ -48,9 +48,14 @@ test.describe('Prerequisite Box Display Logic', () => {
         'clone-build-dstack-vmm': { completed: true, timestamp: new Date().toISOString() },
         'vmm-configuration': { completed: true, timestamp: new Date().toISOString() },
         'vmm-service-setup': { completed: true, timestamp: new Date().toISOString() },
+        'guest-image-setup': { completed: true, timestamp: new Date().toISOString() },
         'smart-contract-compilation': { completed: true, timestamp: new Date().toISOString() },
         'contract-deployment': { completed: true, timestamp: new Date().toISOString() },
-        'kms-build-configuration': { completed: true, timestamp: new Date().toISOString() }
+        'kms-build-configuration': { completed: true, timestamp: new Date().toISOString() },
+        'kms-cvm-deployment': { completed: true, timestamp: new Date().toISOString() },
+        // TDX & SGX verification (may be shown as secondary prerequisite)
+        'tdx-software-installation': { completed: true, timestamp: new Date().toISOString() },
+        'tdx-sgx-verification': { completed: true, timestamp: new Date().toISOString() }
       };
       localStorage.setItem('dstack-tutorial-progress', JSON.stringify(progress));
     });
@@ -69,9 +74,9 @@ test.describe('Prerequisite Box Display Logic', () => {
     await page.evaluate(() => {
       const progress = {
         'tdx-hardware-verification': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-software-setup': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-kernel-installation': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-status-verification': { completed: true, timestamp: new Date().toISOString() },
+        'tdx-software-installation': { completed: true, timestamp: new Date().toISOString() },
+        'tdx-sgx-verification': { completed: true, timestamp: new Date().toISOString() },
+        'kms-cvm-deployment': { completed: true, timestamp: new Date().toISOString() },
         'tdx-bios-configuration': { completed: true, timestamp: new Date().toISOString() },
         'tdx-troubleshooting-next-steps': { completed: true, timestamp: new Date().toISOString() },
         'dns-configuration': { completed: true, timestamp: new Date().toISOString() },
@@ -119,9 +124,9 @@ test.describe('Prerequisite Box Display Logic', () => {
     await page.evaluate(() => {
       const progress = {
         'tdx-hardware-verification': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-software-setup': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-kernel-installation': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-status-verification': { completed: true, timestamp: new Date().toISOString() },
+        'tdx-software-installation': { completed: true, timestamp: new Date().toISOString() },
+        'tdx-sgx-verification': { completed: true, timestamp: new Date().toISOString() },
+        'kms-cvm-deployment': { completed: true, timestamp: new Date().toISOString() },
         'tdx-bios-configuration': { completed: true, timestamp: new Date().toISOString() },
         'tdx-troubleshooting-next-steps': { completed: true, timestamp: new Date().toISOString() },
         'dns-configuration': { completed: true, timestamp: new Date().toISOString() },
@@ -147,9 +152,9 @@ test.describe('Prerequisite Box Display Logic', () => {
       // Complete all prerequisites for rust-toolchain-installation
       const progress = {
         'tdx-hardware-verification': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-software-setup': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-kernel-installation': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-status-verification': { completed: true, timestamp: new Date().toISOString() },
+        'tdx-software-installation': { completed: true, timestamp: new Date().toISOString() },
+        'tdx-sgx-verification': { completed: true, timestamp: new Date().toISOString() },
+        'kms-cvm-deployment': { completed: true, timestamp: new Date().toISOString() },
         'tdx-bios-configuration': { completed: true, timestamp: new Date().toISOString() },
         'tdx-troubleshooting-next-steps': { completed: true, timestamp: new Date().toISOString() },
         'dns-configuration': { completed: true, timestamp: new Date().toISOString() },
@@ -295,9 +300,9 @@ test.describe('Prerequisite Box - Edge Cases', () => {
     await page.evaluate(() => {
       const progress = {
         'tdx-hardware-verification': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-software-setup': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-kernel-installation': { completed: true, timestamp: new Date().toISOString() },
-        'tdx-status-verification': { completed: true, timestamp: new Date().toISOString() },
+        'tdx-software-installation': { completed: true, timestamp: new Date().toISOString() },
+        'tdx-sgx-verification': { completed: true, timestamp: new Date().toISOString() },
+        'kms-cvm-deployment': { completed: true, timestamp: new Date().toISOString() },
         'tdx-bios-configuration': { completed: true, timestamp: new Date().toISOString() },
         'tdx-troubleshooting-next-steps': { completed: true, timestamp: new Date().toISOString() },
         'dns-configuration': { completed: true, timestamp: new Date().toISOString() },

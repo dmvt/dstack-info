@@ -48,6 +48,39 @@ Before starting, ensure you have:
 - VMM service running (with web interface at http://localhost:9080)
 - At least 10GB free disk space for images
 
+## Quick Start: Setup with Ansible
+
+> **Using Ansible?** Playbooks are in `~/dstack-info/ansible`. If you haven't set up Ansible yet, see [TDX Software Installation: Quick Start with Ansible](/tutorial/tdx-software-installation#quick-start-install-with-ansible) for initial setup.
+
+For most users, the recommended approach is to use the Ansible playbook which downloads and configures guest images automatically.
+
+### Step 1: Run the Ansible Playbook
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/setup-guest-images.yml
+```
+
+The playbook will:
+1. **Create image directory structure** - At /var/lib/dstack/images
+2. **Download guest OS image** - From GitHub releases
+3. **Extract and verify** - All image components (OVMF, kernel, initramfs, rootfs)
+4. **Restart VMM** - To pick up new images
+5. **Verify via API** - Confirm VMM can see the images
+
+### Step 2: Verify Images
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/verify-vmm-service.yml
+```
+
+Or check directly on the server:
+
+```bash
+curl -s http://127.0.0.1:9080/api/images | jq '.images[].name'
+```
+
+---
+
 ## Step 1: Create Image Directory Structure
 
 Create the directory where guest images will be stored:
@@ -203,24 +236,6 @@ cat /etc/dstack/vmm.toml | grep -A5 "image"
 The `image_path` should point to `/var/lib/dstack/images`.
 
 If VMM isn't finding the images, verify the path in the configuration matches where you installed them.
-
-## Ansible Automation
-
-You can automate the guest image setup using Ansible.
-
-### Run the Ansible playbook
-
-```bash
-cd ~/dstack-info/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/setup-guest-images.yml \
-  -e "dstack_version=0.4.0"
-```
-
-The playbook will:
-1. Create image directory structure
-2. Download guest OS image
-3. Extract and verify image components
-4. Verify VMM can access the images
 
 ## Managing Multiple Image Versions
 

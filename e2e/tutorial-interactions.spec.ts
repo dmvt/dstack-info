@@ -131,15 +131,15 @@ test.describe('Tutorial Page Interactions', () => {
     });
 
     test('should navigate to another tutorial when clicked', async ({ page }) => {
-      // Click on different tutorial in sidebar
-      const installRustLink = page.locator('aside a[href="/tutorial/tdx-software-setup"]');
-      await installRustLink.click();
+      // Click on different tutorial in sidebar (tdx-bios-configuration is step 2 in Host Setup)
+      const biosConfigLink = page.locator('aside a[href="/tutorial/tdx-bios-configuration"]');
+      await biosConfigLink.click();
 
       // Wait for navigation
-      await page.waitForURL('**/tutorial/tdx-software-setup');
+      await page.waitForURL('**/tutorial/tdx-bios-configuration');
 
       // Verify we're on the new page
-      await expect(page).toHaveURL(/\/tutorial\/tdx-software-setup/);
+      await expect(page).toHaveURL(/\/tutorial\/tdx-bios-configuration/);
     });
 
     test('should update sidebar when tutorial is completed', async ({ page }) => {
@@ -223,8 +223,8 @@ test.describe('Tutorial Page Interactions', () => {
       // Wait for navigation
       await page.waitForLoadState('networkidle');
 
-      // URL should change - should be on tdx-software-setup page
-      await expect(page).toHaveURL(/\/tutorial\/tdx-software-setup/);
+      // URL should change - tdx-bios-configuration is step 2 in Host Setup
+      await expect(page).toHaveURL(/\/tutorial\/tdx-bios-configuration/);
     });
 
     test('should have previous button when available', async ({ page }) => {
@@ -233,7 +233,7 @@ test.describe('Tutorial Page Interactions', () => {
       await expect(prevButtonDisabled).toBeVisible();
 
       // Navigate to second tutorial which DOES have a previous button
-      await page.goto('/tutorial/tdx-software-setup');
+      await page.goto('/tutorial/tdx-bios-configuration');
       await page.waitForLoadState('networkidle');
 
       // Now previous button should be visible

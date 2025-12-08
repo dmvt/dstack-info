@@ -97,8 +97,8 @@ test.describe('User Journeys', () => {
       await nextBtn.click();
       await page.waitForLoadState('networkidle');
 
-      // Should be on tdx-software-setup (second tutorial)
-      await expect(page).toHaveURL(/\/tutorial\/tdx-software-setup/);
+      // Should be on tdx-bios-configuration (second tutorial in Host Setup)
+      await expect(page).toHaveURL(/\/tutorial\/tdx-bios-configuration/);
 
       // Mark second tutorial as complete
       const progressBtn2 = page.locator('button[aria-label*="Mark as"]');
@@ -136,13 +136,12 @@ test.describe('User Journeys', () => {
       await page.waitForLoadState('networkidle');
 
       // Navigate through all tutorials using Next button
-      // Full sorted order: Host Setup (5 steps + 2 appendices), Prerequisites (2 steps), dstack Installation (5 steps), KMS Deployment (5 steps), Gateway Deployment (3 steps), First Application (3 steps)
+      // Full sorted order: Host Setup (4 steps + 2 appendices), Prerequisites (2 steps), dstack Installation (6 steps), KMS Deployment (6 steps), Gateway Deployment (3 steps), First Application (2 steps)
       const tutorialUrls = [
         '/tutorial/tdx-hardware-verification',      // Host Setup #1
-        '/tutorial/tdx-software-setup',             // Host Setup #2
-        '/tutorial/tdx-kernel-installation',        // Host Setup #3
-        '/tutorial/tdx-status-verification',        // Host Setup #4
-        '/tutorial/tdx-bios-configuration',         // Host Setup #5
+        '/tutorial/tdx-bios-configuration',         // Host Setup #2
+        '/tutorial/tdx-software-installation',      // Host Setup #3
+        '/tutorial/tdx-sgx-verification',           // Host Setup #4
         '/tutorial/tdx-troubleshooting-next-steps', // Host Setup appendix
         '/tutorial/ansible-tdx-automation',         // Host Setup appendix
         '/tutorial/dns-configuration',              // Prerequisites #1
@@ -152,17 +151,18 @@ test.describe('User Journeys', () => {
         '/tutorial/clone-build-dstack-vmm',         // dstack Installation #3
         '/tutorial/vmm-configuration',              // dstack Installation #4
         '/tutorial/vmm-service-setup',              // dstack Installation #5
+        '/tutorial/guest-image-setup',              // dstack Installation #6
         '/tutorial/smart-contract-compilation',     // KMS Deployment #1
         '/tutorial/contract-deployment',            // KMS Deployment #2
         '/tutorial/kms-build-configuration',        // KMS Deployment #3
-        '/tutorial/kms-bootstrap',                  // KMS Deployment #4
-        '/tutorial/kms-service-setup',              // KMS Deployment #5
+        '/tutorial/kms-cvm-deployment',             // KMS Deployment #4
+        '/tutorial/kms-bootstrap',                  // KMS Deployment #5
+        '/tutorial/kms-service-setup',              // KMS Deployment #6
         '/tutorial/gateway-ssl-setup',              // Gateway Deployment #1
         '/tutorial/gateway-build-configuration',    // Gateway Deployment #2
         '/tutorial/gateway-service-setup',          // Gateway Deployment #3
-        '/tutorial/guest-image-setup',              // First Application #1
-        '/tutorial/hello-world-app',                // First Application #2
-        '/tutorial/attestation-verification',       // First Application #3 (last!)
+        '/tutorial/hello-world-app',                // First Application #1
+        '/tutorial/attestation-verification',       // First Application #2 (last!)
       ];
 
       for (let i = 0; i < tutorialUrls.length - 1; i++) {
@@ -185,19 +185,18 @@ test.describe('User Journeys', () => {
     });
 
     test('should navigate backwards through tutorials', async ({ page }) => {
-      // Start at last appendix in TDX Enablement section
+      // Start at last appendix in Host Setup section
       await page.goto('/tutorial/ansible-tdx-automation');
       await page.waitForLoadState('networkidle');
 
-      // Navigate backwards using Previous button through TDX Enablement section
+      // Navigate backwards using Previous button through Host Setup section
       const tutorialUrls = [
-        '/tutorial/ansible-tdx-automation',        // TDX Enablement appendix
-        '/tutorial/tdx-troubleshooting-next-steps', // TDX Enablement appendix
-        '/tutorial/tdx-bios-configuration',        // TDX Enablement #5
-        '/tutorial/tdx-status-verification',       // TDX Enablement #4
-        '/tutorial/tdx-kernel-installation',       // TDX Enablement #3
-        '/tutorial/tdx-software-setup',            // TDX Enablement #2
-        '/tutorial/tdx-hardware-verification',     // TDX Enablement #1
+        '/tutorial/ansible-tdx-automation',        // Host Setup appendix
+        '/tutorial/tdx-troubleshooting-next-steps', // Host Setup appendix
+        '/tutorial/tdx-sgx-verification',          // Host Setup #4
+        '/tutorial/tdx-software-installation',     // Host Setup #3
+        '/tutorial/tdx-bios-configuration',        // Host Setup #2
+        '/tutorial/tdx-hardware-verification',     // Host Setup #1
       ];
 
       for (let i = 0; i < tutorialUrls.length - 1; i++) {

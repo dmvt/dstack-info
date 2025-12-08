@@ -139,7 +139,7 @@ test.describe('Tutorial Navigation Enhancements', () => {
     });
 
     test('should have indentation for H3 headings', async ({ page }) => {
-      await page.goto('/tutorial/tdx-software-setup');
+      await page.goto('/tutorial/tdx-bios-configuration');
 
       // Look for TOC buttons
       const tocButtons = page.locator('aside div.border-l button');
@@ -182,7 +182,7 @@ test.describe('Tutorial Navigation Enhancements', () => {
       const initialText = await initialTocButton.textContent();
 
       // Navigate to different tutorial
-      await page.goto('/tutorial/tdx-software-setup');
+      await page.goto('/tutorial/tdx-bios-configuration');
 
       // Get new TOC content
       const newTocButton = page.locator('aside div.border-l button').first();
@@ -305,40 +305,46 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
       await page.goto('/tutorial');
 
-      // Should redirect to second tutorial (tdx-software-setup is step 2 in Host Setup)
-      await page.waitForURL('**/tutorial/tdx-software-setup', { timeout: 3000 });
+      // Should redirect to second tutorial (tdx-bios-configuration is step 2 in Host Setup)
+      await page.waitForURL('**/tutorial/tdx-bios-configuration', { timeout: 3000 });
 
-      expect(page.url()).toContain('/tutorial/tdx-software-setup');
+      expect(page.url()).toContain('/tutorial/tdx-bios-configuration');
     });
 
     test('should redirect to completion page when all tutorials complete', async ({ page }) => {
-      // Mark all tutorials complete
+      // Mark all 25 tutorials complete (correct names)
       await page.goto('/');
       await page.evaluate(() => {
         localStorage.setItem('dstack-tutorial-progress', JSON.stringify({
+          // Host Setup (6)
           'tdx-hardware-verification': { completed: true, timestamp: new Date().toISOString() },
           'tdx-bios-configuration': { completed: true, timestamp: new Date().toISOString() },
-          'tdx-software-setup': { completed: true, timestamp: new Date().toISOString() },
-          'tdx-kernel-installation': { completed: true, timestamp: new Date().toISOString() },
-          'tdx-status-verification': { completed: true, timestamp: new Date().toISOString() },
+          'tdx-software-installation': { completed: true, timestamp: new Date().toISOString() },
+          'tdx-sgx-verification': { completed: true, timestamp: new Date().toISOString() },
           'tdx-troubleshooting-next-steps': { completed: true, timestamp: new Date().toISOString() },
           'ansible-tdx-automation': { completed: true, timestamp: new Date().toISOString() },
+          // Prerequisites (2)
           'dns-configuration': { completed: true, timestamp: new Date().toISOString() },
           'blockchain-setup': { completed: true, timestamp: new Date().toISOString() },
+          // dstack Installation (6)
           'system-baseline-dependencies': { completed: true, timestamp: new Date().toISOString() },
           'rust-toolchain-installation': { completed: true, timestamp: new Date().toISOString() },
           'clone-build-dstack-vmm': { completed: true, timestamp: new Date().toISOString() },
           'vmm-configuration': { completed: true, timestamp: new Date().toISOString() },
           'vmm-service-setup': { completed: true, timestamp: new Date().toISOString() },
+          'guest-image-setup': { completed: true, timestamp: new Date().toISOString() },
+          // KMS Deployment (6)
           'smart-contract-compilation': { completed: true, timestamp: new Date().toISOString() },
           'contract-deployment': { completed: true, timestamp: new Date().toISOString() },
           'kms-build-configuration': { completed: true, timestamp: new Date().toISOString() },
+          'kms-cvm-deployment': { completed: true, timestamp: new Date().toISOString() },
           'kms-bootstrap': { completed: true, timestamp: new Date().toISOString() },
           'kms-service-setup': { completed: true, timestamp: new Date().toISOString() },
+          // Gateway Deployment (3)
           'gateway-ssl-setup': { completed: true, timestamp: new Date().toISOString() },
           'gateway-build-configuration': { completed: true, timestamp: new Date().toISOString() },
           'gateway-service-setup': { completed: true, timestamp: new Date().toISOString() },
-          'guest-image-setup': { completed: true, timestamp: new Date().toISOString() },
+          // First Application (2)
           'hello-world-app': { completed: true, timestamp: new Date().toISOString() },
           'attestation-verification': { completed: true, timestamp: new Date().toISOString() }
         }));
@@ -386,33 +392,39 @@ test.describe('Tutorial Navigation Enhancements', () => {
 
   test.describe('Completion Page', () => {
     test('should show congratulations message when all complete', async ({ page }) => {
-      // Mark all tutorials complete
+      // Mark all 25 tutorials complete (correct names)
       await page.goto('/');
       await page.evaluate(() => {
         localStorage.setItem('dstack-tutorial-progress', JSON.stringify({
+          // Host Setup (6)
           'tdx-hardware-verification': { completed: true, timestamp: new Date().toISOString() },
           'tdx-bios-configuration': { completed: true, timestamp: new Date().toISOString() },
-          'tdx-software-setup': { completed: true, timestamp: new Date().toISOString() },
-          'tdx-kernel-installation': { completed: true, timestamp: new Date().toISOString() },
-          'tdx-status-verification': { completed: true, timestamp: new Date().toISOString() },
+          'tdx-software-installation': { completed: true, timestamp: new Date().toISOString() },
+          'tdx-sgx-verification': { completed: true, timestamp: new Date().toISOString() },
           'tdx-troubleshooting-next-steps': { completed: true, timestamp: new Date().toISOString() },
           'ansible-tdx-automation': { completed: true, timestamp: new Date().toISOString() },
+          // Prerequisites (2)
           'dns-configuration': { completed: true, timestamp: new Date().toISOString() },
           'blockchain-setup': { completed: true, timestamp: new Date().toISOString() },
+          // dstack Installation (6)
           'system-baseline-dependencies': { completed: true, timestamp: new Date().toISOString() },
           'rust-toolchain-installation': { completed: true, timestamp: new Date().toISOString() },
           'clone-build-dstack-vmm': { completed: true, timestamp: new Date().toISOString() },
           'vmm-configuration': { completed: true, timestamp: new Date().toISOString() },
           'vmm-service-setup': { completed: true, timestamp: new Date().toISOString() },
+          'guest-image-setup': { completed: true, timestamp: new Date().toISOString() },
+          // KMS Deployment (6)
           'smart-contract-compilation': { completed: true, timestamp: new Date().toISOString() },
           'contract-deployment': { completed: true, timestamp: new Date().toISOString() },
           'kms-build-configuration': { completed: true, timestamp: new Date().toISOString() },
+          'kms-cvm-deployment': { completed: true, timestamp: new Date().toISOString() },
           'kms-bootstrap': { completed: true, timestamp: new Date().toISOString() },
           'kms-service-setup': { completed: true, timestamp: new Date().toISOString() },
+          // Gateway Deployment (3)
           'gateway-ssl-setup': { completed: true, timestamp: new Date().toISOString() },
           'gateway-build-configuration': { completed: true, timestamp: new Date().toISOString() },
           'gateway-service-setup': { completed: true, timestamp: new Date().toISOString() },
-          'guest-image-setup': { completed: true, timestamp: new Date().toISOString() },
+          // First Application (2)
           'hello-world-app': { completed: true, timestamp: new Date().toISOString() },
           'attestation-verification': { completed: true, timestamp: new Date().toISOString() }
         }));
