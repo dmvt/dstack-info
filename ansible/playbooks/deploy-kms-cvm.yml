@@ -206,6 +206,7 @@
                 - kms-certs:/etc/kms/certs
               environment:
                 - RUST_LOG=info
+                - KMS_DOMAIN={{ kms_domain }}
               restart: unless-stopped
           volumes:
             kms-certs:

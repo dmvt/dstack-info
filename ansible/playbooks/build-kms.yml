@@ -377,6 +377,17 @@
             export $(cat /etc/kms/auth-eth.env | grep -v '^#' | xargs)
           fi
 
+          # Template kms.toml from environment variables if KMS_DOMAIN is set
+          if [ -n "$KMS_DOMAIN" ]; then
+            echo "Configuring KMS for domain: $KMS_DOMAIN"
+            sed -i "s|auto_bootstrap_domain = \".*\"|auto_bootstrap_domain = \"$KMS_DOMAIN\"|" /etc/kms/kms.toml
+          fi
+
+          # Allow overriding contract address via environment
+          if [ -n "$KMS_CONTRACT_ADDR" ]; then
+            echo "Using contract address from environment: $KMS_CONTRACT_ADDR"
+          fi
+
           # Start auth-eth in background
           cd /opt/auth-eth
           node dist/src/main.js &
@@ -423,6 +434,8 @@
                 - kms-certs:/etc/kms/certs
               environment:
                 - RUST_LOG=info
+                # KMS_DOMAIN is set at deploy time via deploy-kms-cvm.yml
+                - KMS_DOMAIN=${KMS_DOMAIN:-}
               restart: unless-stopped
 
           volumes:
