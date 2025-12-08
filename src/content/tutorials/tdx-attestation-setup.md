@@ -183,7 +183,7 @@ Should show `active (running)`.
 Verify PCCS can serve cached certificates:
 
 ```bash
-curl -s http://localhost:8081/sgx/certification/v4/rootcacrl | head -c 100
+curl -sk https://localhost:8081/sgx/certification/v4/rootcacrl | head -c 100
 ```
 
 You should see certificate data (not an error message).
@@ -237,7 +237,7 @@ fi
 
 # Check PCCS health endpoint
 echo -n "PCCS Health: "
-if curl -s http://localhost:8081/sgx/certification/v4/rootcacrl > /dev/null 2>&1; then
+if curl -sk https://localhost:8081/sgx/certification/v4/rootcacrl > /dev/null 2>&1; then
     echo "Responding"
 else
     echo "NOT RESPONDING"
