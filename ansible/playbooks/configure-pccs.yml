@@ -1,0 +1,108 @@
+---
+# Configure PCCS with Intel API Key for TDX Attestation
+#
+# Usage:
+#   export INTEL_API_KEY="your-api-key-here"
+#   ansible-playbook -i inventory/hosts.yml playbooks/configure-pccs.yml
+#
+# Or pass directly:
+#   ansible-playbook -i inventory/hosts.yml playbooks/configure-pccs.yml -e "intel_api_key=YOUR_KEY"
+#
+# Prerequisites:
+#   - PCCS installed (from tdx-software-installation)
+#   - Intel API key from https://api.portal.trustedservices.intel.com/
+
+- name: Configure PCCS with Intel API Key
+  hosts: tdx-host
+  become: true
+  vars:
+    intel_api_key: "{{ lookup('env', 'INTEL_API_KEY') | default('', true) }}"
+    pccs_config_path: /opt/intel/sgx-dcap-pccs/config/default.json
+
+  tasks:
+    - name: Validate Intel API key is provided
+      ansible.builtin.fail:
+        msg: |
+          Intel API key is required.
+
+          Please either:
+            1. Set environment variable: export INTEL_API_KEY="your-key"
+            2. Pass as variable: -e "intel_api_key=your-key"
+
+          To get an API key:
+            1. Go to https://api.portal.trustedservices.intel.com/
+            2. Sign in or create an account
+            3. Subscribe to "Intel SGX and Intel TDX Provisioning Certification Service"
+            4. Copy your Primary or Secondary key from your Profile
+      when: intel_api_key == ""
+
+    - name: Check PCCS is installed
+      ansible.builtin.stat:
+        path: "{{ pccs_config_path }}"
+      register: pccs_config_stat
+
+    - name: Fail if PCCS not installed
+      ansible.builtin.fail:
+        msg: |
+          PCCS configuration not found at {{ pccs_config_path }}
+
+          Please complete the TDX Software Installation tutorial first:
+            https://dstack.info/tutorial/tdx-software-installation
+      when: not pccs_config_stat.stat.exists
+
+    - name: Read current PCCS configuration
+      ansible.builtin.slurp:
+        src: "{{ pccs_config_path }}"
+      register: pccs_config_content
+
+    - name: Parse current configuration
+      ansible.builtin.set_fact:
+        pccs_config: "{{ pccs_config_content.content | b64decode | from_json }}"
+
+    - name: Check if API key already configured
+      ansible.builtin.set_fact:
+        api_key_configured: "{{ pccs_config.ApiKey | default('') != '' }}"
+
+    - name: Display current API key status
+      ansible.builtin.debug:
+        msg: "API key already configured: {{ api_key_configured }}"
+
+    - name: Update API key in configuration
+      ansible.builtin.replace:
+        path: "{{ pccs_config_path }}"
+        regexp: '"ApiKey"\s*:\s*"[^"]*"'
+        replace: '"ApiKey": "{{ intel_api_key }}"'
+      register: config_updated
+
+    - name: Restart PCCS service
+      ansible.builtin.systemd:
+        name: pccs
+        state: restarted
+        daemon_reload: true
+      when: config_updated.changed or not api_key_configured
+
+    - name: Wait for PCCS to start
+      ansible.builtin.wait_for:
+        port: 8081
+        host: 127.0.0.1
+        timeout: 30
+
+    - name: Verify PCCS is responding
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8081/sgx/certification/v4/rootcacrl
+        return_content: false
+        status_code: [200, 404]  # 404 is OK if no cached certs yet
+      register: pccs_health
+      ignore_errors: true
+
+    - name: Display configuration result
+      ansible.builtin.debug:
+        msg: |
+          PCCS configuration complete!
+
+          - API key: Configured
+          - Service: Running on port 8081
+          - Status: {{ 'Healthy' if pccs_health.status in [200, 404] else 'Check logs' }}
+
+          Next step: Verify attestation with
+            ansible-playbook -i inventory/hosts.yml playbooks/verify-attestation.yml

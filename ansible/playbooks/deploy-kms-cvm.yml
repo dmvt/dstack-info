@@ -152,6 +152,32 @@
             ansible-playbook -i inventory/hosts.yml playbooks/setup-guest-images.yml
       when: not guest_image.stat.exists
 
+    # Attestation pre-flight check
+    - name: Check PCCS API key is configured
+      ansible.builtin.shell: |
+        grep '"ApiKey"' /opt/intel/sgx-dcap-pccs/config/default.json | grep -v '""'
+      register: api_key_check
+      changed_when: false
+      failed_when: false
+      become: yes
+
+    - name: Fail if attestation not configured
+      ansible.builtin.fail:
+        msg: |
+          PCCS is not configured with an Intel API key.
+
+          TDX attestation is REQUIRED for CVM deployment.
+          Without proper attestation, the KMS cannot generate TDX quotes
+          and CVM deployment will fail.
+
+          Please complete the attestation setup tutorial:
+            https://dstack.info/tutorial/tdx-attestation-setup
+
+          Or run the Ansible playbook:
+            export INTEL_API_KEY="your-api-key"
+            ansible-playbook -i inventory/hosts.yml playbooks/configure-pccs.yml
+      when: api_key_check.rc != 0
+
     - name: Update kms.toml with domain
       ansible.builtin.lineinfile:
         path: "{{ kms_deployment_dir }}/kms.toml"

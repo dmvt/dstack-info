@@ -3,7 +3,7 @@ title: "TDX & SGX BIOS Configuration"
 description: "Configure BIOS settings for TDX and SGX, including Auto MP Registration for KMS attestation"
 section: "Host Setup"
 stepNumber: 2
-totalSteps: 4
+totalSteps: 5
 prerequisites:
   - tdx-hardware-verification
 tags:

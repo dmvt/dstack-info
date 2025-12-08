@@ -3,7 +3,7 @@ title: "TDX Software Installation"
 description: "Install Canonical's TDX software stack, kernel, and attestation components"
 section: "Host Setup"
 stepNumber: 3
-totalSteps: 4
+totalSteps: 5
 lastUpdated: 2025-12-07
 prerequisites:
   - tdx-bios-configuration

@@ -3,7 +3,7 @@ title: "TDX Hardware Verification"
 description: "Verify your hardware supports Intel TDX and check memory configuration requirements"
 section: "Host Setup"
 stepNumber: 1
-totalSteps: 4
+totalSteps: 5
 lastUpdated: 2025-12-07
 
 tags:
