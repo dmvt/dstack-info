@@ -240,7 +240,7 @@
           {% endif %}
 
           [cvm.port_mapping]
-          enabled = false
+          enabled = true
           address = "127.0.0.1"
           range = [
               { protocol = "tcp", from = 1, to = 20000 },

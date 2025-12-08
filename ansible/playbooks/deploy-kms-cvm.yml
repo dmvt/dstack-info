@@ -240,6 +240,10 @@
           vcpu: "{{ kms_vcpus }}"
           memory: "{{ kms_memory }}"
           disk_size: 20
+          ports:
+            - host_port: "{{ kms_rpc_port }}"
+              vm_port: "{{ kms_rpc_port }}"
+              protocol: "tcp"
         return_content: yes
         status_code: [200, 201]
       register: deploy_result
