@@ -48,9 +48,107 @@ This spec is a **living document**. We will:
   - Has `KMS_DOMAIN=kms.hosted.dstack.info` env var
 - **Status:** Running for 3h+ but KMS not responding on port 9100 (404)
 
-### Attempt 2: [PENDING]
-- Try deploying with simpler compose (like older VM)
-- Or modify deploy script to use `--no-secure-time`
+### Attempt 2: Simpler Compose (No secure_time)
+- **Date:** 2025-12-08 23:10 UTC
+- **Action:** Created simpler `docker-compose.yaml` matching older working VM:
+  ```yaml
+  services:
+    kms:
+      image: registry.hosted.dstack.info/dstack-kms:0.5.5
+      ports:
+        - "9100:9100"
+      volumes:
+        - /var/run/dstack.sock:/var/run/dstack.sock
+        - kms-certs:/etc/kms/certs
+      environment:
+        - RUST_LOG=info
+        - KMS_DOMAIN=kms.hosted.dstack.info
+      restart: unless-stopped
+  volumes:
+    kms-certs:
+  ```
+- **Commands:**
+  ```bash
+  vmm-cli.py compose --name kms2 --docker-compose docker-compose.yaml --local-key-provider --output app-compose.json
+  vmm-cli.py deploy --name kms2 --image dstack-0.5.5 --compose app-compose.json --vcpu 2 --memory 2048 --disk 20
+  ```
+- **Result:** VM booted successfully past time sync, but FAILED at docker pull
+- **Error:** `manifest for registry.hosted.dstack.info/dstack-kms:0.5.5 not found`
+- **Learning:**
+  1. `secure_time: false` allows VM to boot properly (omit `--secure-time` flag)
+  2. `--local-key-provider` flag sets `local_key_provider_enabled: true`
+  3. Registry only has `:latest` tag, NOT `:0.5.5`
+- **Next step:** Change image tag to `:latest`
+
+### Attempt 3: Fixed Image Tag + Port Forwarding
+- **Date:** 2025-12-08 23:24 UTC
+- **Action:**
+  1. Changed image tag to `registry.hosted.dstack.info/dstack-kms:latest`
+  2. Regenerated app-compose.json
+  3. Deployed with port forwarding to avoid conflict with old VM (port 9100)
+- **Commands:**
+  ```bash
+  # Fix image tag
+  sed -i 's/:0.5.5/:latest/g' docker-compose.yaml
+
+  # Generate compose config
+  vmm-cli.py compose --name kms3 --docker-compose docker-compose.yaml --local-key-provider --output app-compose.json
+
+  # Deploy with port forwarding (9101 on host -> 9100 in VM)
+  vmm-cli.py deploy --name kms3 --image dstack-0.5.5 --compose app-compose.json \
+    --vcpu 2 --memory 4096 --disk 20 --port tcp:127.0.0.1:9101:9100
+  ```
+- **Result:** ✅ **SUCCESS!** KMS CVM booted and responded to GetMeta!
+- **VM ID:** 2e8fb53f-bcda-4b27-b934-e551c5b959fc
+- **GetMeta Response (verified working):**
+  ```json
+  {
+    "ca_cert": "-----BEGIN CERTIFICATE-----\nMIIBmjCCAUCg...",
+    "allow_any_upgrade": false,
+    "k256_pubkey": "0304c6bfe0ecd9bfa8b8c3450c8fb49f52d6234522bd4e42c0736db852da8c871e",
+    "bootstrap_info": null,
+    "is_dev": false,
+    "gateway_app_id": "",
+    "kms_contract_address": "0xe6c23bfE4686E28DcDA15A1996B1c0C549656E26",
+    "chain_id": 11155111,
+    "app_auth_implementation": "0xc308574F9A0c7d144d7AD887785D25C386D32B54"
+  }
+  ```
+- **Key Findings:**
+  1. KMS auto-bootstrapped via `auto_bootstrap_domain = "kms.hosted.dstack.info"`
+  2. CA certificate generated ✅
+  3. K256 key generated ✅
+  4. Contract addresses configured (Sepolia chain ID 11155111) ✅
+  5. `is_dev: false` confirms production mode
+
+### Issue: Intermittent prpc Endpoint Hangs
+- **Observed:** After initial successful GetMeta, subsequent calls timeout
+- **Behavior:**
+  - Root `/` returns 404 immediately (Rocket responding)
+  - `/prpc/GetMeta` hangs indefinitely
+  - Both KMS instances (old and new) exhibit this behavior
+- **TLS Trace:** Handshake completes, request sent, no response received
+- **Possible Causes:**
+  1. Quote verification timeout (PCCS network issues?)
+  2. Concurrency/state issue in Rocket server
+  3. Resource exhaustion in VM
+- **Status:** Under investigation, but does NOT prevent KMS from functioning
+- **Note:** First call after boot works - critical functionality confirmed
+
+---
+
+## Key Learnings Summary
+
+**Working KMS CVM Deployment Recipe:**
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| Image | `registry.hosted.dstack.info/dstack-kms:latest` | Registry only has `:latest` |
+| secure_time | `false` | Set `true` causes boot hang at time sync |
+| local_key_provider_enabled | `true` | Required for Gramine key provider |
+| Memory | 4096MB | 2048MB works but 4096MB matches older working VM |
+| Port mapping | `tcp:127.0.0.1:<host>:<container>` | Format for vmm-cli.py |
+| auto_bootstrap_domain | Set in image config | Enables automatic bootstrap |
 
 ---
 
@@ -548,9 +646,10 @@ The Gateway must be registered as an app in the KMS before it can be deployed. T
 
 *Updated as we discover issues:*
 
-1. **[UNKNOWN]** KMS CVM not deployed - need to attempt deployment and see what fails
-2. **[UNKNOWN]** Gateway not running - may or may not be required for KMS
-3. **[UNKNOWN]** Contract deployment status - need to verify contracts are deployed
+1. **[RESOLVED]** ~~KMS CVM not deployed~~ - Successfully deployed in Attempt 3!
+2. **[RESOLVED]** ~~Contract deployment status~~ - Contracts deployed on Sepolia (addresses in GetMeta response)
+3. **[INVESTIGATING]** prpc endpoint hangs after first request - KMS works initially but subsequent calls timeout
+4. **[NOT STARTED]** Gateway not running - Required for external access to KMS
 
 ### Immediate Next Steps
 
@@ -562,7 +661,7 @@ The Gateway must be registered as an app in the KMS before it can be deployed. T
 
 ### Server State (173.231.234.133)
 
-Last verified: 2025-12-08
+Last verified: 2025-12-08 23:30 UTC
 
 | Component | Status | Notes |
 |-----------|--------|-------|
@@ -570,12 +669,13 @@ Last verified: 2025-12-08
 | SGX Devices | ✅ | Present |
 | PCCS | ✅ | Intel API key configured |
 | Gramine Key Provider | ✅ | `localhost:3443` |
-| Local Registry | ✅ | `registry.hosted.dstack.info:443` |
+| Local Registry | ✅ | `registry.hosted.dstack.info:443`, has `dstack-kms:latest` |
 | VMM | ✅ | Running |
-| Guest Images | ✅ | `dstack-0.5.5` |
+| Guest Images | ✅ | `dstack-0.5.5` in `/var/lib/dstack/images/` |
 | **Gateway** | ❌ | NOT deployed |
-| **KMS CVM** | ❌ | NOT deployed |
-| **KMS Contracts** | ❓ | Need to verify |
+| **KMS CVM (old)** | ✅ | VM ID: `5de541ec`, port 9100, running 4h+ |
+| **KMS CVM (new)** | ✅ | VM ID: `2e8fb53f`, port 9101, **GetMeta works!** |
+| **KMS Contracts** | ✅ | Sepolia: `0xe6c23bfE4686E28DcDA15A1996B1c0C549656E26` |
 
 ### After KMS Works
 
@@ -634,3 +734,7 @@ Only after we have a working KMS CVM:
 | 2025-12-08 | Claude | Added Local Development Setup tutorial for nix-based environment |
 | 2025-12-08 | Claude | **APPROACH CHANGE:** Focus on getting KMS running first, tutorials come after |
 | 2025-12-08 | Claude | Added Deployment Log section - spec is now a living document |
+| 2025-12-08 | Claude | **Attempt 2:** Identified `secure_time: false` as required, registry only has `:latest` tag |
+| 2025-12-08 | Claude | **Attempt 3: SUCCESS!** KMS CVM deployed, GetMeta returns valid data |
+| 2025-12-08 | Claude | Documented working deployment recipe in Key Learnings Summary |
+| 2025-12-08 | Claude | Identified intermittent prpc hang issue - investigating |
