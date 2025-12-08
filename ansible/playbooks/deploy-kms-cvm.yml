@@ -4,30 +4,32 @@
 #
 # Configurable variables (pass with -e):
 #   kms_domain           - Domain name for KMS (required, e.g., kms.example.com)
+#   docker_image         - Docker image for KMS (required, e.g., username/dstack-kms:latest)
 #   force_redeploy       - Set to true to destroy existing CVM and redeploy (default: false)
 #
 # Examples:
 #   # Standard deployment
 #   ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-cvm.yml \
-#     -e "kms_domain=kms.example.com"
+#     -e "kms_domain=kms.example.com" -e "docker_image=youruser/dstack-kms:latest"
 #
 #   # Force redeploy (destroys existing CVM)
 #   ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-cvm.yml \
-#     -e "kms_domain=kms.example.com" -e "force_redeploy=true"
+#     -e "kms_domain=kms.example.com" -e "docker_image=youruser/dstack-kms:latest" \
+#     -e "force_redeploy=true"
 #
 # This playbook:
-# - Verifies prerequisites (Docker image, config files, VMM running)
-# - Updates kms.toml with the domain for auto-bootstrap
-# - Deploys KMS CVM via VMM API
+# - Verifies prerequisites (Docker available, VMM running, guest images)
+# - Deploys KMS CVM via VMM API using the specified Docker image
 # - Waits for KMS to become healthy
 # - Verifies bootstrap completed with TDX quote
+#
+# Note: The Docker image must have kms.toml pre-configured with the correct domain.
+# Build with: ansible-playbook playbooks/build-kms.yml -e "kms_domain=..." -e "docker_hub_username=..."
 
 - name: Deploy dstack KMS as CVM
   hosts: dstack_servers
   become: false
   vars:
-    user_home: "/home/{{ ansible_user }}"
-    kms_deployment_dir: "{{ user_home }}/kms-deployment"
     kms_rpc_port: 9100
     vmm_http_port: 9080
     force_redeploy: false
@@ -43,47 +45,21 @@
 
           Usage:
             ansible-playbook -i inventory/hosts.yml playbooks/deploy-kms-cvm.yml \
-              -e "kms_domain=kms.example.com"
+              -e "kms_domain=kms.example.com" -e "docker_image=youruser/dstack-kms:latest"
       when: kms_domain is not defined or kms_domain == ""
 
-    - name: Check deployment directory exists
-      ansible.builtin.stat:
-        path: "{{ kms_deployment_dir }}"
-      register: deployment_dir
-
-    - name: Fail if deployment directory missing
+    - name: Check if docker_image is provided
       ansible.builtin.fail:
         msg: |
-          KMS deployment directory not found at {{ kms_deployment_dir }}
+          docker_image is required.
 
-          Run the build playbook first:
-            ansible-playbook playbooks/build-kms.yml
-      when: not deployment_dir.stat.exists
+          First build and push your KMS image to Docker Hub:
+            ansible-playbook playbooks/build-kms.yml -e "docker_hub_username=youruser"
 
-    - name: Check required deployment files
-      ansible.builtin.stat:
-        path: "{{ kms_deployment_dir }}/{{ item }}"
-      register: required_files
-      loop:
-        - docker-compose.yml
-        - kms.toml
-        - auth-eth.env
-        - Dockerfile
-        - dstack-kms
-        - start-kms.sh
-
-    - name: Count missing files
-      ansible.builtin.set_fact:
-        missing_files: "{{ required_files.results | selectattr('stat.exists', 'equalto', false) | map(attribute='item') | list }}"
-
-    - name: Fail if required files missing
-      ansible.builtin.fail:
-        msg: |
-          Missing required deployment files: {{ missing_files | join(', ') }}
-
-          Run the build playbook:
-            ansible-playbook playbooks/build-kms.yml
-      when: missing_files | length > 0
+          Then deploy with:
+            ansible-playbook playbooks/deploy-kms-cvm.yml \
+              -e "kms_domain=kms.example.com" -e "docker_image=youruser/dstack-kms:latest"
+      when: docker_image is not defined or docker_image == ""
 
     - name: Check Docker is available
       ansible.builtin.command:
@@ -102,20 +78,6 @@
             sudo systemctl start docker
             sudo usermod -aG docker $USER
       when: docker_info.rc != 0
-
-    - name: Check Docker image exists
-      ansible.builtin.shell: |
-        docker images dstack-kms:latest --format "{{ '{{' }}.Repository{{ '}}' }}:{{ '{{' }}.Tag{{ '}}' }}"
-      register: docker_image
-      changed_when: false
-      failed_when: false
-
-    - name: Build Docker image if not exists
-      ansible.builtin.shell: |
-        cd {{ kms_deployment_dir }}
-        docker build -t dstack-kms:latest .
-      when: docker_image.stdout != "dstack-kms:latest"
-      register: docker_build
 
     - name: Check VMM is running
       ansible.builtin.systemd:
@@ -178,17 +140,9 @@
             ansible-playbook -i inventory/hosts.yml playbooks/configure-pccs.yml
       when: api_key_check.rc != 0
 
-    - name: Update kms.toml with domain
-      ansible.builtin.lineinfile:
-        path: "{{ kms_deployment_dir }}/kms.toml"
-        regexp: '^auto_bootstrap_domain\s*='
-        line: 'auto_bootstrap_domain = "{{ kms_domain }}"'
-
-    - name: Ensure quote_enabled is true
-      ansible.builtin.lineinfile:
-        path: "{{ kms_deployment_dir }}/kms.toml"
-        regexp: '^quote_enabled\s*='
-        line: 'quote_enabled = true'
+    # Note: kms_domain is verified at runtime for informational purposes
+    # The actual domain must be set in kms.toml when building the Docker image
+    # via build-kms.yml with -e "kms_domain=your.domain.com"
 
     # Check for existing KMS deployment via VMM API
     - name: Check for existing KMS CVM
@@ -239,12 +193,22 @@
           when: not (force_redeploy | bool)
       when: kms_exists | default(false)
 
-    # Read and deploy KMS CVM via VMM API
-    - name: Read docker-compose file
-      ansible.builtin.command:
-        cmd: cat "{{ kms_deployment_dir }}/docker-compose.yml"
-      register: compose_content
-      changed_when: false
+    # Generate docker-compose for CVM deployment
+    - name: Generate docker-compose content
+      ansible.builtin.set_fact:
+        compose_content: |
+          services:
+            kms:
+              image: {{ docker_image }}
+              ports:
+                - "9100:9100"
+              volumes:
+                - kms-certs:/etc/kms/certs
+              environment:
+                - RUST_LOG=info
+              restart: unless-stopped
+          volumes:
+            kms-certs:
 
     - name: Build app manifest
       ansible.builtin.set_fact:
@@ -252,7 +216,7 @@
           manifest_version: 2
           name: "kms"
           runner: "docker-compose"
-          docker_compose_file: "{{ compose_content.stdout }}"
+          docker_compose_file: "{{ compose_content }}"
           docker_config: {}
           kms_enabled: false
           gateway_enabled: false
@@ -322,8 +286,8 @@
           - "============================================"
           - ""
           - "Domain: {{ kms_domain }}"
+          - "Docker Image: {{ docker_image }}"
           - "RPC Port: {{ kms_rpc_port }}"
-          - "Deployment: {{ kms_deployment_dir }}"
           - ""
           - "Status:"
           - "  CVM Running: {{ 'Yes' if port_check is success else 'No' }}"
@@ -345,6 +309,7 @@
           Check CVM logs via VMM web interface:
             http://127.0.0.1:{{ vmm_http_port }}/
 
-          Verify configuration:
-            cat {{ kms_deployment_dir }}/kms.toml
+          Verify the Docker image contains correct configuration.
+          Rebuild with the correct domain:
+            ansible-playbook playbooks/build-kms.yml -e "kms_domain={{ kms_domain }}"
       when: kms_meta.status | default(0) != 200

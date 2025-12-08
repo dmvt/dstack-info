@@ -9,6 +9,8 @@
 #   auth_eth_port        - Auth-eth service port (default: 9200)
 #   pccs_url             - Intel PCCS URL for quote verification
 #   kms_contract_address - KMS contract address (auto-detected from .deployed-addresses)
+#   docker_hub_username  - Docker Hub username (optional, enables push to registry)
+#   kms_domain           - Domain for KMS auto-bootstrap (required for CVM deployment)
 #
 # Examples:
 #   # Basic usage (reads contract address from previous deployment)
@@ -343,6 +345,10 @@
           # Create directories
           RUN mkdir -p /etc/kms/certs /var/run/kms /var/log/kms
 
+          # Copy config files (baked into image for CVM deployment)
+          COPY kms.toml /etc/kms/kms.toml
+          COPY auth-eth.env /etc/kms/auth-eth.env
+
           # Copy KMS binary
           COPY dstack-kms /usr/local/bin/dstack-kms
           RUN chmod 755 /usr/local/bin/dstack-kms
@@ -402,17 +408,17 @@
       ansible.builtin.copy:
         content: |
           # KMS Deployment Manifest for dstack CVM
-          # Deploy via VMM web interface at http://localhost:9080
+          # Push image to Docker Hub before deployment:
+          #   docker tag dstack-kms:latest YOUR_USERNAME/dstack-kms:latest
+          #   docker push YOUR_USERNAME/dstack-kms:latest
+          # Then update image: below with your Docker Hub username
 
           services:
             kms:
-              image: dstack-kms:latest
+              image: {{ docker_hub_image | default('YOUR_DOCKERHUB_USERNAME/dstack-kms:latest') }}
               ports:
                 - "9100:9100"
               volumes:
-                # Mount config files
-                - ./kms.toml:/etc/kms/kms.toml:ro
-                - ./auth-eth.env:/etc/kms/auth-eth.env:ro
                 # Named volume for persistent certificates
                 - kms-certs:/etc/kms/certs
               environment:
@@ -470,8 +476,7 @@
           # Onboarding Configuration
           [core.onboard]
           enabled = true
-          # Set your KMS domain - REQUIRED before deployment
-          auto_bootstrap_domain = ""
+          auto_bootstrap_domain = "{{ kms_domain | default('') }}"
           # Enable TDX quotes - works because KMS runs in CVM
           quote_enabled = true
           address = "0.0.0.0"
@@ -565,6 +570,36 @@
             docker build -t dstack-kms:latest .
       when: "'dstack-kms:latest' not in docker_image_check.stdout"
 
+    - name: Warn if kms_domain not set for Docker Hub push
+      ansible.builtin.debug:
+        msg:
+          - "WARNING: kms_domain not set!"
+          - ""
+          - "For CVM deployment, kms_domain is required in kms.toml."
+          - "Rebuild with: -e \"kms_domain=kms.yourdomain.com\""
+      when:
+        - docker_hub_username is defined
+        - kms_domain is not defined or kms_domain == ""
+
+    - name: Tag and push to Docker Hub
+      when: docker_hub_username is defined
+      block:
+        - name: Tag image for Docker Hub
+          ansible.builtin.shell: |
+            docker tag dstack-kms:latest {{ docker_hub_username }}/dstack-kms:latest
+          register: docker_tag
+
+        - name: Push to Docker Hub
+          ansible.builtin.shell: |
+            docker push {{ docker_hub_username }}/dstack-kms:latest
+          register: docker_push
+
+        - name: Update docker-compose with Docker Hub image
+          ansible.builtin.lineinfile:
+            path: "{{ user_home }}/kms-deployment/docker-compose.yml"
+            regexp: 'image:.*dstack-kms'
+            line: "      image: {{ docker_hub_username }}/dstack-kms:latest"
+
     - name: Display configuration summary
       ansible.builtin.debug:
         msg:
@@ -591,4 +626,5 @@
           - "Docker (CVM Deployment):"
           - "  Directory: {{ user_home }}/kms-deployment/"
           - "  Image: dstack-kms:latest"
+          - "  Docker Hub: {{ docker_hub_username | default('Not configured - pass docker_hub_username to push') }}/dstack-kms:latest"
           - "  Manifest: docker-compose.yml"
