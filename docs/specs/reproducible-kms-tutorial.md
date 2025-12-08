@@ -28,12 +28,29 @@ This spec is a **living document**. We will:
 
 *This section records each attempt and what we learned.*
 
-### Attempt 1: [PENDING]
-- **Date:**
-- **Action:**
-- **Result:**
+### Attempt 1: Deploy via deploy-to-vmm.sh
+- **Date:** 2025-12-08 23:06 UTC
+- **Action:** Created .env, ran `deploy-to-vmm.sh` from `~/dstack/kms/dstack-app/`
+- **Result:** VM created (ID: 8b926248-17d0-4e1c-9f9d-86c5ebae471e) but STUCK at boot
 - **Learning:**
-- **Next step:**
+  1. VMM_RPC should be `http://127.0.0.1:9080` not unix socket
+  2. VM stuck at "Waiting for the system time to be synchronized"
+  3. Deploy script uses `--secure-time` flag which sets `secure_time: true`
+  4. The compose uses Docker Hub image `kvin/kms@sha256:...` not local registry
+  5. Discovered OLDER working VM (5de541ec) using simpler compose with local registry
+- **Next step:** Try deployment without `--secure-time` or use simpler compose like older VM
+
+### Older Working VM (5de541ec)
+- **Config differences from my attempt:**
+  - Uses local registry: `registry.hosted.dstack.info/dstack-kms:latest`
+  - Simple compose (just KMS container, no auth-api build step)
+  - `secure_time: false`
+  - Has `KMS_DOMAIN=kms.hosted.dstack.info` env var
+- **Status:** Running for 3h+ but KMS not responding on port 9100 (404)
+
+### Attempt 2: [PENDING]
+- Try deploying with simpler compose (like older VM)
+- Or modify deploy script to use `--no-secure-time`
 
 ---
 
