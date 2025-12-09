@@ -4,9 +4,11 @@ description: "Deploy dstack KMS as a Confidential Virtual Machine for TDX attest
 section: "KMS Deployment"
 stepNumber: 4
 totalSteps: 6
-lastUpdated: 2025-12-07
+lastUpdated: 2025-12-09
 prerequisites:
   - kms-build-configuration
+  - gramine-key-provider
+  - local-docker-registry
 tags:
   - dstack
   - kms
@@ -38,13 +40,16 @@ Running KMS inside a CVM provides significant security benefits:
 Before starting, ensure you have:
 
 - Completed [KMS Build & Configuration](/tutorial/kms-build-configuration)
+- Completed [Gramine Key Provider](/tutorial/gramine-key-provider) - Required for CVM boot
+- Completed [Local Docker Registry](/tutorial/local-docker-registry) - With KMS image cached
 - Completed [TDX & SGX Verification](/tutorial/tdx-sgx-verification) - SGX must be working for attestation
-- Docker image `dstack-kms:latest` built
-- Deployment files in `~/kms-deployment/`
+- KMS image pushed to local registry (`registry.yourdomain.com/dstack-kms:fixed`)
 - dstack VMM running (`systemctl status dstack-vmm`)
 - VMM web interface available at http://localhost:9080
 
 > **Why SGX is required:** The KMS uses Intel SGX to generate TDX attestation quotes via the `local_key_provider`. SGX Auto MP Registration must be enabled in BIOS so your platform is registered with Intel's Provisioning Certification Service (PCS). Without this registration, KMS cannot generate valid attestation quotes, and bootstrap will fail.
+
+> **Why local registry?** The default KMS image uses a rate-limited Ethereum RPC endpoint (Alchemy demo) that causes GetMeta calls to hang. The [Local Docker Registry](/tutorial/local-docker-registry) tutorial shows how to build a fixed image with a working RPC endpoint.
 
 ## Quick Start: Deploy with Ansible
 
@@ -112,28 +117,26 @@ If you prefer to deploy manually, follow these steps.
 
 Check that all required components are ready.
 
-#### Verify Docker image exists
+#### Verify KMS image in local registry
 
 ```bash
-docker images dstack-kms:latest
+curl -sk https://registry.yourdomain.com/v2/dstack-kms/tags/list
 ```
 
-Expected output shows the image with size ~300MB.
+Expected output shows the `:fixed` tag:
+```json
+{"name":"dstack-kms","tags":["fixed","latest"]}
+```
 
-#### Verify deployment files
+If missing, complete the [Local Docker Registry](/tutorial/local-docker-registry) tutorial first.
+
+#### Verify Gramine Key Provider is running
 
 ```bash
-ls -la ~/kms-deployment/
+docker ps | grep gramine-sealing-key-provider
 ```
 
-Required files:
-- `Dockerfile`
-- `docker-compose.yml`
-- `kms.toml`
-- `auth-eth.env`
-- `start-kms.sh`
-- `dstack-kms` (binary)
-- `auth-eth/` (directory)
+Should show the container running. If not, complete the [Gramine Key Provider](/tutorial/gramine-key-provider) tutorial.
 
 #### Verify VMM is running
 
@@ -143,140 +146,146 @@ systemctl status dstack-vmm
 
 The VMM must be active and running.
 
-### Step 2: Configure KMS Domain
-
-Set the domain name for auto-bootstrap in kms.toml:
+### Step 2: Create Deployment Directory
 
 ```bash
-cd ~/kms-deployment
-
-# Edit kms.toml
-nano kms.toml
+mkdir -p ~/kms-deploy
+cd ~/kms-deploy
 ```
 
-Find the `[core.onboard]` section and set:
+### Step 3: Create docker-compose.yaml
 
-```toml
-[core.onboard]
-enabled = true
-auto_bootstrap_domain = "kms.yourdomain.com"  # Your domain here
-quote_enabled = true
-address = "0.0.0.0"
-port = 9100
-```
-
-### Step 3: Deploy via VMM Web Interface
-
-Deploy the KMS container as a CVM using the VMM Management Console.
-
-#### Option A: Web Interface (Recommended)
-
-1. Open the VMM Management Console in your browser:
-   ```
-   http://localhost:9080
-   ```
-
-2. Click **"Deploy a new instance"**
-
-3. Fill in the deployment form:
-   - **Name**: `kms`
-   - **vCPUs**: `2`
-   - **Memory**: `4 GB`
-   - **Storage**: `10 GB`
-   - **Docker Compose File**: Paste the contents of `~/kms-deployment/docker-compose.yml`
-
-4. Enable these features:
-   - **KMS**: Unchecked (this IS the KMS)
-   - **dstack Gateway**: Checked (for external access)
-
-5. Click **Deploy**
-
-#### Option B: API (for automation)
+Create the compose file with your registry domain:
 
 ```bash
-cd ~/kms-deployment
-
-# Deploy via VMM API
-curl -X POST http://127.0.0.1:9080/api/deploy \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_AUTH_TOKEN" \
-  -d @- << EOF
-{
-  "name": "kms",
-  "vcpu": 2,
-  "memory": 4096,
-  "disk_size": 10240,
-  "compose_file": "$(cat docker-compose.yml | base64 -w0)"
-}
+cat > docker-compose.yaml << 'EOF'
+services:
+  kms:
+    image: registry.yourdomain.com/dstack-kms:fixed
+    ports:
+      - "9100:9100"
+    volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock
+      - kms-certs:/etc/kms/certs
+    environment:
+      - RUST_LOG=info
+      - KMS_DOMAIN=kms.yourdomain.com
+    restart: unless-stopped
+volumes:
+  kms-certs:
 EOF
 ```
 
-> **Note:** Replace `YOUR_AUTH_TOKEN` with the token from your VMM configuration.
+**Important settings:**
+- `image`: Must use your local registry with the `:fixed` tag
+- `/var/run/dstack.sock`: Required for TDX attestation
+- `KMS_DOMAIN`: Your KMS domain for auto-bootstrap
 
-### Step 4: Monitor Deployment
+### Step 4: Deploy via vmm-cli.py
 
-Watch the CVM startup and bootstrap process:
-
-#### Via Web Interface
-
-1. In the VMM Console, find the `kms` instance in the VM list
-2. Click **Logs** to view real-time startup logs
-
-#### Via API
+Use the VMM CLI tool to deploy the CVM:
 
 ```bash
-# List all instances
-curl -s http://127.0.0.1:9080/api/instances | jq '.instances[] | {name, status}'
+# Navigate to dstack VMM directory
+cd ~/dstack/vmm
 
-# View KMS logs
-curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=50"
+# Generate app-compose.json with local key provider enabled
+./vmm-cli.py --url http://127.0.0.1:9080 compose \
+  --name kms \
+  --docker-compose ~/kms-deploy/docker-compose.yaml \
+  --local-key-provider \
+  --output ~/kms-deploy/app-compose.json
+
+# Deploy the CVM
+./vmm-cli.py --url http://127.0.0.1:9080 deploy \
+  --name kms \
+  --image dstack-0.5.5 \
+  --compose ~/kms-deploy/app-compose.json \
+  --vcpu 2 \
+  --memory 4096 \
+  --disk 20 \
+  --port tcp:127.0.0.1:9100:9100
 ```
 
-Look for these log messages indicating successful bootstrap:
+**Key flags explained:**
+- `--local-key-provider`: Enables Gramine key provider for CVM boot
+- `--image dstack-0.5.5`: Guest image from VMM images directory
+- `--port tcp:127.0.0.1:9100:9100`: Maps host port 9100 to CVM port 9100
 
-```
-Starting KMS in bootstrap mode
-Bootstrap required - keys not found
-Generating root CA certificate...
-Generating RPC certificate...
-Generating K256 key...
-Generating TDX quote...
-Bootstrap complete
-Starting RPC server on 0.0.0.0:9100
+> **Note:** Do NOT use `--secure-time` flag - it causes CVM to hang during boot waiting for time sync.
+
+### Step 5: Monitor Deployment
+
+Watch the CVM boot process:
+
+```bash
+# List VMs to get the ID
+./vmm-cli.py --url http://127.0.0.1:9080 list
+
+# View logs (replace VM_ID with actual ID)
+./vmm-cli.py --url http://127.0.0.1:9080 logs --id VM_ID --follow
 ```
 
-### Step 5: Verify KMS is Running
+Look for these log messages indicating successful startup:
+```
+KMS CVM booting...
+Docker container starting...
+KMS initializing...
+Auto-bootstrap enabled for domain kms.yourdomain.com
+Generating certificates...
+RPC server listening on 0.0.0.0:9100
+```
+
+### Step 6: Verify KMS is Running
 
 Test connectivity to the KMS RPC server:
 
 ```bash
-# Test RPC endpoint (will fail TLS initially, but confirms port is open)
-curl -k https://localhost:9100/
-
-# Or test the onboard endpoint
-curl http://localhost:9100/prpc/KMS.GetMeta
+# Test with HTTPS (KMS uses TLS)
+curl -sk https://localhost:9100/prpc/KMS.GetMeta | jq .
 ```
 
-### Step 6: Retrieve Bootstrap Information
+**Important:** Use HTTPS, not HTTP. The KMS RPC endpoint requires TLS.
+
+### Step 7: Retrieve Bootstrap Information
 
 Get the bootstrap information including the TDX attestation quote:
 
 ```bash
-curl -s http://localhost:9100/prpc/KMS.GetMeta | jq .
+curl -sk https://localhost:9100/prpc/KMS.GetMeta | jq .
 ```
 
 Expected response:
 
 ```json
 {
-  "ca_pubkey": "0x02a1b2c3d4e5f6...",
-  "k256_pubkey": "0x03f1e2d3c4b5a6...",
-  "quote": "base64-encoded-tdx-quote",
-  "eventlog": "base64-encoded-eventlog"
+  "ca_cert": "-----BEGIN CERTIFICATE-----...",
+  "allow_any_upgrade": false,
+  "k256_pubkey": "0304c6bfe0ecd9bfa8b8c3450c8fb49f52d6234522bd4e42c0736db852da8c871e",
+  "bootstrap_info": null,
+  "is_dev": false,
+  "gateway_app_id": "",
+  "kms_contract_address": "0xe6c23bfE4686E28DcDA15A1996B1c0C549656E26",
+  "chain_id": 11155111,
+  "app_auth_implementation": "0xc308574F9A0c7d144d7AD887785D25C386D32B54"
 }
 ```
 
-The presence of `quote` confirms TDX attestation is working.
+Key fields to verify:
+- `ca_cert`: Root CA certificate was generated
+- `k256_pubkey`: Ethereum signing key was generated
+- `chain_id`: 11155111 indicates Sepolia testnet
+- `kms_contract_address`: The deployed KMS contract address
+
+### Step 8: Test Response Time
+
+Verify the RPC responds quickly (not hanging):
+
+```bash
+time curl -sk https://localhost:9100/prpc/KMS.GetMeta > /dev/null
+```
+
+Expected: Response in < 1 second. If it takes > 10 seconds or hangs, see Troubleshooting section below.
 
 ---
 
@@ -430,22 +439,59 @@ curl -s "http://127.0.0.1:9080/api/instances/kms/logs?lines=100" | grep -i "quot
 
 4. **Guest-agent not running** - The `/var/run/dstack.sock` socket must exist inside the CVM.
 
+### GetMeta Hangs or Times Out
+
+**Symptom:** `curl` to GetMeta hangs indefinitely or times out after 30+ seconds
+
+**Root Cause:** The auth-eth service inside the container is using a rate-limited Ethereum RPC endpoint (Alchemy demo returns HTTP 429).
+
+**Solution:** Use the fixed KMS image from your local registry:
+
+```bash
+# Verify you're using the :fixed tag in docker-compose.yaml
+grep "image:" ~/kms-deploy/docker-compose.yaml
+# Should show: image: registry.yourdomain.com/dstack-kms:fixed
+```
+
+If using the unfixed image, rebuild following the [Local Docker Registry](/tutorial/local-docker-registry) tutorial.
+
+**Verification:** The fixed image uses `https://ethereum-sepolia.publicnode.com` instead of the rate-limited Alchemy demo endpoint.
+
 ### Authentication errors from auth-eth
 
 ```
 Error: Contract call failed
 ```
 
-Verify auth-eth.env configuration:
+Verify auth-eth.env configuration inside the container uses a working RPC:
 
 ```bash
-cat ~/kms-deployment/auth-eth.env
+# The :fixed image should have:
+# ETH_RPC_URL=https://ethereum-sepolia.publicnode.com
+# KMS_CONTRACT_ADDR=0xe6c23bfE4686E28DcDA15A1996B1c0C549656E26
 ```
 
-Ensure:
-- `ETH_RPC_URL` is accessible
-- `KMS_CONTRACT_ADDR` is correct
-- Contract is deployed on the network
+If you need to customize the contract address, rebuild the image following the [Local Docker Registry](/tutorial/local-docker-registry) tutorial.
+
+### CVM Hangs at "Waiting for time to be synchronized"
+
+**Symptom:** CVM boot log shows "Waiting for the system time to be synchronized" and never proceeds
+
+**Root Cause:** The `--secure-time` flag was used during deployment
+
+**Solution:** Redeploy without the `--secure-time` flag:
+
+```bash
+./vmm-cli.py --url http://127.0.0.1:9080 deploy \
+  --name kms \
+  --image dstack-0.5.5 \
+  --compose ~/kms-deploy/app-compose.json \
+  --vcpu 2 \
+  --memory 4096 \
+  --disk 20 \
+  --port tcp:127.0.0.1:9100:9100
+  # Note: NO --secure-time flag
+```
 
 ---
 

@@ -3,7 +3,7 @@ title: "Blockchain Wallet Setup"
 description: "Set up an Ethereum wallet on Sepolia testnet for dstack KMS deployment"
 section: "Prerequisites"
 stepNumber: 2
-totalSteps: 2
+totalSteps: 5
 lastUpdated: 2025-11-02
 
 tags:

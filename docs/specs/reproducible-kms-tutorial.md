@@ -3,7 +3,7 @@
 **Status:** DRAFT
 **Author:** Claude (with Dan Matthews)
 **Created:** 2025-12-08
-**Last Updated:** 2025-12-08
+**Last Updated:** 2025-12-09
 
 ## Overview
 
@@ -121,20 +121,101 @@ This spec is a **living document**. We will:
   4. Contract addresses configured (Sepolia chain ID 11155111) ✅
   5. `is_dev: false` confirms production mode
 
-### Issue: auth-eth Webhook Hangs (IDENTIFIED)
+### Issue: auth-eth Webhook Hangs (IDENTIFIED AND FIXED)
 - **Observed:** After initial successful GetMeta, subsequent calls timeout
-- **Root Cause Identified:** auth-eth service (127.0.0.1:9200 inside container) stops responding
+- **Root Cause Identified:** auth-eth service (127.0.0.1:9200 inside container) uses rate-limited RPC
 - **Verification:**
   - `GetTempCaCert` works instantly ✅ (doesn't use auth-eth)
   - `GetMeta` hangs ❌ (calls auth-eth webhook)
 - **Code Path:**
   ```
   GetMeta → state.config.auth_api.get_info() → HTTP GET http://127.0.0.1:9200
+  auth-eth → calls Ethereum RPC for contract data
   ```
-- **Impact:** Only affects endpoints that need chain info (GetMeta)
-- **Workaround:** Restart VM to get one GetMeta call
-- **Status:** Bug identified - auth-eth issue, NOT KMS issue
-- **Note:** KMS core functionality is WORKING - certs, keys, and RPC all work
+
+### Attempt 4: Debug auth-eth RPC Issue
+- **Date:** 2025-12-09 00:20 UTC
+- **Action:** Investigated why auth-eth hangs
+- **Findings:**
+  1. KMS image bundles auth-eth service (Node.js on port 9200)
+  2. `start-kms.sh` loads env from `/etc/kms/auth-eth.env`
+  3. Default `ETH_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/demo`
+  4. **Alchemy demo endpoint returns HTTP 429 (rate limited)**
+  5. ethers.js waits indefinitely for RPC response → hang
+- **Verification:**
+  ```bash
+  # Alchemy demo returns 429
+  curl -v -X POST https://eth-sepolia.g.alchemy.com/v2/demo \
+    -H 'Content-Type: application/json' \
+    -d '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'
+  # Returns: HTTP/2 429 (rate limited)
+
+  # PublicNode works
+  curl -X POST https://ethereum-sepolia.publicnode.com \
+    -H 'Content-Type: application/json' \
+    -d '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'
+  # Returns: {"jsonrpc":"2.0","id":1,"result":"0xaa36a7"}
+  ```
+- **Next step:** Create fixed KMS image with working RPC endpoint
+
+### Attempt 5: Fixed KMS Image with Working RPC (SUCCESS!)
+- **Date:** 2025-12-09 00:30 UTC
+- **Action:**
+  1. Created corrected `auth-eth.env` with PublicNode RPC
+  2. Built wrapper Docker image with fixed config
+  3. Pushed to local registry as `:fixed` tag
+  4. Deployed new KMS CVM
+- **Files Created:**
+  ```bash
+  # ~/kms-deploy-v2/auth-eth.env
+  HOST=127.0.0.1
+  PORT=9200
+  ETH_RPC_URL=https://ethereum-sepolia.publicnode.com
+  KMS_CONTRACT_ADDR=0xe6c23bfE4686E28DcDA15A1996B1c0C549656E26
+
+  # ~/kms-deploy-v2/Dockerfile
+  FROM registry.hosted.dstack.info/dstack-kms:latest
+  COPY auth-eth.env /etc/kms/auth-eth.env
+  ```
+- **Commands:**
+  ```bash
+  # Build and push fixed image
+  docker build -t registry.hosted.dstack.info/dstack-kms:fixed .
+  docker push registry.hosted.dstack.info/dstack-kms:fixed
+
+  # Update compose to use fixed image
+  # image: registry.hosted.dstack.info/dstack-kms:fixed
+
+  # Deploy
+  vmm-cli.py --url http://127.0.0.1:9080 compose --name kms-fixed2 \
+    --docker-compose docker-compose.yaml --local-key-provider --output app-compose.json
+  vmm-cli.py --url http://127.0.0.1:9080 deploy --name kms-fixed2 \
+    --image dstack-0.5.5 --compose app-compose.json \
+    --vcpu 2 --memory 4096 --disk 20 --port tcp:127.0.0.1:9103:9100
+  ```
+- **Result:** ✅ **COMPLETE SUCCESS!** GetMeta responds instantly!
+- **VM ID:** 9900b3c5-b209-45fe-a463-b21c42f92926
+- **Port:** 9103 (host) → 9100 (container)
+- **GetMeta Response Time:** 0.075-0.237 seconds (consistently fast)
+- **GetMeta Response:**
+  ```json
+  {
+    "ca_cert": "-----BEGIN CERTIFICATE-----...",
+    "allow_any_upgrade": false,
+    "k256_pubkey": "033474ec12f649605abf5d6df937aef26cfa3ed55dadb4382f623f08f59c043d2e",
+    "bootstrap_info": null,
+    "is_dev": false,
+    "gateway_app_id": "",
+    "kms_contract_address": "0xe6c23bfE4686E28DcDA15A1996B1c0C549656E26",
+    "chain_id": 11155111,
+    "app_auth_implementation": "0xc308574F9A0c7d144d7AD887785D25C386D32B54"
+  }
+  ```
+- **Key Findings:**
+  1. Root cause was rate-limited Alchemy demo endpoint
+  2. Fix requires custom KMS image with working RPC URL
+  3. PublicNode (`https://ethereum-sepolia.publicnode.com`) works reliably
+  4. KMS is now fully functional - GetMeta, GetTempCaCert all work
 
 ---
 
@@ -144,12 +225,31 @@ This spec is a **living document**. We will:
 
 | Setting | Value | Why |
 |---------|-------|-----|
-| Image | `registry.hosted.dstack.info/dstack-kms:latest` | Registry only has `:latest` |
+| Image | `registry.hosted.dstack.info/dstack-kms:fixed` | Custom image with working ETH RPC |
 | secure_time | `false` | Set `true` causes boot hang at time sync |
 | local_key_provider_enabled | `true` | Required for Gramine key provider |
-| Memory | 4096MB | 2048MB works but 4096MB matches older working VM |
+| Memory | 4096MB | 2048MB works but 4096MB safer |
 | Port mapping | `tcp:127.0.0.1:<host>:<container>` | Format for vmm-cli.py |
 | auto_bootstrap_domain | Set in image config | Enables automatic bootstrap |
+| ETH_RPC_URL | `https://ethereum-sepolia.publicnode.com` | Alchemy demo is rate-limited |
+
+**Critical Fix: auth-eth RPC URL**
+
+The default KMS image uses `https://eth-sepolia.g.alchemy.com/v2/demo` which is rate-limited (HTTP 429). This causes auth-eth to hang, which makes GetMeta hang.
+
+**Solution:** Build a custom KMS image with a working RPC endpoint:
+```dockerfile
+FROM registry.hosted.dstack.info/dstack-kms:latest
+COPY auth-eth.env /etc/kms/auth-eth.env
+```
+
+Where `auth-eth.env` contains:
+```
+HOST=127.0.0.1
+PORT=9200
+ETH_RPC_URL=https://ethereum-sepolia.publicnode.com
+KMS_CONTRACT_ADDR=0xe6c23bfE4686E28DcDA15A1996B1c0C549656E26
+```
 
 ---
 
@@ -649,10 +749,13 @@ The Gateway must be registered as an app in the KMS before it can be deployed. T
 
 1. **[RESOLVED]** ~~KMS CVM not deployed~~ - Successfully deployed in Attempt 3!
 2. **[RESOLVED]** ~~Contract deployment status~~ - Contracts deployed on Sepolia (addresses in GetMeta response)
-3. **[IDENTIFIED]** auth-eth webhook hangs after first request - **Bug in auth-eth**, not KMS
-   - KMS core functionality works (GetTempCaCert returns immediately)
-   - Only GetMeta (which needs chain info) is affected
+3. **[RESOLVED]** ~~auth-eth webhook hangs~~ - Fixed by using custom image with working RPC endpoint
+   - Root cause: Alchemy demo endpoint rate-limited (HTTP 429)
+   - Fix: Build custom image with `ETH_RPC_URL=https://ethereum-sepolia.publicnode.com`
+   - Deployed as `registry.hosted.dstack.info/dstack-kms:fixed`
 4. **[NOT STARTED]** Gateway not running - Required for external access to KMS
+
+**All KMS blockers resolved! Ready to proceed with Gateway deployment.**
 
 ### Immediate Next Steps
 
@@ -664,7 +767,7 @@ The Gateway must be registered as an app in the KMS before it can be deployed. T
 
 ### Server State (173.231.234.133)
 
-Last verified: 2025-12-08 23:30 UTC
+Last verified: 2025-12-09 00:35 UTC
 
 | Component | Status | Notes |
 |-----------|--------|-------|
@@ -672,12 +775,11 @@ Last verified: 2025-12-08 23:30 UTC
 | SGX Devices | ✅ | Present |
 | PCCS | ✅ | Intel API key configured |
 | Gramine Key Provider | ✅ | `localhost:3443` |
-| Local Registry | ✅ | `registry.hosted.dstack.info:443`, has `dstack-kms:latest` |
+| Local Registry | ✅ | `registry.hosted.dstack.info:443`, has `dstack-kms:latest` and `:fixed` |
 | VMM | ✅ | Running |
 | Guest Images | ✅ | `dstack-0.5.5` in `/var/lib/dstack/images/` |
 | **Gateway** | ❌ | NOT deployed |
-| **KMS CVM (old)** | ✅ | VM ID: `5de541ec`, port 9100, running 4h+ |
-| **KMS CVM (new)** | ✅ | VM ID: `2e8fb53f`, port 9101, **GetMeta works!** |
+| **KMS CVM (fixed)** | ✅ | VM ID: `9900b3c5`, port 9103, **GetMeta works instantly!** |
 | **KMS Contracts** | ✅ | Sepolia: `0xe6c23bfE4686E28DcDA15A1996B1c0C549656E26` |
 
 ### After KMS Works
@@ -743,3 +845,7 @@ Only after we have a working KMS CVM:
 | 2025-12-08 | Claude | Identified intermittent prpc hang issue - investigating |
 | 2025-12-08 | Claude | **ROOT CAUSE:** auth-eth (port 9200) stops responding, NOT a KMS issue |
 | 2025-12-08 | Claude | Verified KMS core works: GetTempCaCert returns instantly |
+| 2025-12-09 | Claude | **INVESTIGATION:** Discovered Alchemy demo endpoint returns HTTP 429 (rate limited) |
+| 2025-12-09 | Claude | **FIX:** Built custom KMS image with working RPC (`ethereum-sepolia.publicnode.com`) |
+| 2025-12-09 | Claude | **Attempt 5: COMPLETE SUCCESS!** KMS CVM fully functional, GetMeta responds in <0.25s |
+| 2025-12-09 | Claude | All KMS blockers resolved - ready for Gateway deployment |
