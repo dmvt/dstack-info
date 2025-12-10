@@ -1,6 +1,6 @@
 # Quick Start Ansible Tutorial
 
-**Status:** DRAFT
+**Status:** REVIEW
 **Author:** Claude (with Dan Matthews)
 **Created:** 2025-12-10
 **Last Updated:** 2025-12-10
@@ -36,7 +36,8 @@ Neither provides a "just deploy it" experience for:
 
 ### Must Have
 
-- [ ] **Single master playbook** (`site.yml` or `full-deploy.yml`) that runs the complete stack
+- [ ] **Local contract deployment playbook** (`deploy-contracts-local.yml`) that runs on localhost
+- [ ] **Single master playbook** (`site.yml`) that runs the complete server stack
 - [ ] **Phase-based grouping** with clear tags:
   - `host-setup` - TDX software stack
   - `prerequisites` - DNS, SSL, blockchain, PCCS, Gramine, registry
@@ -204,7 +205,7 @@ skip_contract_deployment: false  # Set true if contracts already deployed
 ```markdown
 # Quick Start: Deploy dstack with Ansible
 
-Deploy a complete dstack environment with a single command.
+Deploy a complete dstack environment with two commands.
 
 ## Prerequisites
 
@@ -214,7 +215,8 @@ Before starting:
 3. Ansible installed on your local machine
 4. SSH access to the server (ubuntu user with sudo)
 5. Intel PCCS API key from Intel portal
-6. Ethereum wallet with Sepolia ETH
+6. Ethereum wallet with Sepolia ETH (private key on local machine)
+7. dstack repository cloned locally (`~/dstack`)
 
 ## Quick Start
 
@@ -226,40 +228,54 @@ cd dstack-info/ansible
 
 # Copy example configuration
 cp vars/quick-start.example.yml vars/quick-start.yml
+cp vars/local-secrets.example.yml vars/local-secrets.yml
 cp inventory/hosts.example.yml inventory/hosts.yml
 
 # Edit configuration
-vim vars/quick-start.yml  # Set your domain, Intel API key
-vim inventory/hosts.yml   # Set your server IP
+vim vars/quick-start.yml    # Set your domain, Intel API key
+vim vars/local-secrets.yml  # Set your private key (NEVER commit!)
+vim inventory/hosts.yml     # Set your server IP
 ```
 
-### Step 2: Deploy Everything
+### Step 2: Deploy Contracts (Local)
+
+This runs on your LOCAL machine - private key never leaves your computer:
+
+```bash
+ansible-playbook playbooks/deploy-contracts-local.yml
+```
+
+This will:
+- Compile the KMS smart contracts
+- Deploy them to Sepolia testnet
+- Save contract addresses to `vars/contract-addresses.yml`
+
+### Step 3: Deploy Server Infrastructure
 
 ```bash
 ansible-playbook site.yml -i inventory/hosts.yml
 ```
 
-This single command will:
+This deploys everything to your server:
 1. Install TDX kernel and reboot
 2. Configure PCCS with your Intel API key
 3. Deploy Gramine key provider
 4. Set up local Docker registry with SSL
 5. Build and configure VMM
 6. Download guest images
-7. Deploy KMS contracts (if not already deployed)
-8. Deploy KMS as a CVM
-9. Build and deploy Gateway
+7. Deploy KMS as a CVM (using contract addresses from Step 2)
+8. Build and deploy Gateway
 
 Estimated time: 45-60 minutes (including reboot)
 
-### Step 3: Verify
+### Step 4: Verify
 
 ```bash
 # Check KMS is responding
-curl -sk https://127.0.0.1:9103/prpc/KMS.GetMeta | head -c 200
+ssh ubuntu@YOUR_SERVER "curl -sk https://127.0.0.1:9103/prpc/KMS.GetMeta | head -c 200"
 
-# Check Gateway is running
-systemctl status dstack-gateway
+# Or run verification playbook
+ansible-playbook playbooks/verify-deployment.yml -i inventory/hosts.yml
 ```
 
 ## Running Specific Phases
@@ -270,7 +286,7 @@ Use tags to run only certain phases:
 # Just host setup (TDX kernel)
 ansible-playbook site.yml -i inventory/hosts.yml --tags host-setup
 
-# Just KMS deployment
+# Just KMS deployment (requires contracts deployed first)
 ansible-playbook site.yml -i inventory/hosts.yml --tags kms-deploy
 
 # All verification steps
@@ -294,6 +310,13 @@ Check prerequisites:
 ansible-playbook playbooks/verify-tdx.yml -i inventory/hosts.yml
 ansible-playbook playbooks/verify-pccs-config.yml -i inventory/hosts.yml
 ```
+
+### Contract deployment fails
+
+Ensure:
+- `~/dstack` repository exists on your LOCAL machine
+- Private key in `vars/local-secrets.yml` has Sepolia ETH
+- RPC endpoint in `vars/quick-start.yml` is working
 ```
 
 ### Phase Diagram
@@ -394,10 +417,139 @@ These need to be created to match their corresponding tutorials.
 4. Verify Gateway running
 5. Document any issues and fix
 
+## Local Contract Deployment
+
+**DECISION:** Contract deployment runs on the user's LOCAL machine (not the remote server) to keep private keys secure.
+
+### Two-Step Deployment Flow
+
+```bash
+# Step 1: Deploy contracts locally (runs on localhost with your private key)
+ansible-playbook playbooks/deploy-contracts-local.yml
+
+# Step 2: Deploy everything to server (uses contract addresses from step 1)
+ansible-playbook site.yml -i inventory/hosts.yml
+```
+
+### Local Playbook Design
+
+```yaml
+# ansible/playbooks/deploy-contracts-local.yml
+---
+- name: Deploy KMS Contracts to Sepolia (LOCAL)
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars_files:
+    - ../vars/quick-start.yml
+    - ../vars/local-secrets.yml  # Contains PRIVATE_KEY (gitignored)
+
+  vars:
+    dstack_repo_path: "{{ lookup('env', 'HOME') }}/dstack"
+    contracts_dir: "{{ dstack_repo_path }}/kms/auth-eth"
+
+  tasks:
+    - name: Verify dstack repo exists
+      stat:
+        path: "{{ contracts_dir }}/hardhat.config.ts"
+      register: hardhat_config
+      failed_when: not hardhat_config.stat.exists
+
+    - name: Verify PRIVATE_KEY is set
+      assert:
+        that:
+          - private_key is defined
+          - private_key | length > 0
+        fail_msg: |
+          PRIVATE_KEY not set. Create vars/local-secrets.yml with:
+          private_key: "0xYOUR_PRIVATE_KEY_HERE"
+
+          NEVER commit this file to git!
+
+    - name: Install npm dependencies
+      npm:
+        path: "{{ contracts_dir }}"
+        state: present
+
+    - name: Compile contracts
+      command: npx hardhat compile
+      args:
+        chdir: "{{ contracts_dir }}"
+      environment:
+        PRIVATE_KEY: "{{ private_key }}"
+
+    - name: Deploy contracts to Sepolia
+      command: npx hardhat run scripts/deploy.js --network sepolia
+      args:
+        chdir: "{{ contracts_dir }}"
+      environment:
+        PRIVATE_KEY: "{{ private_key }}"
+        ETH_RPC_URL: "{{ eth_rpc_url }}"
+      register: deploy_output
+
+    - name: Parse contract addresses from output
+      set_fact:
+        kms_contract_address: "{{ deploy_output.stdout | regex_search('KMS deployed to: (0x[a-fA-F0-9]+)', '\\1') | first }}"
+        app_auth_address: "{{ deploy_output.stdout | regex_search('AppAuth deployed to: (0x[a-fA-F0-9]+)', '\\1') | first }}"
+
+    - name: Save contract addresses to vars file
+      copy:
+        content: |
+          ---
+          # Auto-generated by deploy-contracts-local.yml
+          # DO NOT EDIT - re-run playbook to regenerate
+          kms_contract_address: "{{ kms_contract_address }}"
+          app_auth_implementation: "{{ app_auth_address }}"
+          chain_id: 11155111  # Sepolia
+        dest: "../vars/contract-addresses.yml"
+
+    - name: Display deployment results
+      debug:
+        msg:
+          - "============================================"
+          - "Contract Deployment Complete!"
+          - "============================================"
+          - ""
+          - "KMS Contract: {{ kms_contract_address }}"
+          - "AppAuth: {{ app_auth_address }}"
+          - "Chain: Sepolia (11155111)"
+          - ""
+          - "Addresses saved to: vars/contract-addresses.yml"
+          - ""
+          - "Next step: Run the server deployment"
+          - "ansible-playbook site.yml -i inventory/hosts.yml"
+          - "============================================"
+```
+
+### Files Structure
+
+```
+ansible/
+├── vars/
+│   ├── quick-start.yml           # Main config (domain, versions)
+│   ├── quick-start.example.yml   # Template for users
+│   ├── local-secrets.yml         # PRIVATE_KEY (gitignored)
+│   ├── local-secrets.example.yml # Template for secrets
+│   └── contract-addresses.yml    # Auto-generated after deploy
+├── playbooks/
+│   ├── deploy-contracts-local.yml  # Runs on localhost
+│   └── ...                         # Other playbooks run on server
+└── site.yml                        # Master playbook (imports contract-addresses.yml)
+```
+
+### Security Model
+
+| File | Contains | Committed to Git |
+|------|----------|------------------|
+| `quick-start.yml` | Domain, RPC URL, versions | Yes |
+| `local-secrets.yml` | Private key | **NO** (gitignored) |
+| `contract-addresses.yml` | Public addresses | Yes (safe) |
+| `hosts.yml` | Server IPs | **NO** (gitignored) |
+
 ## Open Questions
 
-1. **Contract deployment location**: Should contracts be deployed from local machine (secure) or can we add a task that uploads the wallet key temporarily?
-   - **Leaning toward**: Keep contract deployment local, have users provide contract addresses in vars file
+1. ~~**Contract deployment location**~~: **RESOLVED** - Local playbook on localhost, private key never touches server
 
 2. **Reboot handling**: Ansible loses connection during TDX kernel reboot. Options:
    - Use `wait_for_connection` after reboot
@@ -435,3 +587,5 @@ These need to be created to match their corresponding tutorials.
 | Date | Author | Changes |
 |------|--------|---------|
 | 2025-12-10 | Claude | Initial draft |
+| 2025-12-10 | Claude | Added local contract deployment playbook design (private key stays local) |
+| 2025-12-10 | Claude | Status changed to REVIEW |
