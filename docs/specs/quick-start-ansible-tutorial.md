@@ -317,6 +317,100 @@ Ensure:
 - `~/dstack` repository exists on your LOCAL machine
 - Private key in `vars/local-secrets.yml` has Sepolia ETH
 - RPC endpoint in `vars/quick-start.yml` is working
+
+## Manual Approach: Run Playbooks Individually
+
+If you prefer to run each step individually (recommended for learning), here are the playbooks in order with links to the full manual tutorials.
+
+### Phase 1: Host Setup
+
+| Step | Playbook | Manual Tutorial |
+|------|----------|-----------------|
+| 1 | `setup-tdx-host.yml` | [TDX Software Installation](/tutorial/tdx-software-installation) |
+| 2 | `verify-tdx.yml` | [TDX & SGX Verification](/tutorial/tdx-sgx-verification) |
+
+```bash
+ansible-playbook playbooks/setup-tdx-host.yml -i inventory/hosts.yml
+# Wait for reboot...
+ansible-playbook playbooks/verify-tdx.yml -i inventory/hosts.yml
+```
+
+### Phase 2: Prerequisites
+
+| Step | Playbook | Manual Tutorial |
+|------|----------|-----------------|
+| 1 | `verify-dns.yml` | [DNS Configuration](/tutorial/dns-configuration) |
+| 2 | `setup-ssl-certificates.yml` | [SSL Certificate Setup](/tutorial/ssl-certificate-setup) |
+| 3 | `configure-pccs.yml` | [TDX Attestation Setup](/tutorial/tdx-attestation-setup) |
+| 4 | `setup-gramine-key-provider.yml` | [Gramine Key Provider](/tutorial/gramine-key-provider) |
+| 5 | `setup-local-registry.yml` | [Local Docker Registry](/tutorial/local-docker-registry) |
+
+```bash
+ansible-playbook playbooks/verify-dns.yml -i inventory/hosts.yml
+ansible-playbook playbooks/setup-ssl-certificates.yml -i inventory/hosts.yml
+ansible-playbook playbooks/configure-pccs.yml -i inventory/hosts.yml
+ansible-playbook playbooks/setup-gramine-key-provider.yml -i inventory/hosts.yml
+ansible-playbook playbooks/setup-local-registry.yml -i inventory/hosts.yml
+```
+
+### Phase 3: dstack Installation
+
+| Step | Playbook | Manual Tutorial |
+|------|----------|-----------------|
+| 1 | `setup-host-dependencies.yml` | [System Baseline Dependencies](/tutorial/system-baseline-dependencies) |
+| 2 | `setup-rust-toolchain.yml` | [Rust Toolchain Installation](/tutorial/rust-toolchain-installation) |
+| 3 | `build-dstack-vmm.yml` | [Clone & Build VMM](/tutorial/clone-build-vmm) |
+| 4 | `setup-vmm-config.yml` | [VMM Configuration](/tutorial/vmm-configuration) |
+| 5 | `setup-vmm-service.yml` | [VMM Service Setup](/tutorial/vmm-service-setup) |
+| 6 | `setup-guest-images.yml` | [Guest Image Setup](/tutorial/guest-image-setup) |
+
+```bash
+ansible-playbook playbooks/setup-host-dependencies.yml -i inventory/hosts.yml
+ansible-playbook playbooks/setup-rust-toolchain.yml -i inventory/hosts.yml
+ansible-playbook playbooks/build-dstack-vmm.yml -i inventory/hosts.yml
+ansible-playbook playbooks/setup-vmm-config.yml -i inventory/hosts.yml
+ansible-playbook playbooks/setup-vmm-service.yml -i inventory/hosts.yml
+ansible-playbook playbooks/setup-guest-images.yml -i inventory/hosts.yml
+```
+
+### Phase 4: KMS Deployment
+
+| Step | Playbook | Manual Tutorial |
+|------|----------|-----------------|
+| 1 | `deploy-contracts-local.yml` | [Smart Contract Compilation](/tutorial/smart-contract-compilation) |
+| 2 | `build-kms.yml` | [KMS Build & Configuration](/tutorial/kms-build-configuration) |
+| 3 | `deploy-kms-cvm.yml` | [KMS CVM Deployment](/tutorial/kms-cvm-deployment) |
+| 4 | `verify-kms-cvm.yml` | [KMS CVM Deployment](/tutorial/kms-cvm-deployment#verification) |
+
+```bash
+# Run locally first (contracts)
+ansible-playbook playbooks/deploy-contracts-local.yml
+
+# Then on server
+ansible-playbook playbooks/build-kms.yml -i inventory/hosts.yml
+ansible-playbook playbooks/deploy-kms-cvm.yml -i inventory/hosts.yml
+ansible-playbook playbooks/verify-kms-cvm.yml -i inventory/hosts.yml
+```
+
+### Phase 5: Gateway Deployment
+
+| Step | Playbook | Manual Tutorial |
+|------|----------|-----------------|
+| 1 | `build-gateway.yml` | [Gateway Build & Configuration](/tutorial/gateway-build-configuration) |
+| 2 | `setup-gateway-service.yml` | [Gateway Service Setup](/tutorial/gateway-service-setup) |
+| 3 | `verify-gateway.yml` | [Gateway Service Setup](/tutorial/gateway-service-setup#verification) |
+
+```bash
+ansible-playbook playbooks/build-gateway.yml -i inventory/hosts.yml
+ansible-playbook playbooks/setup-gateway-service.yml -i inventory/hosts.yml
+ansible-playbook playbooks/verify-gateway.yml -i inventory/hosts.yml
+```
+
+### Final Verification
+
+```bash
+ansible-playbook playbooks/verify-deployment.yml -i inventory/hosts.yml
+```
 ```
 
 ### Phase Diagram
@@ -589,3 +683,4 @@ ansible/
 | 2025-12-10 | Claude | Initial draft |
 | 2025-12-10 | Claude | Added local contract deployment playbook design (private key stays local) |
 | 2025-12-10 | Claude | Status changed to REVIEW |
+| 2025-12-10 | Claude | Added "Manual Approach" section with individual playbooks and tutorial links |
