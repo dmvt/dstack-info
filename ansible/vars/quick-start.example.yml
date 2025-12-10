@@ -1,0 +1,109 @@
+---
+# Quick Start Configuration for dstack Deployment
+#
+# Copy this file to quick-start.yml and customize:
+#   cp quick-start.example.yml quick-start.yml
+#   vim quick-start.yml
+#
+# IMPORTANT: Never commit quick-start.yml to git (it's gitignored)
+
+# =============================================================================
+# DOMAIN CONFIGURATION
+# =============================================================================
+
+# Base domain for all dstack services
+# Example: yourdomain.com -> gateway.yourdomain.com, kms.yourdomain.com, etc.
+base_domain: "yourdomain.com"
+
+# Subdomains (auto-generated from base_domain)
+registry_domain: "registry.{{ base_domain }}"
+gateway_domain: "gateway.{{ base_domain }}"
+kms_domain: "kms.{{ base_domain }}"
+
+# =============================================================================
+# INTEL PCCS CONFIGURATION (REQUIRED)
+# =============================================================================
+
+# Intel PCCS API Key - REQUIRED for TDX attestation
+# Get your key from: https://api.portal.trustedservices.intel.com/
+#   1. Sign in or create an account
+#   2. Subscribe to "Intel SGX and Intel TDX Provisioning Certification Service"
+#   3. Copy your Primary or Secondary key from your Profile
+intel_pccs_api_key: ""
+
+# =============================================================================
+# ETHEREUM/BLOCKCHAIN CONFIGURATION
+# =============================================================================
+
+# Ethereum RPC endpoint for Sepolia testnet
+# PublicNode works reliably (no rate limits)
+eth_rpc_url: "https://ethereum-sepolia.publicnode.com"
+
+# KMS contract address (set after running deploy-contracts-local.yml)
+# This will be overwritten by vars/contract-addresses.yml
+kms_contract_address: "SET_AFTER_RUNNING_deploy-contracts-local.yml"
+
+# Chain ID (11155111 = Sepolia testnet)
+chain_id: 11155111
+
+# =============================================================================
+# DSTACK VERSIONS
+# =============================================================================
+
+# dstack version to deploy
+dstack_version: "0.5.5"
+
+# Guest image version (usually matches dstack_version)
+guest_image_version: "dstack-{{ dstack_version }}"
+
+# =============================================================================
+# CVM CONFIGURATION
+# =============================================================================
+
+# KMS CVM resources
+kms_vcpus: 2
+kms_memory: 4096  # MB
+kms_disk: 20      # GB
+
+# Gateway CVM resources (if applicable)
+gateway_vcpus: 2
+gateway_memory: 2048  # MB
+
+# =============================================================================
+# PORT CONFIGURATION
+# =============================================================================
+
+# VMM HTTP API port
+vmm_http_port: 9080
+
+# KMS RPC port (exposed on host)
+kms_rpc_port: 9100
+
+# Gramine key provider port
+gramine_port: 3443
+
+# =============================================================================
+# SSL CERTIFICATE CONFIGURATION
+# =============================================================================
+
+# Email for Let's Encrypt certificate registration
+ssl_email: "admin@{{ base_domain }}"
+
+# Certificate challenge type: http or dns
+# - http: Requires port 80 open (simpler)
+# - dns: Requires Cloudflare API (for wildcards)
+ssl_challenge: "http"
+
+# Cloudflare credentials (only needed if ssl_challenge: dns)
+# cloudflare_api_token: ""
+# cloudflare_zone_id: ""
+
+# =============================================================================
+# FEATURE FLAGS
+# =============================================================================
+
+# Enable TDX attestation (should always be true for production)
+enable_attestation: true
+
+# Skip contract deployment (set true if contracts already deployed)
+skip_contract_deployment: false

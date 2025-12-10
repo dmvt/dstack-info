@@ -1,0 +1,272 @@
+---
+# Setup Gramine Sealing Key Provider
+#
+# This playbook deploys the Gramine-based sealing key provider, which is required
+# for KMS CVM deployment. It solves the "chicken-and-egg" problem where KMS needs
+# sealing keys to boot, but KMS is the service that provides keys.
+#
+# The Gramine key provider runs as an SGX enclave on the HOST (not in a CVM),
+# providing attestation-backed sealing keys during CVM boot.
+#
+# Prerequisites:
+#   - SGX devices present (/dev/sgx_enclave, /dev/sgx_provision)
+#   - Docker installed and running
+#   - PCCS configured with Intel API key
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/setup-gramine-key-provider.yml
+
+- name: Setup Gramine Sealing Key Provider
+  hosts: dstack_servers
+  become: yes
+
+  vars_files:
+    - ../vars/quick-start.yml
+
+  vars:
+    dstack_repo_path: /home/{{ ansible_user }}/dstack
+    key_provider_dir: "{{ dstack_repo_path }}/key-provider-build"
+    gramine_port: 3443
+
+  tasks:
+    # =========================================================================
+    # PRE-FLIGHT CHECKS
+    # =========================================================================
+
+    - name: Check SGX enclave device exists
+      ansible.builtin.stat:
+        path: /dev/sgx_enclave
+      register: sgx_enclave
+
+    - name: Check SGX provision device exists
+      ansible.builtin.stat:
+        path: /dev/sgx_provision
+      register: sgx_provision
+
+    - name: Fail if SGX devices missing
+      ansible.builtin.fail:
+        msg: |
+          SGX devices not found!
+
+          Required devices:
+            /dev/sgx_enclave: {{ 'EXISTS' if sgx_enclave.stat.exists else 'MISSING' }}
+            /dev/sgx_provision: {{ 'EXISTS' if sgx_provision.stat.exists else 'MISSING' }}
+
+          Possible causes:
+            1. TDX/SGX not enabled in BIOS
+            2. TDX kernel not installed
+            3. SGX driver not loaded
+
+          Follow the TDX Software Installation tutorial:
+            https://dstack.info/tutorial/tdx-software-installation
+      when: not sgx_enclave.stat.exists or not sgx_provision.stat.exists
+
+    - name: Check Docker is running
+      ansible.builtin.command:
+        cmd: docker info
+      register: docker_info
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if Docker not running
+      ansible.builtin.fail:
+        msg: |
+          Docker is not running.
+
+          Start Docker:
+            sudo systemctl start docker
+      when: docker_info.rc != 0
+
+    # =========================================================================
+    # CHECK EXISTING DEPLOYMENT
+    # =========================================================================
+
+    - name: Check if gramine-sealing-key-provider container exists
+      ansible.builtin.command:
+        cmd: docker ps -a --filter "name=gramine-sealing-key-provider" --format "{{ '{{' }}.Status{{ '}}' }}"
+      register: gramine_container
+      changed_when: false
+
+    - name: Check if key provider is already running
+      ansible.builtin.set_fact:
+        gramine_running: "{{ 'Up' in gramine_container.stdout }}"
+
+    - name: Display current status
+      ansible.builtin.debug:
+        msg: "Gramine key provider already running: {{ gramine_running }}"
+
+    # =========================================================================
+    # CLONE/UPDATE DSTACK REPOSITORY
+    # =========================================================================
+
+    - name: Check if dstack repo exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}"
+      register: dstack_repo
+
+    - name: Clone dstack repository
+      ansible.builtin.git:
+        repo: "https://github.com/Dstack-TEE/dstack.git"
+        dest: "{{ dstack_repo_path }}"
+        version: "master"
+      become_user: "{{ ansible_user }}"
+      when: not dstack_repo.stat.exists
+
+    - name: Update dstack repository
+      ansible.builtin.git:
+        repo: "https://github.com/Dstack-TEE/dstack.git"
+        dest: "{{ dstack_repo_path }}"
+        version: "master"
+        update: yes
+      become_user: "{{ ansible_user }}"
+      when: dstack_repo.stat.exists and not gramine_running
+
+    # =========================================================================
+    # CHECK KEY PROVIDER BUILD FILES
+    # =========================================================================
+
+    - name: Check key-provider-build directory exists
+      ansible.builtin.stat:
+        path: "{{ key_provider_dir }}"
+      register: key_provider_exists
+
+    - name: Check for docker-compose.yaml
+      ansible.builtin.stat:
+        path: "{{ key_provider_dir }}/docker-compose.yaml"
+      register: compose_file
+      when: key_provider_exists.stat.exists
+
+    - name: Fail if key provider build files missing
+      ansible.builtin.fail:
+        msg: |
+          Key provider build files not found in dstack repository.
+
+          Expected location: {{ key_provider_dir }}
+
+          Try re-cloning the repository:
+            rm -rf {{ dstack_repo_path }}
+            git clone https://github.com/Dstack-TEE/dstack.git {{ dstack_repo_path }}
+      when: not key_provider_exists.stat.exists or not compose_file.stat.exists | default(false)
+
+    # =========================================================================
+    # CREATE QCNL CONFIG
+    # =========================================================================
+
+    - name: Create QCNL configuration
+      ansible.builtin.copy:
+        content: |
+          {
+            "pccs_url": "https://127.0.0.1:8081/sgx/certification/v4/",
+            "use_secure_cert": false,
+            "retry_times": 6,
+            "retry_delay": 10
+          }
+        dest: "{{ key_provider_dir }}/sgx_default_qcnl.conf"
+        mode: '0644'
+      become_user: "{{ ansible_user }}"
+
+    # =========================================================================
+    # BUILD AND START CONTAINERS
+    # =========================================================================
+
+    - name: Build Docker images
+      ansible.builtin.command:
+        cmd: docker compose build
+        chdir: "{{ key_provider_dir }}"
+      register: build_result
+      when: not gramine_running
+      changed_when: "'Successfully built' in build_result.stdout or 'Successfully tagged' in build_result.stdout"
+
+    - name: Start key provider containers
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ key_provider_dir }}"
+      register: start_result
+      when: not gramine_running
+
+    - name: Wait for containers to start
+      ansible.builtin.pause:
+        seconds: 10
+      when: not gramine_running
+
+    # =========================================================================
+    # VERIFY DEPLOYMENT
+    # =========================================================================
+
+    - name: Check aesmd container is running
+      ansible.builtin.command:
+        cmd: docker ps --filter "name=aesmd" --format "{{ '{{' }}.Status{{ '}}' }}"
+      register: aesmd_status
+      changed_when: false
+
+    - name: Check gramine container is running
+      ansible.builtin.command:
+        cmd: docker ps --filter "name=gramine-sealing-key-provider" --format "{{ '{{' }}.Status{{ '}}' }}"
+      register: gramine_status
+      changed_when: false
+
+    - name: Verify key provider port is listening
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ gramine_port }}"
+        timeout: 30
+        state: started
+      register: port_check
+
+    - name: Test key provider endpoint
+      ansible.builtin.uri:
+        url: "https://127.0.0.1:{{ gramine_port }}/"
+        method: GET
+        validate_certs: false
+        return_content: no
+        status_code: [200, 400, 404, 405]  # Any response means it's running
+      register: endpoint_check
+      failed_when: false
+
+    - name: Check container logs for errors
+      ansible.builtin.command:
+        cmd: docker logs --tail 20 gramine-sealing-key-provider
+      register: gramine_logs
+      changed_when: false
+      failed_when: false
+
+    # =========================================================================
+    # SUMMARY
+    # =========================================================================
+
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "Gramine Key Provider Setup Complete"
+          - "============================================"
+          - ""
+          - "Containers:"
+          - "  aesmd: {{ 'Running' if 'Up' in aesmd_status.stdout else 'NOT RUNNING' }}"
+          - "  gramine-sealing-key-provider: {{ 'Running' if 'Up' in gramine_status.stdout else 'NOT RUNNING' }}"
+          - ""
+          - "Endpoint: https://127.0.0.1:{{ gramine_port }}"
+          - "Port Status: {{ 'Listening' if port_check is success else 'NOT LISTENING' }}"
+          - ""
+          - "Recent logs:"
+          - "{{ gramine_logs.stdout_lines[-5:] | default(['No logs available']) }}"
+          - ""
+          - "Commands:"
+          - "  View logs: docker logs -f gramine-sealing-key-provider"
+          - "  Restart:   docker compose -f {{ key_provider_dir }}/docker-compose.yaml restart"
+          - "============================================"
+
+    - name: Fail if containers not running
+      ansible.builtin.fail:
+        msg: |
+          Gramine key provider containers are not running properly.
+
+          Check container logs:
+            docker logs aesmd
+            docker logs gramine-sealing-key-provider
+
+          Common issues:
+            1. SGX devices not accessible
+            2. PCCS not configured
+            3. Docker build failed
+      when: "'Up' not in aesmd_status.stdout or 'Up' not in gramine_status.stdout"

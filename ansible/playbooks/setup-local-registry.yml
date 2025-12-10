@@ -1,0 +1,280 @@
+---
+# Setup Local Docker Registry with SSL
+#
+# This playbook deploys a local Docker registry with SSL certificates.
+# A local registry ensures reliable image pulls during CVM deployment,
+# avoiding Docker Hub rate limits and network issues.
+#
+# Prerequisites:
+#   - SSL certificates obtained (from setup-ssl-certificates.yml)
+#   - Docker installed and running
+#   - DNS record for registry.domain pointing to server
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/setup-local-registry.yml
+
+- name: Setup Local Docker Registry with SSL
+  hosts: dstack_servers
+  become: yes
+
+  vars_files:
+    - ../vars/quick-start.yml
+
+  vars:
+    registry_cert_dir: /etc/docker/registry/certs
+    registry_data_dir: /var/lib/registry
+    registry_container_name: registry
+
+  tasks:
+    # =========================================================================
+    # PRE-FLIGHT CHECKS
+    # =========================================================================
+
+    - name: Check Docker is running
+      ansible.builtin.command:
+        cmd: docker info
+      register: docker_info
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if Docker not running
+      ansible.builtin.fail:
+        msg: |
+          Docker is not running.
+
+          Start Docker:
+            sudo systemctl start docker
+      when: docker_info.rc != 0
+
+    - name: Check SSL certificates exist
+      ansible.builtin.stat:
+        path: "{{ registry_cert_dir }}/fullchain.pem"
+      register: ssl_cert
+
+    - name: Fail if SSL certificates missing
+      ansible.builtin.fail:
+        msg: |
+          SSL certificates not found at {{ registry_cert_dir }}
+
+          Run the SSL certificate setup first:
+            ansible-playbook playbooks/setup-ssl-certificates.yml
+      when: not ssl_cert.stat.exists
+
+    # =========================================================================
+    # CHECK EXISTING REGISTRY
+    # =========================================================================
+
+    - name: Check if registry container exists
+      ansible.builtin.command:
+        cmd: docker ps -a --filter "name={{ registry_container_name }}" --format "{{ '{{' }}.Status{{ '}}' }}"
+      register: registry_container
+      changed_when: false
+
+    - name: Set registry running fact
+      ansible.builtin.set_fact:
+        registry_running: "{{ 'Up' in registry_container.stdout }}"
+
+    - name: Display current status
+      ansible.builtin.debug:
+        msg: "Registry container running: {{ registry_running }}"
+
+    # =========================================================================
+    # CREATE DIRECTORIES
+    # =========================================================================
+
+    - name: Create registry data directory
+      ansible.builtin.file:
+        path: "{{ registry_data_dir }}"
+        state: directory
+        mode: '0755'
+
+    # =========================================================================
+    # DEPLOY REGISTRY CONTAINER
+    # =========================================================================
+
+    - name: Stop existing registry container
+      ansible.builtin.command:
+        cmd: docker rm -f {{ registry_container_name }}
+      when: registry_container.stdout != "" and not registry_running
+      failed_when: false
+
+    - name: Deploy registry container
+      ansible.builtin.command:
+        cmd: >
+          docker run -d
+          --name {{ registry_container_name }}
+          --restart always
+          -p 443:443
+          -v {{ registry_cert_dir }}:/certs:ro
+          -v {{ registry_data_dir }}:/var/lib/registry
+          -e REGISTRY_HTTP_ADDR=0.0.0.0:443
+          -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/fullchain.pem
+          -e REGISTRY_HTTP_TLS_KEY=/certs/privkey.pem
+          registry:2
+      when: not registry_running
+      register: deploy_result
+
+    - name: Wait for registry to start
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 443
+        timeout: 30
+        state: started
+
+    # =========================================================================
+    # VERIFY REGISTRY
+    # =========================================================================
+
+    - name: Test registry API
+      ansible.builtin.uri:
+        url: "https://{{ registry_domain }}/v2/"
+        method: GET
+        validate_certs: yes
+        return_content: yes
+        status_code: 200
+      register: registry_api
+      retries: 5
+      delay: 3
+      until: registry_api.status == 200
+
+    - name: Display registry API response
+      ansible.builtin.debug:
+        msg: "Registry API response: {{ registry_api.json | default({}) }}"
+
+    # =========================================================================
+    # CACHE KMS IMAGE
+    # =========================================================================
+
+    - name: Check if dstack-kms image already cached
+      ansible.builtin.uri:
+        url: "https://{{ registry_domain }}/v2/dstack-kms/tags/list"
+        method: GET
+        validate_certs: yes
+        return_content: yes
+        status_code: [200, 404]
+      register: kms_image_check
+
+    - name: Set KMS image cached fact
+      ansible.builtin.set_fact:
+        kms_image_cached: "{{ kms_image_check.status == 200 }}"
+
+    - name: Pull dstack-kms from Docker Hub
+      ansible.builtin.command:
+        cmd: docker pull dstack0/dstack-kms:{{ dstack_version }}
+      when: not kms_image_cached
+      register: pull_result
+
+    - name: Tag image for local registry
+      ansible.builtin.command:
+        cmd: docker tag dstack0/dstack-kms:{{ dstack_version }} {{ registry_domain }}/dstack-kms:{{ dstack_version }}
+      when: not kms_image_cached
+
+    - name: Tag image as latest
+      ansible.builtin.command:
+        cmd: docker tag dstack0/dstack-kms:{{ dstack_version }} {{ registry_domain }}/dstack-kms:latest
+      when: not kms_image_cached
+
+    - name: Push image to local registry
+      ansible.builtin.command:
+        cmd: docker push {{ registry_domain }}/dstack-kms:{{ dstack_version }}
+      when: not kms_image_cached
+
+    - name: Push latest tag to local registry
+      ansible.builtin.command:
+        cmd: docker push {{ registry_domain }}/dstack-kms:latest
+      when: not kms_image_cached
+
+    # =========================================================================
+    # BUILD FIXED KMS IMAGE (with working RPC)
+    # =========================================================================
+
+    - name: Create temporary build directory
+      ansible.builtin.tempfile:
+        state: directory
+      register: build_dir
+      when: not kms_image_cached
+
+    - name: Create auth-eth.env with working RPC
+      ansible.builtin.copy:
+        content: |
+          HOST=127.0.0.1
+          PORT=9200
+          ETH_RPC_URL={{ eth_rpc_url }}
+          KMS_CONTRACT_ADDR={{ kms_contract_address | default('0x0000000000000000000000000000000000000000') }}
+        dest: "{{ build_dir.path }}/auth-eth.env"
+      when: not kms_image_cached
+
+    - name: Create Dockerfile for fixed KMS image
+      ansible.builtin.copy:
+        content: |
+          FROM {{ registry_domain }}/dstack-kms:{{ dstack_version }}
+          COPY auth-eth.env /etc/kms/auth-eth.env
+        dest: "{{ build_dir.path }}/Dockerfile"
+      when: not kms_image_cached
+
+    - name: Build fixed KMS image
+      ansible.builtin.command:
+        cmd: docker build -t {{ registry_domain }}/dstack-kms:fixed .
+        chdir: "{{ build_dir.path }}"
+      when: not kms_image_cached
+
+    - name: Push fixed KMS image
+      ansible.builtin.command:
+        cmd: docker push {{ registry_domain }}/dstack-kms:fixed
+      when: not kms_image_cached
+
+    - name: Clean up build directory
+      ansible.builtin.file:
+        path: "{{ build_dir.path }}"
+        state: absent
+      when: build_dir.path is defined
+
+    # =========================================================================
+    # VERIFY CACHED IMAGES
+    # =========================================================================
+
+    - name: Get registry catalog
+      ansible.builtin.uri:
+        url: "https://{{ registry_domain }}/v2/_catalog"
+        method: GET
+        validate_certs: yes
+        return_content: yes
+      register: catalog
+
+    - name: Get dstack-kms tags
+      ansible.builtin.uri:
+        url: "https://{{ registry_domain }}/v2/dstack-kms/tags/list"
+        method: GET
+        validate_certs: yes
+        return_content: yes
+        status_code: [200, 404]
+      register: kms_tags
+
+    # =========================================================================
+    # SUMMARY
+    # =========================================================================
+
+    - name: Display summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "Local Docker Registry Setup Complete"
+          - "============================================"
+          - ""
+          - "Registry: https://{{ registry_domain }}"
+          - "Container: {{ registry_container_name }}"
+          - "Data Directory: {{ registry_data_dir }}"
+          - ""
+          - "Cached Repositories:"
+          - "{{ catalog.json.repositories | default([]) }}"
+          - ""
+          - "dstack-kms Tags:"
+          - "{{ kms_tags.json.tags | default(['Not cached yet']) }}"
+          - ""
+          - "Test Commands:"
+          - "  Catalog: curl -sk https://{{ registry_domain }}/v2/_catalog"
+          - "  Tags:    curl -sk https://{{ registry_domain }}/v2/dstack-kms/tags/list"
+          - ""
+          - "Note: The 'fixed' tag includes a working Ethereum RPC endpoint"
+          - "(PublicNode instead of rate-limited Alchemy demo)"
+          - "============================================"

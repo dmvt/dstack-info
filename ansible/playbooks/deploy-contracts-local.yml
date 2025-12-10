@@ -1,0 +1,286 @@
+---
+# Deploy KMS Contracts to Sepolia (LOCAL)
+#
+# This playbook runs on your LOCAL machine to deploy smart contracts.
+# Your private key NEVER leaves your local machine.
+#
+# Prerequisites:
+#   1. Clone dstack repository locally:
+#      git clone https://github.com/Dstack-TEE/dstack ~/dstack
+#
+#   2. Configure secrets:
+#      cp vars/local-secrets.example.yml vars/local-secrets.yml
+#      vim vars/local-secrets.yml  # Add your private key
+#
+#   3. Ensure you have Sepolia ETH in your wallet (~0.1 ETH)
+#
+# Usage:
+#   ansible-playbook playbooks/deploy-contracts-local.yml
+#
+# Output:
+#   Creates vars/contract-addresses.yml with deployed contract addresses
+
+- name: Deploy KMS Contracts to Sepolia (LOCAL)
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+
+  vars_files:
+    - ../vars/quick-start.yml
+    - ../vars/local-secrets.yml
+
+  vars:
+    contracts_output_file: "../vars/contract-addresses.yml"
+
+  tasks:
+    # =========================================================================
+    # VALIDATE PREREQUISITES
+    # =========================================================================
+
+    - name: Validate private key is set
+      ansible.builtin.assert:
+        that:
+          - private_key is defined
+          - private_key != ""
+          - private_key | length > 60
+        fail_msg: |
+          Private key not configured!
+
+          Edit vars/local-secrets.yml and add your Ethereum private key:
+            private_key: "0xYOUR_PRIVATE_KEY_HERE"
+
+          SECURITY: This file is gitignored and should NEVER be committed.
+
+    - name: Check dstack repository exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}"
+      register: dstack_repo
+
+    - name: Clone dstack repository if missing
+      ansible.builtin.git:
+        repo: "https://github.com/Dstack-TEE/dstack.git"
+        dest: "{{ dstack_repo_path }}"
+        version: "master"
+      when: not dstack_repo.stat.exists
+
+    - name: Check contracts directory exists
+      ansible.builtin.stat:
+        path: "{{ contracts_dir }}/hardhat.config.ts"
+      register: hardhat_config
+
+    - name: Fail if contracts directory missing
+      ansible.builtin.fail:
+        msg: |
+          Hardhat configuration not found at {{ contracts_dir }}/hardhat.config.ts
+
+          Expected dstack repository structure:
+            {{ dstack_repo_path }}/
+            └── kms/
+                └── auth-eth/
+                    ├── hardhat.config.ts
+                    ├── package.json
+                    └── contracts/
+      when: not hardhat_config.stat.exists
+
+    # =========================================================================
+    # CHECK NODE.JS AND NPM
+    # =========================================================================
+
+    - name: Check Node.js is installed
+      ansible.builtin.command: node --version
+      register: node_version
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if Node.js not installed
+      ansible.builtin.fail:
+        msg: |
+          Node.js is required for contract deployment.
+
+          Install Node.js:
+            # macOS
+            brew install node
+
+            # Ubuntu/Debian
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+
+            # Or use nvm
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+            nvm install 20
+      when: node_version.rc != 0
+
+    - name: Display Node.js version
+      ansible.builtin.debug:
+        msg: "Node.js version: {{ node_version.stdout }}"
+
+    # =========================================================================
+    # INSTALL DEPENDENCIES
+    # =========================================================================
+
+    - name: Check if node_modules exists
+      ansible.builtin.stat:
+        path: "{{ contracts_dir }}/node_modules"
+      register: node_modules
+
+    - name: Install npm dependencies
+      ansible.builtin.command:
+        cmd: npm install
+        chdir: "{{ contracts_dir }}"
+      when: not node_modules.stat.exists
+      register: npm_install
+
+    - name: Display npm install output
+      ansible.builtin.debug:
+        msg: "{{ npm_install.stdout_lines | default(['Dependencies already installed']) }}"
+
+    # =========================================================================
+    # COMPILE CONTRACTS
+    # =========================================================================
+
+    - name: Compile contracts
+      ansible.builtin.command:
+        cmd: npx hardhat compile
+        chdir: "{{ contracts_dir }}"
+      environment:
+        PRIVATE_KEY: "{{ private_key }}"
+      register: compile_result
+      changed_when: "'Compiled' in compile_result.stdout"
+
+    - name: Display compilation result
+      ansible.builtin.debug:
+        msg: "{{ compile_result.stdout_lines }}"
+
+    # =========================================================================
+    # CHECK WALLET BALANCE
+    # =========================================================================
+
+    - name: Check wallet balance
+      ansible.builtin.command:
+        cmd: >
+          npx hardhat run --network sepolia -e "
+          const { ethers } = require('hardhat');
+          async function main() {
+            const [signer] = await ethers.getSigners();
+            const balance = await ethers.provider.getBalance(signer.address);
+            console.log('ADDRESS:' + signer.address);
+            console.log('BALANCE:' + ethers.formatEther(balance));
+          }
+          main();
+          "
+        chdir: "{{ contracts_dir }}"
+      environment:
+        PRIVATE_KEY: "{{ private_key }}"
+      register: balance_check
+      failed_when: false
+      changed_when: false
+
+    - name: Parse wallet info
+      ansible.builtin.set_fact:
+        wallet_address: "{{ balance_check.stdout | regex_search('ADDRESS:(0x[a-fA-F0-9]+)', '\\1') | first | default('unknown') }}"
+        wallet_balance: "{{ balance_check.stdout | regex_search('BALANCE:([0-9.]+)', '\\1') | first | default('0') }}"
+      when: balance_check.rc == 0
+
+    - name: Display wallet info
+      ansible.builtin.debug:
+        msg:
+          - "Wallet Address: {{ wallet_address }}"
+          - "Balance: {{ wallet_balance }} ETH"
+      when: balance_check.rc == 0
+
+    - name: Warn if balance is low
+      ansible.builtin.debug:
+        msg:
+          - "WARNING: Wallet balance is low ({{ wallet_balance }} ETH)"
+          - ""
+          - "Get testnet ETH from: https://sepolia-faucet.pk910.de/"
+          - "Address: {{ wallet_address }}"
+      when: balance_check.rc == 0 and (wallet_balance | float) < 0.05
+
+    # =========================================================================
+    # DEPLOY CONTRACTS
+    # =========================================================================
+
+    - name: Deploy contracts to Sepolia
+      ansible.builtin.command:
+        cmd: npx hardhat run scripts/deploy.js --network sepolia
+        chdir: "{{ contracts_dir }}"
+      environment:
+        PRIVATE_KEY: "{{ private_key }}"
+        ETH_RPC_URL: "{{ eth_rpc_url }}"
+      register: deploy_output
+
+    - name: Display deployment output
+      ansible.builtin.debug:
+        msg: "{{ deploy_output.stdout_lines }}"
+
+    # =========================================================================
+    # PARSE AND SAVE CONTRACT ADDRESSES
+    # =========================================================================
+
+    - name: Parse KMS contract address
+      ansible.builtin.set_fact:
+        deployed_kms_address: "{{ deploy_output.stdout | regex_search('KMS[^:]*:\\s*(0x[a-fA-F0-9]+)', '\\1') | first }}"
+      failed_when: deployed_kms_address is not defined
+
+    - name: Parse AppAuth contract address
+      ansible.builtin.set_fact:
+        deployed_app_auth_address: "{{ deploy_output.stdout | regex_search('AppAuth[^:]*:\\s*(0x[a-fA-F0-9]+)', '\\1') | first | default('') }}"
+      failed_when: false
+
+    - name: Save contract addresses to file
+      ansible.builtin.copy:
+        content: |
+          ---
+          # Contract Addresses - Auto-generated by deploy-contracts-local.yml
+          # Generated: {{ ansible_date_time.iso8601 }}
+          #
+          # DO NOT EDIT MANUALLY - Re-run the playbook to regenerate
+          #
+          # These addresses are for Sepolia testnet (chain ID: 11155111)
+
+          # KMS Contract Address
+          kms_contract_address: "{{ deployed_kms_address }}"
+
+          # App Authentication Implementation Address
+          app_auth_implementation: "{{ deployed_app_auth_address | default('') }}"
+
+          # Chain ID (Sepolia testnet)
+          chain_id: 11155111
+
+          # Deployment metadata
+          deployment_timestamp: "{{ ansible_date_time.iso8601 }}"
+          deployer_address: "{{ wallet_address | default('unknown') }}"
+        dest: "{{ contracts_output_file }}"
+        mode: '0644'
+
+    # =========================================================================
+    # SUMMARY
+    # =========================================================================
+
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "Contract Deployment Complete!"
+          - "============================================"
+          - ""
+          - "Network: Sepolia (Chain ID: 11155111)"
+          - "Deployer: {{ wallet_address | default('unknown') }}"
+          - ""
+          - "Deployed Contracts:"
+          - "  KMS: {{ deployed_kms_address }}"
+          - "  AppAuth: {{ deployed_app_auth_address | default('N/A') }}"
+          - ""
+          - "Addresses saved to: vars/contract-addresses.yml"
+          - ""
+          - "Next Steps:"
+          - "  1. Run the server deployment:"
+          - "     ansible-playbook site.yml -i inventory/hosts.yml"
+          - ""
+          - "  2. Or run individual phases:"
+          - "     ansible-playbook site.yml -i inventory/hosts.yml --tags kms-deploy"
+          - ""
+          - "View on Etherscan:"
+          - "  https://sepolia.etherscan.io/address/{{ deployed_kms_address }}"
+          - "============================================"

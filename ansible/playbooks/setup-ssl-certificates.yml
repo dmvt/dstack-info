@@ -1,0 +1,202 @@
+---
+# Setup SSL Certificates with Let's Encrypt
+#
+# This playbook obtains SSL certificates for dstack services using certbot.
+#
+# Prerequisites:
+#   - DNS records configured (registry.domain, gateway.domain pointing to server)
+#   - Port 80 accessible for HTTP-01 challenge (or Cloudflare API for DNS challenge)
+#
+# Variables (from vars/quick-start.yml):
+#   - base_domain: Your base domain
+#   - registry_domain: registry.{{ base_domain }}
+#   - ssl_email: Email for Let's Encrypt registration
+#   - ssl_challenge: "http" or "dns"
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/setup-ssl-certificates.yml
+
+- name: Setup SSL Certificates with Let's Encrypt
+  hosts: dstack_servers
+  become: yes
+
+  vars_files:
+    - ../vars/quick-start.yml
+
+  vars:
+    certbot_webroot: /var/www/certbot
+    registry_cert_dir: /etc/docker/registry/certs
+
+  tasks:
+    # =========================================================================
+    # INSTALL CERTBOT
+    # =========================================================================
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install certbot and dependencies
+      ansible.builtin.apt:
+        name:
+          - certbot
+          - python3-certbot-nginx
+        state: present
+
+    - name: Install Cloudflare plugin (for DNS challenge)
+      ansible.builtin.apt:
+        name: python3-certbot-dns-cloudflare
+        state: present
+      when: ssl_challenge | default('http') == 'dns'
+
+    # =========================================================================
+    # CHECK EXISTING CERTIFICATES
+    # =========================================================================
+
+    - name: Check if registry certificate exists
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/live/{{ registry_domain }}/fullchain.pem"
+      register: registry_cert
+
+    - name: Display certificate status
+      ansible.builtin.debug:
+        msg: "Registry certificate exists: {{ registry_cert.stat.exists }}"
+
+    # =========================================================================
+    # OBTAIN REGISTRY CERTIFICATE (HTTP-01 Challenge)
+    # =========================================================================
+
+    - name: Stop services using port 80
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: stopped
+      loop:
+        - nginx
+        - apache2
+      failed_when: false
+      when:
+        - not registry_cert.stat.exists
+        - ssl_challenge | default('http') == 'http'
+
+    - name: Obtain registry certificate (HTTP-01)
+      ansible.builtin.command:
+        cmd: >
+          certbot certonly --standalone
+          -d {{ registry_domain }}
+          --non-interactive
+          --agree-tos
+          --email {{ ssl_email }}
+      register: certbot_result
+      when:
+        - not registry_cert.stat.exists
+        - ssl_challenge | default('http') == 'http'
+
+    - name: Display certbot output
+      ansible.builtin.debug:
+        msg: "{{ certbot_result.stdout_lines | default(['Certificate already exists']) }}"
+
+    # =========================================================================
+    # COPY CERTIFICATES FOR DOCKER REGISTRY
+    # =========================================================================
+
+    - name: Create registry certificate directory
+      ansible.builtin.file:
+        path: "{{ registry_cert_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copy certificate chain to registry
+      ansible.builtin.copy:
+        src: "/etc/letsencrypt/live/{{ registry_domain }}/fullchain.pem"
+        dest: "{{ registry_cert_dir }}/fullchain.pem"
+        remote_src: yes
+        mode: '0644'
+      when: registry_cert.stat.exists or certbot_result is changed
+
+    - name: Copy private key to registry
+      ansible.builtin.copy:
+        src: "/etc/letsencrypt/live/{{ registry_domain }}/privkey.pem"
+        dest: "{{ registry_cert_dir }}/privkey.pem"
+        remote_src: yes
+        mode: '0600'
+      when: registry_cert.stat.exists or certbot_result is changed
+
+    # =========================================================================
+    # VERIFY CERTIFICATES
+    # =========================================================================
+
+    - name: Verify certificate files exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ registry_cert_dir }}/fullchain.pem"
+        - "{{ registry_cert_dir }}/privkey.pem"
+      register: cert_files
+
+    - name: Fail if certificates missing
+      ansible.builtin.fail:
+        msg: "Certificate file {{ item.item }} is missing"
+      when: not item.stat.exists
+      loop: "{{ cert_files.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Check certificate expiration
+      ansible.builtin.command:
+        cmd: openssl x509 -enddate -noout -in {{ registry_cert_dir }}/fullchain.pem
+      register: cert_expiry
+      changed_when: false
+
+    - name: Display certificate info
+      ansible.builtin.debug:
+        msg: "Certificate expiry: {{ cert_expiry.stdout }}"
+
+    # =========================================================================
+    # SETUP AUTO-RENEWAL
+    # =========================================================================
+
+    - name: Create renewal hook script
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Copy renewed certificates to registry directory
+          DOMAIN="{{ registry_domain }}"
+          cp -L /etc/letsencrypt/live/$DOMAIN/fullchain.pem {{ registry_cert_dir }}/
+          cp -L /etc/letsencrypt/live/$DOMAIN/privkey.pem {{ registry_cert_dir }}/
+          chmod 644 {{ registry_cert_dir }}/fullchain.pem
+          chmod 600 {{ registry_cert_dir }}/privkey.pem
+
+          # Restart registry to pick up new certs
+          docker restart registry 2>/dev/null || true
+        dest: /etc/letsencrypt/renewal-hooks/deploy/registry-certs.sh
+        mode: '0755'
+
+    - name: Verify certbot timer is running
+      ansible.builtin.systemd:
+        name: certbot.timer
+        state: started
+        enabled: yes
+
+    # =========================================================================
+    # SUMMARY
+    # =========================================================================
+
+    - name: Display summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "SSL Certificate Setup Complete"
+          - "============================================"
+          - ""
+          - "Domain: {{ registry_domain }}"
+          - "Certificate: {{ registry_cert_dir }}/fullchain.pem"
+          - "Private Key: {{ registry_cert_dir }}/privkey.pem"
+          - "Expiry: {{ cert_expiry.stdout }}"
+          - ""
+          - "Auto-renewal: Enabled (certbot.timer)"
+          - "Renewal hook: /etc/letsencrypt/renewal-hooks/deploy/registry-certs.sh"
+          - ""
+          - "Test renewal:"
+          - "  sudo certbot renew --dry-run"
+          - "============================================"

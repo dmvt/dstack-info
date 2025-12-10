@@ -1,0 +1,184 @@
+---
+# site.yml - Master playbook for full dstack deployment
+#
+# This playbook orchestrates the complete dstack deployment by importing
+# individual playbooks in the correct order.
+#
+# Prerequisites:
+#   1. Deploy contracts locally first:
+#      ansible-playbook playbooks/deploy-contracts-local.yml
+#
+#   2. Configure variables:
+#      cp vars/quick-start.example.yml vars/quick-start.yml
+#      vim vars/quick-start.yml  # Set your domain, Intel API key
+#
+#   3. Configure inventory:
+#      cp inventory/hosts.example.yml inventory/hosts.yml
+#      vim inventory/hosts.yml  # Set your server IP
+#
+# Usage:
+#   # Full deployment
+#   ansible-playbook site.yml -i inventory/hosts.yml
+#
+#   # Run specific phase only
+#   ansible-playbook site.yml -i inventory/hosts.yml --tags host-setup
+#   ansible-playbook site.yml -i inventory/hosts.yml --tags prerequisites
+#   ansible-playbook site.yml -i inventory/hosts.yml --tags dstack-install
+#   ansible-playbook site.yml -i inventory/hosts.yml --tags kms-deploy
+#   ansible-playbook site.yml -i inventory/hosts.yml --tags gateway-deploy
+#
+#   # Run all verification steps
+#   ansible-playbook site.yml -i inventory/hosts.yml --tags verify
+
+# =============================================================================
+# PHASE 0: Pre-flight checks and display deployment plan
+# =============================================================================
+
+- name: Quick Start - Pre-flight Checks
+  hosts: dstack_servers
+  gather_facts: no
+  tags: [always]
+
+  vars_files:
+    - vars/quick-start.yml
+
+  tasks:
+    - name: Display deployment plan
+      ansible.builtin.debug:
+        msg:
+          - "====================================================="
+          - "  dstack Quick Start Deployment"
+          - "====================================================="
+          - ""
+          - "  Target: {{ inventory_hostname }}"
+          - "  Domain: {{ base_domain }}"
+          - ""
+          - "  Phases:"
+          - "    1. Host Setup     - TDX kernel + attestation"
+          - "    2. Prerequisites  - SSL, PCCS, Gramine, Registry"
+          - "    3. dstack Install - VMM + guest images"
+          - "    4. KMS Deploy     - KMS CVM deployment"
+          - "    5. Gateway Deploy - Gateway service"
+          - ""
+          - "  Contract Address: {{ kms_contract_address | default('Not set - run deploy-contracts-local.yml first') }}"
+          - ""
+          - "====================================================="
+
+    - name: Verify contract addresses are set
+      ansible.builtin.assert:
+        that:
+          - kms_contract_address is defined
+          - kms_contract_address != ""
+          - kms_contract_address != "SET_AFTER_RUNNING_deploy-contracts-local.yml"
+        fail_msg: |
+          Contract addresses not configured!
+
+          First, deploy contracts locally:
+            ansible-playbook playbooks/deploy-contracts-local.yml
+
+          This will create vars/contract-addresses.yml with the deployed addresses.
+      tags: [kms-deploy, gateway-deploy]
+
+# =============================================================================
+# PHASE 1: Host Setup - TDX kernel and attestation software
+# =============================================================================
+
+- name: "Phase 1.1: Install TDX Software Stack"
+  ansible.builtin.import_playbook: playbooks/setup-tdx-host.yml
+  tags: [host-setup]
+
+- name: "Phase 1.2: Verify TDX Installation"
+  ansible.builtin.import_playbook: playbooks/verify-tdx.yml
+  tags: [host-setup, verify]
+
+# =============================================================================
+# PHASE 2: Prerequisites - Infrastructure setup
+# =============================================================================
+
+- name: "Phase 2.1: Verify DNS Configuration"
+  ansible.builtin.import_playbook: playbooks/verify-dns.yml
+  tags: [prerequisites]
+
+- name: "Phase 2.2: Setup SSL Certificates"
+  ansible.builtin.import_playbook: playbooks/setup-ssl-certificates.yml
+  tags: [prerequisites]
+
+- name: "Phase 2.3: Configure PCCS"
+  ansible.builtin.import_playbook: playbooks/configure-pccs.yml
+  tags: [prerequisites]
+
+- name: "Phase 2.4: Setup Gramine Key Provider"
+  ansible.builtin.import_playbook: playbooks/setup-gramine-key-provider.yml
+  tags: [prerequisites]
+
+- name: "Phase 2.5: Setup Local Docker Registry"
+  ansible.builtin.import_playbook: playbooks/setup-local-registry.yml
+  tags: [prerequisites]
+
+# =============================================================================
+# PHASE 3: dstack Installation - VMM and guest images
+# =============================================================================
+
+- name: "Phase 3.1: Install Host Dependencies"
+  ansible.builtin.import_playbook: playbooks/setup-host-dependencies.yml
+  tags: [dstack-install]
+
+- name: "Phase 3.2: Install Rust Toolchain"
+  ansible.builtin.import_playbook: playbooks/setup-rust-toolchain.yml
+  tags: [dstack-install]
+
+- name: "Phase 3.3: Build dstack VMM"
+  ansible.builtin.import_playbook: playbooks/build-dstack-vmm.yml
+  tags: [dstack-install]
+
+- name: "Phase 3.4: Configure VMM"
+  ansible.builtin.import_playbook: playbooks/setup-vmm-config.yml
+  tags: [dstack-install]
+
+- name: "Phase 3.5: Setup VMM Service"
+  ansible.builtin.import_playbook: playbooks/setup-vmm-service.yml
+  tags: [dstack-install]
+
+- name: "Phase 3.6: Setup Guest Images"
+  ansible.builtin.import_playbook: playbooks/setup-guest-images.yml
+  tags: [dstack-install]
+
+# =============================================================================
+# PHASE 4: KMS Deployment
+# =============================================================================
+
+- name: "Phase 4.1: Build KMS"
+  ansible.builtin.import_playbook: playbooks/build-kms.yml
+  tags: [kms-deploy]
+
+- name: "Phase 4.2: Deploy KMS CVM"
+  ansible.builtin.import_playbook: playbooks/deploy-kms-cvm.yml
+  tags: [kms-deploy]
+
+- name: "Phase 4.3: Verify KMS CVM"
+  ansible.builtin.import_playbook: playbooks/verify-kms-cvm.yml
+  tags: [kms-deploy, verify]
+
+# =============================================================================
+# PHASE 5: Gateway Deployment
+# =============================================================================
+
+- name: "Phase 5.1: Build Gateway"
+  ansible.builtin.import_playbook: playbooks/build-gateway.yml
+  tags: [gateway-deploy]
+
+- name: "Phase 5.2: Setup Gateway Service"
+  ansible.builtin.import_playbook: playbooks/setup-gateway-service.yml
+  tags: [gateway-deploy]
+
+- name: "Phase 5.3: Verify Gateway"
+  ansible.builtin.import_playbook: playbooks/verify-gateway.yml
+  tags: [gateway-deploy, verify]
+
+# =============================================================================
+# FINAL: Full deployment verification
+# =============================================================================
+
+- name: "Final: Verify Full Deployment"
+  ansible.builtin.import_playbook: playbooks/verify-deployment.yml
+  tags: [verify]

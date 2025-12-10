@@ -11,6 +11,13 @@ group_vars/all.yml
 group_vars/*.yml
 !group_vars/*.example.yml
 
+# Quick-start variables (keep only .example files in git)
+vars/quick-start.yml
+vars/local-secrets.yml
+vars/contract-addresses.yml
+vars/*.yml
+!vars/*.example.yml
+
 # Secrets and sensitive data
 *.pem
 *.key
