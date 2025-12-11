@@ -376,6 +376,9 @@ ansible-playbook playbooks/deploy-contracts-local.yml
 | Error lists required variables | `site.yml` lines 68-71 | [x] |
 | Validation for quick-start.yml in deploy | `deploy-contracts-local.yml` lines 27-66 | [x] |
 | Validation for local-secrets.yml | `deploy-contracts-local.yml` lines 68-104 | [x] |
+| Conditional loading of contract-addresses.yml | `site.yml` lines 96-105 | [x] |
+| Contract validation moved to Phase 4.0 | `site.yml` lines 196-248 | [x] |
+| Phases 1-3 runnable without contracts | Tested with --tags host-setup | [x] |
 
 ---
 
@@ -385,3 +388,4 @@ ansible-playbook playbooks/deploy-contracts-local.yml
 |------|--------|---------|
 | 2025-12-11 | Claude | Initial draft |
 | 2025-12-11 | Claude | Revised: Fixed technical approach (Option D), expanded scope to include local-secrets.yml validation |
+| 2025-12-11 | Claude | Moved contract validation to Phase 4.0, added conditional loading of contract-addresses.yml |

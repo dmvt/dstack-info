@@ -93,6 +93,17 @@
     - vars/quick-start.yml
 
   tasks:
+    - name: Check if contract-addresses.yml exists
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/vars/contract-addresses.yml"
+      register: contract_addresses_file
+      delegate_to: localhost
+
+    - name: Load contract addresses (if deployed)
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/vars/contract-addresses.yml"
+      when: contract_addresses_file.stat.exists
+
     - name: Display deployment plan
       ansible.builtin.debug:
         msg:
@@ -110,24 +121,9 @@
           - "    4. KMS Deploy     - KMS CVM deployment"
           - "    5. Gateway Deploy - Gateway service"
           - ""
-          - "  Contract Address: {{ kms_contract_address | default('Not set - run deploy-contracts-local.yml first') }}"
+          - "  Contract Address: {{ kms_contract_address | default('Not deployed yet') }}"
           - ""
           - "====================================================="
-
-    - name: Verify contract addresses are set
-      ansible.builtin.assert:
-        that:
-          - kms_contract_address is defined
-          - kms_contract_address != ""
-          - kms_contract_address != "SET_AFTER_RUNNING_deploy-contracts-local.yml"
-        fail_msg: |
-          Contract addresses not configured!
-
-          First, deploy contracts locally:
-            ansible-playbook playbooks/deploy-contracts-local.yml
-
-          This will create vars/contract-addresses.yml with the deployed addresses.
-      tags: [kms-deploy, gateway-deploy]
 
 # =============================================================================
 # PHASE 1: Host Setup - TDX kernel and attestation software
@@ -196,6 +192,60 @@
 # =============================================================================
 # PHASE 4: KMS Deployment
 # =============================================================================
+
+- name: "Phase 4.0: Validate Contract Deployment"
+  hosts: dstack_servers
+  gather_facts: no
+  tags: [kms-deploy, gateway-deploy]
+
+  vars_files:
+    - vars/quick-start.yml
+
+  tasks:
+    - name: Check if contract-addresses.yml exists
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/vars/contract-addresses.yml"
+      register: contract_addresses_file
+      delegate_to: localhost
+
+    - name: Load contract addresses
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/vars/contract-addresses.yml"
+      when: contract_addresses_file.stat.exists
+
+    - name: Verify contract addresses are configured
+      ansible.builtin.assert:
+        that:
+          - kms_contract_address is defined
+          - kms_contract_address != ""
+          - kms_contract_address != "SET_AFTER_RUNNING_deploy-contracts-local.yml"
+        fail_msg: |
+
+          ═══════════════════════════════════════════════════════════════════════════════
+           CONTRACT DEPLOYMENT REQUIRED
+          ═══════════════════════════════════════════════════════════════════════════════
+
+           KMS/Gateway deployment requires smart contracts to be deployed first.
+
+           The file vars/contract-addresses.yml was not found or doesn't contain
+           valid contract addresses.
+
+           To deploy contracts:
+
+           Step 1: Configure your private key
+             cd ansible
+             cp vars/local-secrets.example.yml vars/local-secrets.yml
+             vim vars/local-secrets.yml  # Add your Sepolia private key
+
+           Step 2: Deploy contracts (runs locally, never sends key to server)
+             ansible-playbook playbooks/deploy-contracts-local.yml
+
+           This creates vars/contract-addresses.yml with the deployed addresses.
+
+           For full instructions, see:
+             https://dstack.info/tutorial/quick-start-ansible
+
+          ═══════════════════════════════════════════════════════════════════════════════
 
 - name: "Phase 4.1: Build KMS"
   ansible.builtin.import_playbook: playbooks/build-kms.yml
