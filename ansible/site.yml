@@ -31,7 +31,57 @@
 #   ansible-playbook site.yml -i inventory/hosts.yml --tags verify
 
 # =============================================================================
-# PHASE 0: Pre-flight checks and display deployment plan
+# PHASE 0: Configuration Validation (runs on localhost, fails fast)
+# =============================================================================
+
+- name: Configuration Validation
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tags: [always]
+
+  tasks:
+    - name: Check vars/quick-start.yml exists
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/vars/quick-start.yml"
+      register: quick_start_file
+
+    - name: Fail if vars/quick-start.yml is missing
+      ansible.builtin.fail:
+        msg: |
+
+          ═══════════════════════════════════════════════════════════════════════════════
+           CONFIGURATION REQUIRED
+          ═══════════════════════════════════════════════════════════════════════════════
+
+           The file vars/quick-start.yml was not found.
+
+           Before running site.yml, you must create and configure this file:
+
+           Step 1: Copy the example file
+             cd ansible
+             cp vars/quick-start.example.yml vars/quick-start.yml
+
+           Step 2: Edit with your settings
+             vim vars/quick-start.yml
+
+             Required settings:
+               base_domain:        Your domain (e.g., example.com)
+               intel_pccs_api_key: Your Intel PCCS API key
+                                   Get one at: https://api.portal.trustedservices.intel.com/
+
+           Step 3: (If not already done) Deploy contracts locally
+             ansible-playbook playbooks/deploy-contracts-local.yml
+
+           For full instructions, see:
+             https://dstack.info/tutorial/quick-start-ansible
+
+          ═══════════════════════════════════════════════════════════════════════════════
+
+      when: not quick_start_file.stat.exists
+
+# =============================================================================
+# PHASE 0.1: Pre-flight checks and display deployment plan
 # =============================================================================
 
 - name: Quick Start - Pre-flight Checks

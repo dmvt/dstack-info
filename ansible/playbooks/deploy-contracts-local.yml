@@ -20,6 +20,93 @@
 # Output:
 #   Creates vars/contract-addresses.yml with deployed contract addresses
 
+# =============================================================================
+# Configuration Validation (fails fast with helpful errors)
+# =============================================================================
+
+- name: Configuration Validation
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Check vars/quick-start.yml exists
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../vars/quick-start.yml"
+      register: quick_start_file
+
+    - name: Fail if vars/quick-start.yml is missing
+      ansible.builtin.fail:
+        msg: |
+
+          ═══════════════════════════════════════════════════════════════════════════════
+           CONFIGURATION REQUIRED
+          ═══════════════════════════════════════════════════════════════════════════════
+
+           The file vars/quick-start.yml was not found.
+
+           Before deploying contracts, you must create and configure this file:
+
+           Step 1: Copy the example file
+             cd ansible
+             cp vars/quick-start.example.yml vars/quick-start.yml
+
+           Step 2: Edit with your settings
+             vim vars/quick-start.yml
+
+             Required settings:
+               base_domain:        Your domain (e.g., example.com)
+               intel_pccs_api_key: Your Intel PCCS API key
+
+           For full instructions, see:
+             https://dstack.info/tutorial/quick-start-ansible
+
+          ═══════════════════════════════════════════════════════════════════════════════
+
+      when: not quick_start_file.stat.exists
+
+    - name: Check vars/local-secrets.yml exists
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../vars/local-secrets.yml"
+      register: local_secrets_file
+
+    - name: Fail if vars/local-secrets.yml is missing
+      ansible.builtin.fail:
+        msg: |
+
+          ═══════════════════════════════════════════════════════════════════════════════
+           CONFIGURATION REQUIRED
+          ═══════════════════════════════════════════════════════════════════════════════
+
+           The file vars/local-secrets.yml was not found.
+
+           Before deploying contracts, you must create this file with your private key:
+
+           Step 1: Copy the example file
+             cd ansible
+             cp vars/local-secrets.example.yml vars/local-secrets.yml
+
+           Step 2: Add your Ethereum private key
+             vim vars/local-secrets.yml
+
+             Required:
+               private_key: "0x..."  (Sepolia testnet wallet with ETH)
+
+           Get testnet ETH from: https://sepolia-faucet.pk910.de/
+
+           SECURITY: This file is gitignored. Never commit private keys!
+
+           For full instructions, see:
+             https://dstack.info/tutorial/quick-start-ansible
+
+          ═══════════════════════════════════════════════════════════════════════════════
+
+      when: not local_secrets_file.stat.exists
+
+# =============================================================================
+# Contract Deployment
+# =============================================================================
+
 - name: Deploy KMS Contracts to Sepolia (LOCAL)
   hosts: localhost
   connection: local
