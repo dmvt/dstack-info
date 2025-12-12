@@ -1,12 +1,13 @@
 ---
 # Configure PCCS with Intel API Key for TDX Attestation
 #
-# Usage:
-#   export INTEL_API_KEY="your-api-key-here"
+# Usage (via quick-start.yml - recommended):
+#   Configure intel_pccs_api_key in vars/quick-start.yml
 #   ansible-playbook -i inventory/hosts.yml playbooks/configure-pccs.yml
 #
-# Or pass directly:
-#   ansible-playbook -i inventory/hosts.yml playbooks/configure-pccs.yml -e "intel_api_key=YOUR_KEY"
+# Usage (via environment variable):
+#   export INTEL_API_KEY="your-api-key-here"
+#   ansible-playbook -i inventory/hosts.yml playbooks/configure-pccs.yml
 #
 # Prerequisites:
 #   - PCCS installed (from tdx-software-installation)
@@ -15,8 +16,13 @@
 - name: Configure PCCS with Intel API Key
   hosts: tdx-host
   become: true
+
+  vars_files:
+    - ../vars/quick-start.yml
+
   vars:
-    intel_api_key: "{{ lookup('env', 'INTEL_API_KEY') | default('', true) }}"
+    # Use intel_pccs_api_key from quick-start.yml, fall back to environment variable
+    intel_api_key: "{{ intel_pccs_api_key | default(lookup('env', 'INTEL_API_KEY'), true) | default('', true) }}"
     pccs_config_path: /opt/intel/sgx-dcap-pccs/config/default.json
 
   tasks:
@@ -25,9 +31,11 @@
         msg: |
           Intel API key is required.
 
-          Please either:
-            1. Set environment variable: export INTEL_API_KEY="your-key"
-            2. Pass as variable: -e "intel_api_key=your-key"
+          Please configure in vars/quick-start.yml:
+            intel_pccs_api_key: "your-key"
+
+          Or set environment variable:
+            export INTEL_API_KEY="your-key"
 
           To get an API key:
             1. Go to https://api.portal.trustedservices.intel.com/

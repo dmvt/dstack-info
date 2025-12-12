@@ -3,11 +3,13 @@
   hosts: localhost
   gather_facts: no
 
+  vars_files:
+    - ../vars/quick-start.yml
+
   vars:
-    # These should be defined in group_vars/all.yml or passed via command line
-    # domain: "yourdomain.com"
-    # dstack_subdomain: "dstack"
-    # server_ip: "173.231.234.133"
+    # Server IP from inventory or override
+    server_ip: "{{ hostvars[groups['dstack_servers'][0]]['ansible_host'] | default('') }}"
+    # Test subdomains for wildcard verification
     test_subdomains:
       - "test"
       - "app"
@@ -17,47 +19,49 @@
     - name: Check required variables are defined
       assert:
         that:
-          - domain is defined
-          - dstack_subdomain is defined
+          - base_domain is defined
+          - base_domain != ""
           - server_ip is defined
+          - server_ip != ""
         fail_msg: |
-          Required variables not defined. Please define in group_vars/all.yml:
-          - domain: Your domain name (e.g., yourdomain.com)
-          - dstack_subdomain: Subdomain for dstack (e.g., dstack)
-          - server_ip: IP address of dstack server
+          Required variables not defined.
 
-          Or pass via command line:
-          ansible-playbook verify-dns.yml -e "domain=yourdomain.com" -e "dstack_subdomain=dstack" -e "server_ip=173.231.234.133"
-        success_msg: "✓ All required variables defined"
+          Ensure vars/quick-start.yml contains:
+            base_domain: "yourdomain.com"
 
-    - name: Test DNS resolution for base subdomain
+          And inventory/hosts.yml contains:
+            ansible_host: YOUR_SERVER_IP
+
+        success_msg: "✓ All required variables defined (base_domain: {{ base_domain }}, server_ip: {{ server_ip }})"
+
+    - name: Test DNS resolution for base domain
       shell: |
-        dig +short {{ dstack_subdomain }}.{{ domain }} A | head -1
+        dig +short {{ base_domain }} A | head -1
       register: base_dns_result
       failed_when: false
       changed_when: false
 
-    - name: Verify base subdomain resolves to correct IP
+    - name: Verify base domain resolves to correct IP
       assert:
         that:
           - base_dns_result.stdout == server_ip
         fail_msg: |
-          ✗ DNS resolution failed for {{ dstack_subdomain }}.{{ domain }}
+          ✗ DNS resolution failed for {{ base_domain }}
           Expected IP: {{ server_ip }}
           Got: {{ base_dns_result.stdout | default('No response') }}
 
           Troubleshooting:
-          1. Check A record exists in Cloudflare: {{ dstack_subdomain }}.{{ domain }} → {{ server_ip }}
-          2. Verify nameservers point to Cloudflare
+          1. Check A record exists: {{ base_domain }} → {{ server_ip }}
+          2. Verify nameservers are configured correctly
           3. Wait for DNS propagation (can take up to 48 hours)
-          4. Test directly against Cloudflare DNS: dig @1.1.1.1 {{ dstack_subdomain }}.{{ domain }}
+          4. Test directly against Cloudflare DNS: dig @1.1.1.1 {{ base_domain }}
 
           See tutorial: https://dstack.info/tutorial/dns-configuration
-        success_msg: "✓ Base subdomain {{ dstack_subdomain }}.{{ domain }} resolves to {{ server_ip }}"
+        success_msg: "✓ Base domain {{ base_domain }} resolves to {{ server_ip }}"
 
     - name: Test wildcard DNS resolution
       shell: |
-        dig +short {{ item }}.{{ dstack_subdomain }}.{{ domain }} A | head -1
+        dig +short {{ item }}.{{ base_domain }} A | head -1
       loop: "{{ test_subdomains }}"
       register: wildcard_dns_results
       failed_when: false
@@ -68,23 +72,23 @@
         that:
           - item.stdout == server_ip
         fail_msg: |
-          ✗ Wildcard DNS resolution failed for {{ item.item }}.{{ dstack_subdomain }}.{{ domain }}
+          ✗ Wildcard DNS resolution failed for {{ item.item }}.{{ base_domain }}
           Expected IP: {{ server_ip }}
           Got: {{ item.stdout | default('No response') }}
 
           Troubleshooting:
-          1. Check wildcard A record exists: *.{{ dstack_subdomain }}.{{ domain }} → {{ server_ip }}
+          1. Check wildcard A record exists: *.{{ base_domain }} → {{ server_ip }}
           2. Verify proxy status is "DNS only" (gray cloud) in Cloudflare
           3. Wait for DNS propagation
-          4. Test with: dig {{ item.item }}.{{ dstack_subdomain }}.{{ domain }}
+          4. Test with: dig {{ item.item }}.{{ base_domain }}
 
           See tutorial: https://dstack.info/tutorial/dns-configuration#step-2-configure-dns-records
-        success_msg: "✓ Wildcard subdomain {{ item.item }}.{{ dstack_subdomain }}.{{ domain }} resolves to {{ server_ip }}"
+        success_msg: "✓ Wildcard subdomain {{ item.item }}.{{ base_domain }} resolves to {{ server_ip }}"
       loop: "{{ wildcard_dns_results.results }}"
 
     - name: Test DNS resolution from multiple resolvers
       shell: |
-        dig @{{ item.resolver }} +short {{ dstack_subdomain }}.{{ domain }} A | head -1
+        dig @{{ item.resolver }} +short {{ base_domain }} A | head -1
       loop:
         - { name: "Cloudflare DNS", resolver: "1.1.1.1" }
         - { name: "Google DNS", resolver: "8.8.8.8" }
@@ -107,37 +111,41 @@
           3. Incorrect DNS configuration
 
           Wait a few minutes and try again. DNS propagation can take time.
-        success_msg: "✓ {{ item.item.name }} resolves {{ dstack_subdomain }}.{{ domain }} to {{ server_ip }}"
+        success_msg: "✓ {{ item.item.name }} resolves {{ base_domain }} to {{ server_ip }}"
       loop: "{{ resolver_results.results }}"
 
-    - name: Check CAA records on subdomain
+    - name: Check CAA records on base domain
       shell: |
-        dig +short {{ dstack_subdomain }}.{{ domain }} CAA
-      register: caa_subdomain_result
+        dig +short {{ base_domain }} CAA
+      register: caa_base_result
       failed_when: false
       changed_when: false
 
+    - name: Extract parent domain for CAA check
+      set_fact:
+        parent_domain: "{{ base_domain.split('.')[1:] | join('.') }}"
+
     - name: Check CAA records on parent domain
       shell: |
-        dig +short {{ domain }} CAA
+        dig +short {{ parent_domain }} CAA
       register: caa_parent_result
       failed_when: false
       changed_when: false
 
-    - name: Report CAA record status (subdomain)
+    - name: Report CAA record status (base domain)
       debug:
         msg:
-          - "✓ CAA records configured on {{ dstack_subdomain }}.{{ domain }}:"
-          - "{{ caa_subdomain_result.stdout }}"
-      when: caa_subdomain_result.stdout | length > 0
+          - "✓ CAA records configured on {{ base_domain }}:"
+          - "{{ caa_base_result.stdout }}"
+      when: caa_base_result.stdout | length > 0
 
     - name: Report CAA record status (parent domain)
       debug:
         msg:
-          - "✓ CAA records configured on parent domain {{ domain }} (inherited by subdomains):"
+          - "✓ CAA records configured on parent domain {{ parent_domain }} (inherited by subdomains):"
           - "{{ caa_parent_result.stdout }}"
       when:
-        - caa_subdomain_result.stdout | length == 0
+        - caa_base_result.stdout | length == 0
         - caa_parent_result.stdout | length > 0
 
     - name: Report CAA record status (none found)
@@ -151,7 +159,7 @@
           - "To add CAA records, see:"
           - "  https://dstack.info/tutorial/dns-configuration#step-2-configure-dns-records"
       when:
-        - caa_subdomain_result.stdout | length == 0
+        - caa_base_result.stdout | length == 0
         - caa_parent_result.stdout | length == 0
 
     - name: DNS verification summary
@@ -162,8 +170,8 @@
           - "═══════════════════════════════════════════════════════════════"
           - ""
           - "Domain Configuration:"
-          - "  • Base domain: {{ dstack_subdomain }}.{{ domain }} → {{ server_ip }}"
-          - "  • Wildcard: *.{{ dstack_subdomain }}.{{ domain }} → {{ server_ip }}"
+          - "  • Base domain: {{ base_domain }} → {{ server_ip }}"
+          - "  • Wildcard: *.{{ base_domain }} → {{ server_ip }}"
           - "  • Tested subdomains: {{ test_subdomains | join(', ') }}"
           - "  • All resolvers consistent: ✓"
           - "═══════════════════════════════════════════════════════════════"
