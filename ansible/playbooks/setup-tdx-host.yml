@@ -118,7 +118,7 @@
         repo: "{{ tdx_repo_url }}"
         dest: "{{ tdx_repo_dest }}"
         version: "{{ tdx_repo_version }}"
-        force: no
+        force: yes  # Allow re-running after config modifications
       become_user: "{{ ansible_user }}"
 
     - name: Verify repository contents
@@ -159,6 +159,8 @@
         chdir: "{{ tdx_repo_dest }}"
       environment:
         DEBIAN_FRONTEND: noninteractive
+      async: 1800  # 30 minute timeout for long-running script
+      poll: 30     # Check every 30 seconds (keeps SSH alive)
       register: tdx_setup_result
       changed_when: "'linux-image' in tdx_setup_result.stdout or 'Setting up' in tdx_setup_result.stdout"
       notify: Reboot for TDX kernel
