@@ -142,95 +142,7 @@
         msg: "Registry API response: {{ registry_api.json | default({}) }}"
 
     # =========================================================================
-    # CACHE KMS IMAGE
-    # =========================================================================
-
-    - name: Check if dstack-kms image already cached
-      ansible.builtin.uri:
-        url: "https://{{ registry_domain }}/v2/dstack-kms/tags/list"
-        method: GET
-        validate_certs: yes
-        return_content: yes
-        status_code: [200, 404]
-      register: kms_image_check
-
-    - name: Set KMS image cached fact
-      ansible.builtin.set_fact:
-        kms_image_cached: "{{ kms_image_check.status == 200 }}"
-
-    - name: Pull dstack-kms from Docker Hub
-      ansible.builtin.command:
-        cmd: docker pull dstack0/dstack-kms:{{ dstack_version }}
-      when: not kms_image_cached
-      register: pull_result
-
-    - name: Tag image for local registry
-      ansible.builtin.command:
-        cmd: docker tag dstack0/dstack-kms:{{ dstack_version }} {{ registry_domain }}/dstack-kms:{{ dstack_version }}
-      when: not kms_image_cached
-
-    - name: Tag image as latest
-      ansible.builtin.command:
-        cmd: docker tag dstack0/dstack-kms:{{ dstack_version }} {{ registry_domain }}/dstack-kms:latest
-      when: not kms_image_cached
-
-    - name: Push image to local registry
-      ansible.builtin.command:
-        cmd: docker push {{ registry_domain }}/dstack-kms:{{ dstack_version }}
-      when: not kms_image_cached
-
-    - name: Push latest tag to local registry
-      ansible.builtin.command:
-        cmd: docker push {{ registry_domain }}/dstack-kms:latest
-      when: not kms_image_cached
-
-    # =========================================================================
-    # BUILD FIXED KMS IMAGE (with working RPC)
-    # =========================================================================
-
-    - name: Create temporary build directory
-      ansible.builtin.tempfile:
-        state: directory
-      register: build_dir
-      when: not kms_image_cached
-
-    - name: Create auth-eth.env with working RPC
-      ansible.builtin.copy:
-        content: |
-          HOST=127.0.0.1
-          PORT=9200
-          ETH_RPC_URL={{ eth_rpc_url }}
-          KMS_CONTRACT_ADDR={{ kms_contract_address | default('0x0000000000000000000000000000000000000000') }}
-        dest: "{{ build_dir.path }}/auth-eth.env"
-      when: not kms_image_cached
-
-    - name: Create Dockerfile for fixed KMS image
-      ansible.builtin.copy:
-        content: |
-          FROM {{ registry_domain }}/dstack-kms:{{ dstack_version }}
-          COPY auth-eth.env /etc/kms/auth-eth.env
-        dest: "{{ build_dir.path }}/Dockerfile"
-      when: not kms_image_cached
-
-    - name: Build fixed KMS image
-      ansible.builtin.command:
-        cmd: docker build -t {{ registry_domain }}/dstack-kms:fixed .
-        chdir: "{{ build_dir.path }}"
-      when: not kms_image_cached
-
-    - name: Push fixed KMS image
-      ansible.builtin.command:
-        cmd: docker push {{ registry_domain }}/dstack-kms:fixed
-      when: not kms_image_cached
-
-    - name: Clean up build directory
-      ansible.builtin.file:
-        path: "{{ build_dir.path }}"
-        state: absent
-      when: build_dir.path is defined
-
-    # =========================================================================
-    # VERIFY CACHED IMAGES
+    # VERIFY REGISTRY
     # =========================================================================
 
     - name: Get registry catalog
@@ -240,15 +152,6 @@
         validate_certs: yes
         return_content: yes
       register: catalog
-
-    - name: Get dstack-kms tags
-      ansible.builtin.uri:
-        url: "https://{{ registry_domain }}/v2/dstack-kms/tags/list"
-        method: GET
-        validate_certs: yes
-        return_content: yes
-        status_code: [200, 404]
-      register: kms_tags
 
     # =========================================================================
     # SUMMARY
@@ -265,16 +168,11 @@
           - "Container: {{ registry_container_name }}"
           - "Data Directory: {{ registry_data_dir }}"
           - ""
-          - "Cached Repositories:"
-          - "{{ catalog.json.repositories | default([]) }}"
+          - "Note: KMS image will be built and pushed in Phase 4"
           - ""
-          - "dstack-kms Tags:"
-          - "{{ kms_tags.json.tags | default(['Not cached yet']) }}"
+          - "Current Repositories:"
+          - "{{ catalog.json.repositories | default(['(empty)']) }}"
           - ""
-          - "Test Commands:"
-          - "  Catalog: curl -sk https://{{ registry_domain }}/v2/_catalog"
-          - "  Tags:    curl -sk https://{{ registry_domain }}/v2/dstack-kms/tags/list"
-          - ""
-          - "Note: The 'fixed' tag includes a working Ethereum RPC endpoint"
-          - "(PublicNode instead of rate-limited Alchemy demo)"
+          - "Test Command:"
+          - "  curl -sk https://{{ registry_domain }}/v2/_catalog"
           - "============================================"

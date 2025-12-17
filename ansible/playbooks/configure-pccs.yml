@@ -80,7 +80,19 @@
         path: "{{ pccs_config_path }}"
         regexp: '"ApiKey"\s*:\s*"[^"]*"'
         replace: '"ApiKey": "{{ intel_api_key }}"'
-      register: config_updated
+      register: api_key_updated
+
+    - name: Configure PCCS to listen on all interfaces (required for CVM access)
+      ansible.builtin.replace:
+        path: "{{ pccs_config_path }}"
+        regexp: '"hosts"\s*:\s*"127\.0\.0\.1"'
+        replace: '"hosts" : "0.0.0.0"'
+      register: hosts_updated
+
+    - name: Set config_updated fact
+      ansible.builtin.set_fact:
+        config_updated:
+          changed: "{{ api_key_updated.changed or hosts_updated.changed }}"
 
     - name: Restart PCCS service
       ansible.builtin.systemd:

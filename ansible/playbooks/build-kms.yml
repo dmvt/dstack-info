@@ -52,7 +52,10 @@
     kms_log_level: "info"
     kms_rpc_port: 9100
     auth_eth_port: 9200
+    # PCCS URL for host-based KMS (direct execution, not in CVM)
     pccs_url: "https://api.trustedservices.intel.com/tdx/certification/v4"
+    # PCCS URL for CVM deployment (10.0.2.2 is host from QEMU user-mode network)
+    cvm_pccs_url: "https://10.0.2.2:8081/sgx/certification/v4"
   environment:
     RUSTUP_HOME: "{{ user_home }}/.rustup"
     CARGO_HOME: "{{ user_home }}/.cargo"
@@ -477,7 +480,8 @@
           [core]
           cert_dir = "/etc/kms/certs"
           subject_postfix = ".dstack"
-          pccs_url = "{{ pccs_url }}"
+          # Use local PCCS via host IP (10.0.2.2 is host from QEMU user-mode network)
+          pccs_url = "{{ cvm_pccs_url }}"
 
           # Authentication API Configuration
           [core.auth_api]

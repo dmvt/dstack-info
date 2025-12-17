@@ -25,12 +25,21 @@
     CARGO_HOME: "{{ user_home }}/.cargo"
 
   tasks:
+    - name: Reset any local changes in dstack repository
+      ansible.builtin.command:
+        cmd: git reset --hard HEAD
+        chdir: "{{ dstack_repo_path }}"
+      register: git_reset
+      changed_when: false
+      failed_when: false
+
     - name: Clone or update dstack repository
       ansible.builtin.git:
         repo: "{{ dstack_repo_url }}"
         dest: "{{ dstack_repo_path }}"
         version: "{{ dstack_version }}"
         update: true
+        force: true
       register: git_result
 
     - name: Get current git commit
@@ -57,7 +66,7 @@
     - name: Check VMM binary exists
       ansible.builtin.stat:
         path: "{{ dstack_repo_path }}/target/release/dstack-vmm"
-      register: vmm_binary
+      register: vmm_build_binary
 
     - name: Fail if VMM binary not found
       ansible.builtin.fail:
@@ -66,7 +75,7 @@
           Check build output for errors.
           See tutorial: Clone & Build dstack-vmm
           https://dstack.info/tutorial/clone-build-dstack-vmm
-      when: not vmm_binary.stat.exists
+      when: not vmm_build_binary.stat.exists
 
     - name: Get VMM binary size
       ansible.builtin.command:

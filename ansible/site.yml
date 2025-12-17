@@ -427,11 +427,15 @@
   ansible.builtin.import_playbook: playbooks/configure-pccs.yml
   tags: [prerequisites]
 
-- name: "Phase 2.4: Setup Gramine Key Provider"
+- name: "Phase 2.4: Setup Docker"
+  ansible.builtin.import_playbook: playbooks/setup-docker.yml
+  tags: [prerequisites]
+
+- name: "Phase 2.5: Setup Gramine Key Provider"
   ansible.builtin.import_playbook: playbooks/setup-gramine-key-provider.yml
   tags: [prerequisites]
 
-- name: "Phase 2.5: Setup Local Docker Registry"
+- name: "Phase 2.6: Setup Local Docker Registry"
   ansible.builtin.import_playbook: playbooks/setup-local-registry.yml
   tags: [prerequisites]
 

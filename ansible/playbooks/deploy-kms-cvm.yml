@@ -29,6 +29,11 @@
 - name: Deploy dstack KMS as CVM
   hosts: dstack_servers
   become: false
+
+  vars_files:
+    - ../vars/quick-start.yml
+    - ../vars/contract-addresses.yml
+
   vars:
     kms_rpc_port: 9100
     vmm_http_port: 9080
