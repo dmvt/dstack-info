@@ -264,8 +264,8 @@
         msg: "{{ compile_result.stdout_lines }}"
 
     - name: Deploy contracts to Sepolia
-      ansible.builtin.command:
-        cmd: npx hardhat kms:deploy --with-app-impl --network sepolia
+      ansible.builtin.shell:
+        cmd: yes | npx hardhat kms:deploy --with-app-impl --network sepolia
         chdir: "{{ contracts_dir }}"
       environment:
         PRIVATE_KEY: "{{ private_key }}"
@@ -278,12 +278,12 @@
 
     - name: Parse KMS contract address
       ansible.builtin.set_fact:
-        deployed_kms_address: "{{ deploy_output.stdout | regex_search('DstackKms deployed to:\\s*(0x[a-fA-F0-9]+)', '\\1') | first }}"
+        deployed_kms_address: "{{ deploy_output.stdout | regex_search('DstackKms [Pp]roxy deployed to:\\s*(0x[a-fA-F0-9]+)', '\\1') | first }}"
       failed_when: deployed_kms_address is not defined
 
     - name: Parse AppAuth contract address
       ansible.builtin.set_fact:
-        deployed_app_auth_address: "{{ deploy_output.stdout | regex_search('DstackApp implementation deployed to:\\s*(0x[a-fA-F0-9]+)', '\\1') | first | default('') }}"
+        deployed_app_auth_address: "{{ deploy_output.stdout | regex_search('DstackApp implementation.*?:\\s*(0x[a-fA-F0-9]+)', '\\1') | first | default('') }}"
       failed_when: false
 
     - name: Save contract addresses to file
