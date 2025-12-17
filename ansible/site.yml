@@ -5,19 +5,20 @@
 # individual playbooks in the correct order.
 #
 # Prerequisites:
-#   1. Deploy contracts locally first:
-#      ansible-playbook playbooks/deploy-contracts-local.yml
-#
-#   2. Configure variables:
+#   1. Configure variables:
 #      cp vars/quick-start.example.yml vars/quick-start.yml
 #      vim vars/quick-start.yml  # Set your domain, Intel API key
+#
+#   2. Configure secrets (for contract deployment):
+#      cp vars/local-secrets.example.yml vars/local-secrets.yml
+#      vim vars/local-secrets.yml  # Add your Sepolia private key
 #
 #   3. Configure inventory:
 #      cp inventory/hosts.example.yml inventory/hosts.yml
 #      vim inventory/hosts.yml  # Set your server IP
 #
 # Usage:
-#   # Full deployment
+#   # Full deployment (contracts deployed automatically if needed)
 #   ansible-playbook site.yml -i inventory/hosts.yml
 #
 #   # Run specific phase only
@@ -49,39 +50,288 @@
     - name: Fail if vars/quick-start.yml is missing
       ansible.builtin.fail:
         msg: |
+          vars/quick-start.yml not found.
 
-          ═══════════════════════════════════════════════════════════════════════════════
-           CONFIGURATION REQUIRED
-          ═══════════════════════════════════════════════════════════════════════════════
+          Create and configure this file:
+            cd ansible
+            cp vars/quick-start.example.yml vars/quick-start.yml
+            vim vars/quick-start.yml
 
-           The file vars/quick-start.yml was not found.
-
-           Before running site.yml, you must create and configure this file:
-
-           Step 1: Copy the example file
-             cd ansible
-             cp vars/quick-start.example.yml vars/quick-start.yml
-
-           Step 2: Edit with your settings
-             vim vars/quick-start.yml
-
-             Required settings:
-               base_domain:        Your domain (e.g., example.com)
-               intel_pccs_api_key: Your Intel PCCS API key
-                                   Get one at: https://api.portal.trustedservices.intel.com/
-
-           Step 3: (If not already done) Deploy contracts locally
-             ansible-playbook playbooks/deploy-contracts-local.yml
-
-           For full instructions, see:
-             https://dstack.info/tutorial/quick-start-ansible
-
-          ═══════════════════════════════════════════════════════════════════════════════
-
+          Required settings:
+            base_domain:        Your domain (e.g., example.com)
+            intel_pccs_api_key: Your Intel PCCS API key
+                                Get one at: https://api.portal.trustedservices.intel.com/
       when: not quick_start_file.stat.exists
 
+    - name: Check vars/local-secrets.yml exists
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/vars/local-secrets.yml"
+      register: local_secrets_file
+
+    - name: Fail if vars/local-secrets.yml is missing
+      ansible.builtin.fail:
+        msg: |
+          vars/local-secrets.yml not found.
+
+          This file contains your Ethereum private key for contract deployment.
+          Your private key NEVER leaves your local machine.
+
+          Create and configure:
+            cd ansible
+            cp vars/local-secrets.example.yml vars/local-secrets.yml
+            chmod 600 vars/local-secrets.yml
+            vim vars/local-secrets.yml
+
+          Required:
+            private_key: "0x..."      (Sepolia wallet with ETH)
+            alchemy_api_key: "..."    (Get from https://dashboard.alchemy.com/)
+
+          Get testnet ETH from: https://sepolia-faucet.pk910.de/
+      when: not local_secrets_file.stat.exists
+
+    - name: Load local secrets for validation
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/vars/local-secrets.yml"
+      when: local_secrets_file.stat.exists
+
+    - name: Validate private_key is configured
+      ansible.builtin.fail:
+        msg: |
+          private_key in vars/local-secrets.yml is empty or not set.
+
+          Edit the file and add your Ethereum private key:
+            vim vars/local-secrets.yml
+
+            private_key: "0xYOUR_PRIVATE_KEY_HERE"
+
+          Your wallet must have Sepolia ETH for gas fees (~0.1 ETH).
+          Get testnet ETH from: https://sepolia-faucet.pk910.de/
+      when:
+        - local_secrets_file.stat.exists
+        - (private_key is not defined) or (private_key == "") or (private_key | length < 60)
+
+    - name: Validate alchemy_api_key is configured
+      ansible.builtin.fail:
+        msg: |
+          alchemy_api_key in vars/local-secrets.yml is empty or not set.
+
+          An Alchemy API key is required for deploying contracts to Sepolia.
+
+          1. Create a free Alchemy account: https://dashboard.alchemy.com/
+          2. Create an app for Sepolia testnet
+          3. Copy the API key and add to vars/local-secrets.yml:
+
+            vim vars/local-secrets.yml
+            alchemy_api_key: "YOUR_ALCHEMY_API_KEY"
+      when:
+        - local_secrets_file.stat.exists
+        - (alchemy_api_key is not defined) or (alchemy_api_key == "")
+
 # =============================================================================
-# PHASE 0.1: Pre-flight checks and display deployment plan
+# PHASE 0.1: Contract Deployment (runs locally, private key never sent to server)
+# =============================================================================
+
+- name: Contract Deployment Check
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tags: [always]
+
+  tasks:
+    - name: Check if contracts already deployed
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/vars/contract-addresses.yml"
+      register: contract_addresses_file
+
+    - name: Set contracts_needed fact
+      ansible.builtin.set_fact:
+        contracts_need_deployment: "{{ not contract_addresses_file.stat.exists }}"
+
+    - name: Report contract status
+      ansible.builtin.debug:
+        msg: "{{ 'Contracts not yet deployed - will deploy now' if contracts_need_deployment else 'Contracts already deployed - skipping deployment' }}"
+
+- name: Deploy Contracts to Sepolia (LOCAL)
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  tags: [contracts]
+
+  vars_files:
+    - vars/quick-start.yml
+    - vars/local-secrets.yml
+
+  tasks:
+    - name: Check if contracts already deployed
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/vars/contract-addresses.yml"
+      register: contract_check
+
+    - name: Skip if contracts already deployed
+      ansible.builtin.meta: end_play
+      when: contract_check.stat.exists
+
+    - name: Validate private key is set
+      ansible.builtin.assert:
+        that:
+          - private_key is defined
+          - private_key != ""
+          - private_key | length > 60
+        fail_msg: |
+          Private key not configured!
+
+          Edit vars/local-secrets.yml and add your Ethereum private key:
+            private_key: "0xYOUR_PRIVATE_KEY_HERE"
+
+    - name: Check dstack repository exists
+      ansible.builtin.stat:
+        path: "{{ dstack_repo_path }}"
+      register: dstack_repo
+
+    - name: Clone dstack repository if missing
+      ansible.builtin.git:
+        repo: "https://github.com/Dstack-TEE/dstack.git"
+        dest: "{{ dstack_repo_path }}"
+        version: "master"
+      when: not dstack_repo.stat.exists
+
+    - name: Check contracts directory exists
+      ansible.builtin.stat:
+        path: "{{ contracts_dir }}/hardhat.config.ts"
+      register: hardhat_config
+
+    - name: Fail if contracts directory missing
+      ansible.builtin.fail:
+        msg: |
+          Hardhat configuration not found at {{ contracts_dir }}/hardhat.config.ts
+
+          Expected dstack repository structure:
+            {{ dstack_repo_path }}/
+            └── kms/
+                └── auth-eth/
+                    ├── hardhat.config.ts
+                    ├── package.json
+                    └── contracts/
+      when: not hardhat_config.stat.exists
+
+    - name: Check Node.js is installed
+      ansible.builtin.command: node --version
+      register: node_version
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if Node.js not installed
+      ansible.builtin.fail:
+        msg: |
+          Node.js is required for contract deployment.
+
+          Install Node.js:
+            # macOS
+            brew install node
+
+            # Ubuntu/Debian
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+      when: node_version.rc != 0
+
+    - name: Display Node.js version
+      ansible.builtin.debug:
+        msg: "Node.js version: {{ node_version.stdout }}"
+
+    - name: Check if node_modules exists
+      ansible.builtin.stat:
+        path: "{{ contracts_dir }}/node_modules"
+      register: node_modules
+
+    - name: Install npm dependencies
+      ansible.builtin.command:
+        cmd: npm install
+        chdir: "{{ contracts_dir }}"
+      when: not node_modules.stat.exists
+      register: npm_install
+
+    - name: Compile contracts
+      ansible.builtin.command:
+        cmd: npx hardhat compile
+        chdir: "{{ contracts_dir }}"
+      environment:
+        PRIVATE_KEY: "{{ private_key }}"
+      register: compile_result
+      changed_when: "'Compiled' in compile_result.stdout"
+
+    - name: Display compilation result
+      ansible.builtin.debug:
+        msg: "{{ compile_result.stdout_lines }}"
+
+    - name: Deploy contracts to Sepolia
+      ansible.builtin.command:
+        cmd: npx hardhat kms:deploy --with-app-impl --network sepolia
+        chdir: "{{ contracts_dir }}"
+      environment:
+        PRIVATE_KEY: "{{ private_key }}"
+        ALCHEMY_API_KEY: "{{ alchemy_api_key }}"
+      register: deploy_output
+
+    - name: Display deployment output
+      ansible.builtin.debug:
+        msg: "{{ deploy_output.stdout_lines }}"
+
+    - name: Parse KMS contract address
+      ansible.builtin.set_fact:
+        deployed_kms_address: "{{ deploy_output.stdout | regex_search('DstackKms deployed to:\\s*(0x[a-fA-F0-9]+)', '\\1') | first }}"
+      failed_when: deployed_kms_address is not defined
+
+    - name: Parse AppAuth contract address
+      ansible.builtin.set_fact:
+        deployed_app_auth_address: "{{ deploy_output.stdout | regex_search('DstackApp implementation deployed to:\\s*(0x[a-fA-F0-9]+)', '\\1') | first | default('') }}"
+      failed_when: false
+
+    - name: Save contract addresses to file
+      ansible.builtin.copy:
+        content: |
+          ---
+          # Contract Addresses - Auto-generated by site.yml
+          # Generated: {{ ansible_date_time.iso8601 }}
+          #
+          # DO NOT EDIT MANUALLY - Re-run the playbook to regenerate
+          #
+          # These addresses are for Sepolia testnet (chain ID: 11155111)
+
+          # KMS Contract Address
+          kms_contract_address: "{{ deployed_kms_address }}"
+
+          # App Authentication Implementation Address
+          app_auth_implementation: "{{ deployed_app_auth_address | default('') }}"
+
+          # Chain ID (Sepolia testnet)
+          chain_id: 11155111
+
+          # Deployment metadata
+          deployment_timestamp: "{{ ansible_date_time.iso8601 }}"
+        dest: "{{ playbook_dir }}/vars/contract-addresses.yml"
+        mode: '0644'
+
+    - name: Display contract deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "Contract Deployment Complete!"
+          - "============================================"
+          - ""
+          - "Network: Sepolia (Chain ID: 11155111)"
+          - ""
+          - "Deployed Contracts:"
+          - "  KMS: {{ deployed_kms_address }}"
+          - "  AppAuth: {{ deployed_app_auth_address | default('N/A') }}"
+          - ""
+          - "Addresses saved to: vars/contract-addresses.yml"
+          - ""
+          - "View on Etherscan:"
+          - "  https://sepolia.etherscan.io/address/{{ deployed_kms_address }}"
+          - "============================================"
+
+# =============================================================================
+# PHASE 0.2: Pre-flight checks and display deployment plan
 # =============================================================================
 
 - name: Quick Start - Pre-flight Checks
@@ -99,7 +349,7 @@
       register: contract_addresses_file
       delegate_to: localhost
 
-    - name: Load contract addresses (if deployed)
+    - name: Load contract addresses
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/vars/contract-addresses.yml"
       when: contract_addresses_file.stat.exists
@@ -121,7 +371,7 @@
           - "    4. KMS Deploy     - KMS CVM deployment"
           - "    5. Gateway Deploy - Gateway service"
           - ""
-          - "  Contract Address: {{ kms_contract_address | default('Not deployed yet') }}"
+          - "  Contract Address: {{ kms_contract_address | default('Not deployed yet - ERROR') }}"
           - ""
           - "====================================================="
 
