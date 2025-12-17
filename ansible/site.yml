@@ -127,6 +127,30 @@
         - local_secrets_file.stat.exists
         - (alchemy_api_key is not defined) or (alchemy_api_key == "")
 
+    - name: Load quick-start config for validation
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/vars/quick-start.yml"
+      when: quick_start_file.stat.exists
+
+    - name: Validate intel_pccs_api_key is configured
+      ansible.builtin.fail:
+        msg: |
+          intel_pccs_api_key in vars/quick-start.yml is empty or not set.
+
+          An Intel PCCS API key is required for TDX attestation.
+
+          1. Go to https://api.portal.trustedservices.intel.com/
+          2. Sign in or create an account
+          3. Subscribe to "Intel SGX and Intel TDX Provisioning Certification Service"
+          4. Copy your Primary or Secondary key
+          5. Add to vars/quick-start.yml:
+
+            vim vars/quick-start.yml
+            intel_pccs_api_key: "YOUR_INTEL_API_KEY"
+      when:
+        - quick_start_file.stat.exists
+        - (intel_pccs_api_key is not defined) or (intel_pccs_api_key == "")
+
 # =============================================================================
 # PHASE 0.1: Contract Deployment (runs locally, private key never sent to server)
 # =============================================================================
