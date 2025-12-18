@@ -37,6 +37,11 @@
 - name: Build and Configure dstack KMS
   hosts: dstack_servers
   become: false
+
+  vars_files:
+    - ../vars/quick-start.yml
+    - ../vars/contract-addresses.yml
+
   vars:
     # Use the connecting user's home directory
     user_home: "/home/{{ ansible_user }}"
@@ -586,6 +591,18 @@
             cd ~/kms-deployment
             docker build -t dstack-kms:latest .
       when: "'dstack-kms:latest' not in docker_image_check.stdout"
+
+    # Push to local registry (required for CVM deployment)
+    - name: Tag image for local registry
+      ansible.builtin.shell: |
+        docker tag dstack-kms:latest {{ registry_domain }}/dstack-kms:latest
+      when: registry_domain is defined
+
+    - name: Push to local registry
+      ansible.builtin.shell: |
+        docker push {{ registry_domain }}/dstack-kms:latest
+      register: local_registry_push
+      when: registry_domain is defined
 
     - name: Warn if kms_domain not set for Docker Hub push
       ansible.builtin.debug:
