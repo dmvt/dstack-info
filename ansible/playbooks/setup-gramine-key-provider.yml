@@ -166,6 +166,17 @@
       become_user: "{{ ansible_user }}"
 
     # =========================================================================
+    # CONFIGURE FOR CVM ACCESS
+    # =========================================================================
+
+    - name: Configure key provider to listen on all interfaces (required for CVM access)
+      ansible.builtin.replace:
+        path: "{{ key_provider_dir }}/docker-compose.yaml"
+        regexp: '"127\.0\.0\.1:3443:3443"'
+        replace: '"0.0.0.0:3443:3443"'
+      become_user: "{{ ansible_user }}"
+
+    # =========================================================================
     # BUILD AND START CONTAINERS
     # =========================================================================
 
