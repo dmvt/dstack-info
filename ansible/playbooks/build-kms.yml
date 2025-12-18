@@ -503,7 +503,7 @@
           [core.onboard]
           enabled = true
           auto_bootstrap_domain = "{{ kms_domain | default('') }}"
-          # Enable TDX quotes - works because KMS runs in CVM
+          # Enable TDX quotes - requires PCCS accessible via 10.0.2.2 (host from QEMU)
           quote_enabled = true
           address = "0.0.0.0"
           port = {{ kms_rpc_port }}

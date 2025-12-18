@@ -215,14 +215,14 @@
 
     # Generate docker-compose for CVM deployment
     # Note: /var/run/dstack.sock is required for TDX quote generation
+    # Note: network_mode=host allows container to access 10.0.2.2 (QEMU host) for PCCS
     - name: Generate docker-compose content
       ansible.builtin.set_fact:
         compose_content: |
           services:
             kms:
               image: {{ docker_image }}
-              ports:
-                - "9100:9100"
+              network_mode: host
               volumes:
                 - /var/run/dstack.sock:/var/run/dstack.sock
                 - kms-certs:/etc/kms/certs
