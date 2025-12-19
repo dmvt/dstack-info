@@ -65,6 +65,8 @@
 - name: Setup VMM Configuration
   hosts: dstack_servers
   become: true
+  vars_files:
+    - "{{ playbook_dir }}/../vars/quick-start.yml"
   vars:
     # Directory paths
     dstack_config_dir: "/etc/dstack"
@@ -98,8 +100,8 @@
     gateway_agent_port: 8090
 
     # Authentication configuration
-    # IMPORTANT: Set auth_enabled=true for production!
-    auth_enabled: false
+    # Default: true for production security (loaded from vars/quick-start.yml)
+    auth_enabled: "{{ auth_enabled | default(true) }}"
     # auth_token: ""  # Leave undefined to auto-generate when auth_enabled=true
 
   tasks:

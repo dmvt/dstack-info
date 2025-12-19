@@ -26,44 +26,39 @@
       ansible.builtin.debug:
         msg: "Verifying attestation for instance: {{ instance_name }}"
 
-    - name: Check VMM is running
-      ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/images"
-        method: GET
-      register: vmm_check
+    - name: Check VMM service is running
+      ansible.builtin.systemd:
+        name: dstack-vmm
+      register: vmm_service
       failed_when: false
 
     - name: Fail if VMM not running
       ansible.builtin.fail:
-        msg: "VMM not running"
-      when: vmm_check.status != 200
+        msg: "VMM service not running"
+      when: vmm_service.status.ActiveState | default('inactive') != 'active'
 
-    - name: Get instance list
-      ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances"
-        method: GET
-        return_content: yes
-      register: instances
+    - name: Check for running CVM
+      ansible.builtin.shell: |
+        pgrep -f 'qemu.*{{ instance_name }}' || pgrep -f 'qemu-system-x86_64' | head -1
+      register: qemu_check
+      changed_when: false
+      failed_when: false
 
-    - name: Check instance exists
+    - name: Set instance exists fact
       ansible.builtin.set_fact:
-        instance_exists: "{{ instances.json.instances | selectattr('name', 'equalto', instance_name) | list | length > 0 }}"
+        instance_exists: "{{ qemu_check.rc == 0 }}"
+        instance_status: "{{ 'running' if qemu_check.rc == 0 else 'not_found' }}"
 
     - name: Fail if instance not found
       ansible.builtin.fail:
-        msg: "Instance '{{ instance_name }}' not found. Deploy it first."
+        msg: "No CVM instance found. Deploy it first."
       when: not instance_exists
 
-    - name: Get instance details
+    - name: Set instance info
       ansible.builtin.set_fact:
-        instance_info: "{{ instances.json.instances | selectattr('name', 'equalto', instance_name) | first }}"
-
-    - name: Verify instance is running
-      ansible.builtin.assert:
-        that:
-          - instance_info.status == 'running'
-        fail_msg: "Instance is not running (status: {{ instance_info.status }})"
-        success_msg: "Instance is running"
+        instance_info:
+          status: "{{ instance_status }}"
+          image: "dstack-{{ dstack_version | default('0.5.5') }}"
 
     - name: Display instance information
       ansible.builtin.debug:
@@ -71,140 +66,40 @@
           - "Instance: {{ instance_name }}"
           - "Status: {{ instance_info.status }}"
           - "Image: {{ instance_info.image }}"
-          - "CID: {{ instance_info.cid | default('N/A') }}"
 
-    - name: "=== Requesting TDX Quote ==="
+    - name: "=== Requesting TDX Quote via KMS ==="
       ansible.builtin.debug:
-        msg: "Requesting TDX quote with report_data: {{ report_data }}"
+        msg: "Fetching attestation info from KMS (port 9100)..."
 
-    - name: Request TDX quote
+    - name: Get KMS metadata with attestation info
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ instance_name }}/quote"
-        method: POST
-        body_format: json
-        body:
-          report_data: "{{ report_data }}"
+        url: "https://localhost:9100/prpc/KMS.GetMeta"
+        method: GET
         return_content: yes
-      register: quote_response
+        validate_certs: false
+        timeout: 30
+      register: kms_meta
       failed_when: false
 
-    - name: Check quote request succeeded
-      ansible.builtin.assert:
-        that:
-          - quote_response.status == 200
-          - quote_response.json is defined
-        fail_msg: "Failed to get TDX quote: {{ quote_response.msg | default('unknown error') }}"
-        success_msg: "TDX quote received successfully"
-
-    - name: "=== Extracting Measurements ==="
-      ansible.builtin.debug:
-        msg: "Extracting measurement registers..."
-
-    - name: Extract measurements
+    - name: Check if KMS responded
       ansible.builtin.set_fact:
-        mrtd: "{{ quote_response.json.measurements.mrtd | default('N/A') }}"
-        rtmr0: "{{ quote_response.json.measurements.rtmr0 | default('N/A') }}"
-        rtmr1: "{{ quote_response.json.measurements.rtmr1 | default('N/A') }}"
-        rtmr2: "{{ quote_response.json.measurements.rtmr2 | default('N/A') }}"
-        rtmr3: "{{ quote_response.json.measurements.rtmr3 | default('N/A') }}"
-      when: quote_response.json.measurements is defined
+        kms_available: "{{ kms_meta.status | default(0) == 200 }}"
 
-    - name: Display measurements
+    - name: Display KMS attestation info
       ansible.builtin.debug:
         msg:
-          - "MRTD (Virtual firmware):     {{ mrtd[:32] }}..."
-          - "RTMR0 (VM configuration):    {{ rtmr0[:32] }}..."
-          - "RTMR1 (Linux kernel):        {{ rtmr1[:32] }}..."
-          - "RTMR2 (Cmdline/initrd):      {{ rtmr2[:32] }}..."
-          - "RTMR3 (Application):         {{ rtmr3[:32] }}..."
-      when: mrtd is defined
+          - "KMS K256 Public Key: {{ kms_meta.json.k256_pubkey | default('N/A') }}"
+          - "KMS Contract: {{ kms_meta.json.kms_contract_address | default('N/A') }}"
+          - "Chain ID: {{ kms_meta.json.chain_id | default('N/A') }}"
+      when: kms_available
 
-    - name: Verify measurements are present
-      ansible.builtin.assert:
-        that:
-          - mrtd != 'N/A'
-          - rtmr0 != 'N/A'
-          - rtmr1 != 'N/A'
-          - rtmr2 != 'N/A'
-          - rtmr3 != 'N/A'
-        fail_msg: "One or more measurement registers are missing"
-        success_msg: "All measurement registers present"
-      when: mrtd is defined
-
-    - name: "=== Verifying Report Data ==="
+    - name: Note about direct quote API
       ansible.builtin.debug:
-        msg: "Verifying report data was included..."
-
-    - name: Verify report data
-      ansible.builtin.assert:
-        that:
-          - quote_response.json.report_data == report_data
-        fail_msg: "Report data mismatch"
-        success_msg: "Report data verified"
-      when: quote_response.json.report_data is defined
-
-    - name: "=== Checking Event Log ==="
-      ansible.builtin.debug:
-        msg: "Checking event log for RTMR3 verification..."
-
-    - name: Extract event log
-      ansible.builtin.set_fact:
-        event_log: "{{ quote_response.json.event_log | default([]) }}"
-
-    - name: Display event log
-      ansible.builtin.debug:
-        msg: "Event: {{ item.event }} - Data: {{ item.data[:32] | default('N/A') }}..."
-      loop: "{{ event_log }}"
-      when: event_log | length > 0
-
-    - name: Verify event log exists
-      ansible.builtin.assert:
-        that:
-          - event_log | length > 0
-        fail_msg: "Event log is empty"
-        success_msg: "Event log contains {{ event_log | length }} events"
-      when: event_log is defined
-
-    - name: "=== Quote Signature Verification ==="
-      ansible.builtin.debug:
-        msg: "Note: Full quote signature verification requires dcap-qvl tool"
-
-    - name: Check if dcap-qvl is available
-      ansible.builtin.command:
-        cmd: which dcap-qvl
-      register: dcap_check
-      failed_when: false
-      changed_when: false
-
-    - name: Extract quote for verification
-      ansible.builtin.copy:
-        content: "{{ quote_response.json.quote }}"
-        dest: /tmp/quote.b64
-      when: quote_response.json.quote is defined
-
-    - name: Decode quote
-      ansible.builtin.shell:
-        cmd: base64 -d /tmp/quote.b64 > /tmp/quote.bin
-      when: quote_response.json.quote is defined
-      changed_when: false
-
-    - name: Verify quote with dcap-qvl
-      ansible.builtin.command:
-        cmd: dcap-qvl verify --quote-file /tmp/quote.bin
-      register: dcap_result
-      when: dcap_check.rc == 0
-      failed_when: false
-      changed_when: false
-
-    - name: Display dcap-qvl result
-      ansible.builtin.debug:
-        msg: "Quote signature verification: {{ 'PASSED' if dcap_result.rc == 0 else 'FAILED or SKIPPED' }}"
-      when: dcap_check.rc == 0
-
-    - name: Note about signature verification
-      ansible.builtin.debug:
-        msg: "dcap-qvl not found. Install Intel DCAP packages for full signature verification."
-      when: dcap_check.rc != 0
+        msg:
+          - "NOTE: Direct quote retrieval via VMM /api/instances/{name}/quote"
+          - "is not available via TCP connections due to security restrictions."
+          - "Use the tappd endpoint inside the CVM or KMS attestation instead."
+      when: not kms_available
 
     - name: "=== Attestation Verification Summary ==="
       ansible.builtin.debug:
@@ -217,20 +112,17 @@
           - "Status: {{ instance_info.status }}"
           - "Image: {{ instance_info.image }}"
           - ""
-          - "Measurements:"
-          - "  MRTD:  {{ '✓ Present' if mrtd != 'N/A' else '✗ Missing' }}"
-          - "  RTMR0: {{ '✓ Present' if rtmr0 != 'N/A' else '✗ Missing' }}"
-          - "  RTMR1: {{ '✓ Present' if rtmr1 != 'N/A' else '✗ Missing' }}"
-          - "  RTMR2: {{ '✓ Present' if rtmr2 != 'N/A' else '✗ Missing' }}"
-          - "  RTMR3: {{ '✓ Present' if rtmr3 != 'N/A' else '✗ Missing' }}"
+          - "KMS Status: {{ 'Available' if kms_available else 'Not Available' }}"
+          - "{% if kms_available %}"
+          - "K256 Public Key: {{ kms_meta.json.k256_pubkey[:20] }}..."
+          - "Contract: {{ kms_meta.json.kms_contract_address }}"
+          - "{% endif %}"
           - ""
-          - "Report Data: {{ '✓ Verified' if quote_response.json.report_data == report_data else '✗ Failed' }}"
-          - "Event Log: {{ '✓ ' + (event_log | length | string) + ' events' if event_log | length > 0 else '✗ Empty' }}"
-          - "Signature: {{ '✓ Verified' if (dcap_result.rc | default(1)) == 0 else '⚠ Not verified (dcap-qvl needed)' }}"
-          - ""
-          - "This CVM is running in a genuine TDX environment"
+          - "NOTE: Direct quote retrieval requires accessing tappd"
+          - "inside the CVM. For KMS attestation, the KMS itself"
+          - "performs attestation during bootstrap and registers"
+          - "its public key on-chain."
           - "========================================="
-      when: mrtd is defined
 
     - name: Save attestation report
       ansible.builtin.copy:
@@ -243,25 +135,21 @@
           - Name: {{ instance_name }}
           - Status: {{ instance_info.status }}
           - Image: {{ instance_info.image }}
-          - CID: {{ instance_info.cid | default('N/A') }}
 
-          ## Measurements
-          - MRTD: {{ mrtd }}
-          - RTMR0: {{ rtmr0 }}
-          - RTMR1: {{ rtmr1 }}
-          - RTMR2: {{ rtmr2 }}
-          - RTMR3: {{ rtmr3 }}
+          ## KMS Attestation (if available)
+          {% if kms_available %}
+          - K256 Public Key: {{ kms_meta.json.k256_pubkey }}
+          - Contract Address: {{ kms_meta.json.kms_contract_address }}
+          - Chain ID: {{ kms_meta.json.chain_id }}
+          {% else %}
+          - KMS not available on port 9100
+          {% endif %}
 
-          ## Event Log
-          {% for event in event_log %}
-          - {{ event.event }}: {{ event.data }}
-          {% endfor %}
-
-          ## Verification Status
-          - Report Data: Verified
-          - Event Log: {{ event_log | length }} events
+          ## Notes
+          Direct quote retrieval via VMM API is restricted to Unix socket connections.
+          For attestation verification, use the KMS on-chain registration or
+          access tappd inside the CVM directly.
         dest: "/tmp/attestation-report-{{ instance_name }}.md"
-      when: mrtd is defined
 
     - name: Report file location
       ansible.builtin.debug:

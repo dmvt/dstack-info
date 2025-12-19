@@ -98,85 +98,89 @@
       ansible.builtin.debug:
         msg: "Checking deployed applications..."
 
-    - name: Get running instances
-      ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances"
-        method: GET
-        return_content: yes
-      register: instances
-      failed_when: false
+    - name: Check for running QEMU instances
+      ansible.builtin.shell: |
+        pgrep -af 'qemu-system-x86_64' | grep -v grep || true
+      register: qemu_processes
+      changed_when: false
 
     - name: Count running instances
       ansible.builtin.set_fact:
-        running_instances: "{{ instances.json.instances | selectattr('status', 'equalto', 'running') | list }}"
-      when: instances.status == 200
+        running_instance_count: "{{ qemu_processes.stdout_lines | length }}"
 
     - name: Display instance count
       ansible.builtin.debug:
-        msg: "Running instances: {{ running_instances | length }}"
-      when: running_instances is defined
+        msg: "Running CVM instances: {{ running_instance_count }}"
 
-    - name: Display each running instance
+    - name: Display running QEMU processes
       ansible.builtin.debug:
-        msg: "  - {{ item.name }} ({{ item.status }}, image: {{ item.image }})"
-      loop: "{{ running_instances }}"
-      loop_control:
-        label: "{{ item.name }}"
-      when: running_instances is defined and running_instances | length > 0
+        msg: "{{ qemu_processes.stdout }}"
+      when: running_instance_count | int > 0
 
     - name: Check hello-world instance exists
-      ansible.builtin.set_fact:
-        hello_world_exists: "{{ instances.json.instances | selectattr('name', 'equalto', 'hello-world') | list | length > 0 }}"
-      when: instances.status == 200
+      ansible.builtin.shell: |
+        pgrep -f 'qemu.*hello-world' || true
+      register: hello_world_check
+      changed_when: false
 
-    - name: Get hello-world details if exists
+    - name: Set hello-world exists fact
       ansible.builtin.set_fact:
-        hello_world_info: "{{ instances.json.instances | selectattr('name', 'equalto', 'hello-world') | first }}"
-      when: hello_world_exists | default(false)
+        hello_world_exists: "{{ hello_world_check.stdout | length > 0 }}"
 
     - name: Test hello-world accessibility
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ hello_world_info.ports['80'] | default('10080') }}/"
+        url: "http://127.0.0.1:10080/"
         method: GET
         return_content: yes
       register: hello_world_response
       when: hello_world_exists | default(false)
       failed_when: false
+      retries: 3
+      delay: 5
 
     - name: Verify hello-world content
       ansible.builtin.assert:
         that: "'dstack' in hello_world_response.content"
         fail_msg: "Hello World application content verification failed"
         success_msg: "✓ Hello World application responding correctly"
-      when: hello_world_exists | default(false) and hello_world_response.status == 200
+      when: hello_world_exists | default(false) and hello_world_response.status | default(0) == 200
 
     - name: "=== Phase 5.3: Attestation Verification ==="
       ansible.builtin.debug:
-        msg: "Checking attestation capability..."
+        msg: "Checking attestation capability via KMS..."
 
-    - name: Request TDX quote from hello-world
+    - name: Get KMS metadata (includes attestation info)
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances/hello-world/quote"
-        method: POST
-        body_format: json
-        body:
-          report_data: "766572696679"
+        url: "https://localhost:9100/prpc/KMS.GetMeta"
+        method: GET
         return_content: yes
-      register: quote_response
-      when: hello_world_exists | default(false)
+        validate_certs: false
+        timeout: 30
+      register: kms_meta
       failed_when: false
 
-    - name: Verify quote contains measurements
-      ansible.builtin.assert:
-        that:
-          - quote_response.json.measurements.mrtd is defined
-          - quote_response.json.measurements.rtmr0 is defined
-          - quote_response.json.measurements.rtmr1 is defined
-          - quote_response.json.measurements.rtmr2 is defined
-          - quote_response.json.measurements.rtmr3 is defined
-        fail_msg: "TDX quote missing measurements"
-        success_msg: "✓ TDX attestation working - all measurements present"
-      when: quote_response.status | default(0) == 200
+    - name: Check KMS attestation status
+      ansible.builtin.set_fact:
+        kms_available: "{{ kms_meta.status | default(0) == 200 }}"
+        has_quote: "{{ (kms_meta.json.quote | default('')) | length > 100 }}"
+        has_k256_key: "{{ (kms_meta.json.k256_pubkey | default('')) | length > 10 }}"
+      when: kms_meta.status | default(0) == 200
+
+    - name: Display KMS attestation info
+      ansible.builtin.debug:
+        msg:
+          - "KMS Status: {{ 'Available' if kms_available | default(false) else 'Not Available' }}"
+          - "TDX Quote: {{ 'Present' if has_quote | default(false) else 'Not Available' }}"
+          - "K256 Key: {{ kms_meta.json.k256_pubkey[:50] | default('N/A') }}..."
+      when: kms_available | default(false)
+
+    - name: Note about direct instance quote
+      ansible.builtin.debug:
+        msg:
+          - "NOTE: Direct quote retrieval from instances via VMM API"
+          - "is not available via TCP connections (security restriction)."
+          - "Use KMS attestation or access tappd inside the CVM directly."
+      when: not (kms_available | default(false))
 
     - name: "=== Verification Summary ==="
       ansible.builtin.debug:
@@ -193,13 +197,14 @@
           - "  - VMM images: {{ vmm_image_count | default(0) }}"
           - ""
           - "Phase 5.2 - Application Deployment:"
-          - "  - Running instances: {{ running_instances | length | default(0) }}"
+          - "  - Running CVM instances: {{ running_instance_count | default(0) }}"
           - "  - Hello World: {{ '✓' if hello_world_exists | default(false) else '✗ Not deployed' }}"
           - "  - Hello World accessible: {{ '✓' if (hello_world_response.status | default(0)) == 200 else '✗' }}"
           - ""
           - "Phase 5.3 - Attestation:"
-          - "  - TDX quotes: {{ '✓ Working' if (quote_response.status | default(0)) == 200 else '⚠ Not tested' }}"
-          - "  - Measurements: {{ '✓ Present' if (quote_response.json.measurements.mrtd | default('')) != '' else '⚠ Not verified' }}"
+          - "  - KMS available: {{ '✓' if kms_available | default(false) else '✗' }}"
+          - "  - TDX quote present: {{ '✓' if has_quote | default(false) else '⚠ Not available' }}"
+          - "  - K256 key valid: {{ '✓' if has_k256_key | default(false) else '⚠ Not verified' }}"
           - ""
           - "Overall Status: {{ 'All checks passed!' if vmm_active.stdout == 'active' and vmm_api.status == 200 else 'Some checks failed' }}"
           - "========================================="

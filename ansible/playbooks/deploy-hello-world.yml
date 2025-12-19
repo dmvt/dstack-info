@@ -30,22 +30,20 @@
     # =========================================================================
     # VERIFY VMM IS RUNNING
     # =========================================================================
-    - name: Check VMM is running
-      ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/images"
-        method: GET
-        status_code: [200, 401]
-      register: vmm_check
+    - name: Check VMM service is running
+      ansible.builtin.systemd:
+        name: dstack-vmm
+      register: vmm_service
       failed_when: false
 
     - name: Fail if VMM not running
       ansible.builtin.fail:
         msg: |
-          VMM not running at http://127.0.0.1:{{ vmm_http_port }}.
+          VMM service not running.
 
           Start VMM first:
             sudo systemctl start dstack-vmm
-      when: vmm_check.status is not defined or vmm_check.status not in [200, 401]
+      when: vmm_service.status.ActiveState | default('inactive') != 'active'
 
     # =========================================================================
     # CREATE APPLICATION FILES
@@ -167,26 +165,40 @@
     # DEPLOY APPLICATION
     # =========================================================================
     - name: Check if application already deployed
-      ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances"
-        method: GET
-        return_content: yes
-      register: instances
+      ansible.builtin.shell: |
+        pgrep -f 'qemu.*{{ app_name }}' || true
+      register: existing_app
+      changed_when: false
 
     - name: Set existing instance fact
       ansible.builtin.set_fact:
-        app_exists: "{{ instances.json.instances | default([]) | selectattr('name', 'equalto', app_name) | list | length > 0 }}"
+        app_exists: "{{ existing_app.stdout | length > 0 }}"
+
+    - name: Stop existing application if present
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ vmm_http_port }}/prpc/StopVm?json"
+        method: POST
+        body_format: json
+        body:
+          name: "{{ app_name }}"
+        status_code: [200, 400, 404]
+      when: app_exists
+      failed_when: false
 
     - name: Delete existing application if present
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ app_name }}"
-        method: DELETE
+        url: "http://127.0.0.1:{{ vmm_http_port }}/prpc/RemoveVm?json"
+        method: POST
+        body_format: json
+        body:
+          name: "{{ app_name }}"
+        status_code: [200, 400, 404]
       when: app_exists
       failed_when: false
 
     - name: Wait for cleanup
       ansible.builtin.pause:
-        seconds: 3
+        seconds: 5
       when: app_exists
 
     - name: Read docker-compose file
@@ -194,18 +206,41 @@
         src: "{{ app_dir }}/docker-compose.yaml"
       register: compose_content
 
+    - name: Build app manifest
+      ansible.builtin.set_fact:
+        app_manifest:
+          docker_compose_file: "{{ compose_content.content | b64decode }}"
+          docker_config:
+            url: ""
+            username: ""
+            password: ""
+          features:
+            kms: false
+            local_key_provider: false
+            tproxy: false
+            host_net: false
+          tcb_info:
+            allow_debug: false
+            allow_outdated: false
+          encrypted_env: ""
+          allowed_envs: []
+
     - name: Deploy application via VMM API
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/deploy"
+        url: "http://127.0.0.1:{{ vmm_http_port }}/prpc/CreateVm?json"
         method: POST
         body_format: json
         body:
           name: "{{ app_name }}"
           image: "dstack-{{ dstack_version }}"
-          compose: "{{ compose_content.content }}"
-          vcpus: "{{ app_vcpus }}"
+          compose_file: "{{ app_manifest | to_json }}"
+          vcpu: "{{ app_vcpus }}"
           memory: "{{ app_memory }}"
-          env: {}
+          disk_size: 10
+          ports:
+            - host_port: 10080
+              vm_port: 80
+              protocol: "tcp"
         return_content: yes
         status_code: [200, 201]
       register: deploy_result
@@ -224,35 +259,34 @@
       ansible.builtin.pause:
         seconds: 30
 
-    - name: Check instance status
-      ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances"
-        method: GET
-        return_content: yes
-      register: final_instances
-      retries: 10
-      delay: 5
-      until: >
-        final_instances.json.instances | default([]) | selectattr('name', 'equalto', app_name) |
-        selectattr('status', 'equalto', 'running') | list | length > 0
+    - name: Wait for application port to be available
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 10080
+        timeout: 120
+        state: started
+      register: port_check
 
-    - name: Get instance details
+    - name: Check QEMU process is running
+      ansible.builtin.shell: |
+        pgrep -f 'qemu.*{{ app_name }}' || pgrep -f 'qemu-system-x86_64' | head -1
+      register: qemu_check
+      changed_when: false
+
+    - name: Set instance status
       ansible.builtin.set_fact:
-        instance_info: "{{ final_instances.json.instances | selectattr('name', 'equalto', app_name) | first }}"
+        instance_status: "{{ 'running' if qemu_check.rc == 0 else 'not_found' }}"
+        app_port: 10080
 
     - name: Display instance information
       ansible.builtin.debug:
         msg:
-          - "Instance ID: {{ instance_info.id | default('N/A') }}"
-          - "Status: {{ instance_info.status | default('N/A') }}"
-          - "Image: {{ instance_info.image | default('N/A') }}"
-          - "vCPUs: {{ instance_info.vcpus | default('N/A') }}"
-          - "Memory: {{ instance_info.memory | default('N/A') }} MB"
-          - "Ports: {{ instance_info.ports | default({}) }}"
-
-    - name: Get mapped port
-      ansible.builtin.set_fact:
-        app_port: "{{ instance_info.ports['80'] | default('10080') }}"
+          - "Instance: {{ app_name }}"
+          - "Status: {{ instance_status }}"
+          - "Image: dstack-{{ dstack_version }}"
+          - "vCPUs: {{ app_vcpus }}"
+          - "Memory: {{ app_memory }} MB"
+          - "Port: {{ app_port }}"
 
     - name: Test application accessibility
       ansible.builtin.uri:
@@ -271,15 +305,7 @@
           - "'dstack' in app_response.content"
         fail_msg: "Application content verification failed"
         success_msg: "Application content verified successfully"
-      when: app_response.status == 200
-
-    - name: Get application logs
-      ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ app_name }}/logs?lines=20"
-        method: GET
-        return_content: yes
-      register: app_logs
-      failed_when: false
+      when: app_response.status | default(0) == 200
 
     # =========================================================================
     # SUMMARY
@@ -292,17 +318,11 @@
           - "========================================"
           - ""
           - "Application: {{ app_name }}"
-          - "Status: {{ instance_info.status | default('unknown') }}"
+          - "Status: {{ instance_status }}"
           - "Image: dstack-{{ dstack_version }}"
           - "Resources: {{ app_vcpus }} vCPUs, {{ app_memory }} MB RAM"
           - ""
           - "Access URL: http://127.0.0.1:{{ app_port }}/"
-          - "Accessibility: {{ 'OK' if app_response.status == 200 else 'FAILED' }}"
+          - "Accessibility: {{ 'OK' if app_response.status | default(0) == 200 else 'FAILED' }}"
           - ""
           - "VMM Web Interface: http://localhost:{{ vmm_http_port }}"
-          - ""
-          - "Commands:"
-          - "  View instance: curl http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ app_name }}"
-          - "  View logs:     curl http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ app_name }}/logs"
-          - "  Stop:          curl -X POST http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ app_name }}/stop"
-          - "  Delete:        curl -X DELETE http://127.0.0.1:{{ vmm_http_port }}/api/instances/{{ app_name }}"

@@ -107,3 +107,15 @@ enable_attestation: true
 
 # Skip contract deployment (set true if contracts already deployed)
 skip_contract_deployment: false
+
+# =============================================================================
+# VMM AUTHENTICATION (REQUIRED FOR PRODUCTION)
+# =============================================================================
+
+# Enable VMM API authentication
+# IMPORTANT: Must be true for production to prevent unauthorized CVM deployment
+auth_enabled: true
+
+# Auth token for VMM API (auto-generated if not provided)
+# If you want to use a specific token, set it here:
+# auth_token: "your-secure-token-here"

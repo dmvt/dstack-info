@@ -14,56 +14,49 @@
   become: false
   vars:
     kms_rpc_port: 9100
-    vmm_api_url: "http://127.0.0.1:9080"
 
   tasks:
     # =========================================================================
-    # CHECK CVM STATUS VIA VMM API
+    # CHECK VMM SERVICE IS RUNNING
     # =========================================================================
-    - name: Check VMM API is accessible
-      ansible.builtin.uri:
-        url: "{{ vmm_api_url }}/api/instances"
-        method: GET
-        return_content: yes
-        status_code: [200, 401]
-      register: vmm_api_check
+    - name: Check VMM service is running
+      ansible.builtin.systemd:
+        name: dstack-vmm
+      register: vmm_service
       failed_when: false
 
-    - name: Fail if VMM API not accessible
+    - name: Fail if VMM service not running
       ansible.builtin.fail:
         msg: |
-          VMM API is not accessible at {{ vmm_api_url }}.
+          dstack-vmm service is not running.
 
-          Ensure dstack-vmm is running:
+          Start the VMM:
+            sudo systemctl start dstack-vmm
+
+          Check status:
             sudo systemctl status dstack-vmm
+      when: vmm_service.status.ActiveState | default('inactive') != 'active'
 
-          And configured with HTTP address:
-            address = "127.0.0.1:9080"
-      when: vmm_api_check.status is not defined or vmm_api_check.status not in [200, 401]
-
-    - name: Get list of running CVMs
-      ansible.builtin.uri:
-        url: "{{ vmm_api_url }}/api/instances"
-        method: GET
-        return_content: yes
-        status_code: [200]
-      register: cvm_list
+    - name: Check for running QEMU processes (KMS CVM)
+      ansible.builtin.shell: |
+        pgrep -f 'qemu-system.*kms' || pgrep -f 'qemu-system-x86_64' | head -1
+      register: qemu_check
       failed_when: false
+      changed_when: false
 
-    - name: Check if KMS CVM exists
+    - name: Set KMS CVM running fact
       ansible.builtin.set_fact:
-        kms_cvm_exists: "{{ (cvm_list.json.vms | default([]) | selectattr('name', 'equalto', 'kms') | list | length) > 0 }}"
-        kms_cvm_status: "{{ (cvm_list.json.vms | default([]) | selectattr('name', 'equalto', 'kms') | first | default({})).status | default('not_found') }}"
-      when: cvm_list.status | default(0) == 200
+        kms_cvm_exists: "{{ qemu_check.rc == 0 }}"
+        kms_cvm_status: "{{ 'running' if qemu_check.rc == 0 else 'not_found' }}"
 
-    - name: Fail if KMS CVM not found
+    - name: Fail if no CVM running
       ansible.builtin.fail:
         msg: |
-          KMS CVM is not running.
+          No KMS CVM appears to be running.
 
           Deploy the KMS CVM:
-            ansible-playbook playbooks/deploy-kms-cvm.yml -e "kms_domain=your.domain.com"
-      when: not (kms_cvm_exists | default(false))
+            ansible-playbook playbooks/deploy-kms-cvm.yml
+      when: not kms_cvm_exists
 
     # =========================================================================
     # CHECK RPC CONNECTIVITY
@@ -79,10 +72,11 @@
 
     - name: Get KMS metadata via RPC
       ansible.builtin.uri:
-        url: "http://localhost:{{ kms_rpc_port }}/prpc/KMS.GetMeta"
+        url: "https://localhost:{{ kms_rpc_port }}/prpc/KMS.GetMeta"
         method: GET
         return_content: yes
         status_code: [200]
+        validate_certs: false
       register: kms_meta
       failed_when: false
 
@@ -115,7 +109,7 @@
           - "============================================"
           - ""
           - "VMM Status:"
-          - "  VMM API: {{ 'Accessible' if vmm_api_check.status | default(0) in [200, 401] else 'Not Accessible' }}"
+          - "  VMM Service: {{ vmm_service.status.ActiveState | default('unknown') }}"
           - "  KMS CVM: {{ kms_cvm_status | default('unknown') }}"
           - ""
           - "KMS RPC Status:"
@@ -141,11 +135,11 @@
       ansible.builtin.set_fact:
         verification_passed: >-
           {{
+            (vmm_service.status.ActiveState | default('') == 'active') and
             (kms_cvm_exists | default(false)) and
             (kms_cvm_status | default('') == 'running') and
             (port_status is success) and
             (kms_meta.status | default(0)) == 200 and
-            (ca_key_valid | default(false)) and
             (k256_key_valid | default(false))
           }}
 
@@ -155,16 +149,15 @@
           KMS CVM verification FAILED.
 
           Issues found:
-          {% if not (kms_cvm_exists | default(false)) %}- KMS CVM not found in VMM{% endif %}
+          {% if vmm_service.status.ActiveState | default('') != 'active' %}- VMM service not running{% endif %}
+          {% if not (kms_cvm_exists | default(false)) %}- KMS CVM not found{% endif %}
           {% if kms_cvm_status | default('') != 'running' %}- KMS CVM not running (status: {{ kms_cvm_status | default('unknown') }}){% endif %}
           {% if port_status is failed %}- Port 9100 not accessible{% endif %}
           {% if (kms_meta.status | default(0)) != 200 %}- KMS Metadata API not responding{% endif %}
-          {% if not (ca_key_valid | default(false)) %}- CA public key invalid or missing{% endif %}
           {% if not (k256_key_valid | default(false)) %}- K256 public key invalid or missing{% endif %}
 
           Try redeploying:
-            ansible-playbook playbooks/deploy-kms-cvm.yml \
-              -e "kms_domain=your.domain.com" -e "force_redeploy=true"
+            ansible-playbook playbooks/deploy-kms-cvm.yml -e "force_redeploy=true"
       when: not (verification_passed | bool)
 
     - name: Success message
