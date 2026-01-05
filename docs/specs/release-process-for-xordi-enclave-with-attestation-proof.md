@@ -3,7 +3,7 @@
 **Status:** REVIEW
 **Author:** LSDan (with context from Andrew Miller, Node Father, h4x3rotab)
 **Created:** 2025-12-21
-**Last Updated:** 2025-12-31
+**Last Updated:** 2026-01-05
 
 ## Overview
 
@@ -16,6 +16,16 @@ Xordi is a TEE-based API service for TikTok data collection (watch history, auth
 > "we want to prove we're not misusing the session to get anything more than watch history... DMs etc are totally safe"
 
 This is **external signaling** for user trust - cryptographic proof that the running enclave only accesses watch history, not DMs or other sensitive data.
+
+### Direct Request (from Andrew, Jan 5, 2026)
+
+> "@LSDan_DeFi since we didn't have a release process we didn't follow one, and as a result we can't actually show any evidence about what code we are running"
+>
+> "This is what the trust center shows, could you critique it? https://trust.phala.com/app/8b7f9f28fde9764b483ac987c68f3321cb7276b0/..."
+>
+> "My ask for you is to make a release process we can follow for xordi and how could we provide some report or something, maybe in github or a post"
+
+This spec directly addresses Andrew's request.
 
 ### Secondary Goal
 
@@ -650,6 +660,8 @@ Rejected - Phala team has more expertise, better to use/contribute upstream
 ### Repositories
 - **Xordi Source**: https://github.com/Account-Link/teleport-tokscope/tree/tokscope-xordi-perf
 - **dstack**: https://github.com/Dstack-TEE/dstack
+- **dstack Tutorial**: https://github.com/amiller/dstack-tutorial (Andrew's tutorial for IC3 event Jan 5)
+- **Hermes**: https://github.com/amiller/hermes (live at https://hermes.teleport.computer)
 - **KMS Simulator**: https://github.com/amiller/dstack-kms-simulator
 - **Reproducible Builds Playground**: https://github.com/Account-Link/reproducible-builds-playground
 - **dstack Verifier**: https://github.com/Phala-Network/dstack-verifier
@@ -736,3 +748,4 @@ Rejected - Phala team has more expertise, better to use/contribute upstream
 | 2025-12-30 | LSDan | Updated KMS limitation with planned migration to Base (from Andrew's infra roadmap) |
 | 2025-12-31 | LSDan | Added dstack docs revamp PRs (#423, #75) with operator guides for prod deployment |
 | 2025-12-31 | LSDan | Added LSDan-Andrew sync context: core problem articulation, availability vs integrity tension, three infra problems, restructured next steps around "the one thing that needs to change" |
+| 2026-01-05 | LSDan | Added Andrew's direct request (Jan 5 Telegram), dstack-tutorial repo, Hermes live URL (hermes.teleport.computer) |
