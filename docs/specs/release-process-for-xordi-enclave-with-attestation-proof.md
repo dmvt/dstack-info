@@ -478,20 +478,20 @@ Following the Hermes project's verified implementation:
 
 #### Phase 1: CI/CD Setup (Pre-requisites)
 
-- [ ] Fork/adapt Hermes GitHub Actions workflow for tokscope repo
-- [ ] Configure DockerHub credentials in GitHub secrets
-- [ ] Configure Phala Cloud API key in GitHub secrets
-- [ ] Update `docker-compose.yml` for Xordi services
-- [ ] Test build workflow (without deploy)
+- [x] Fork/adapt Hermes GitHub Actions workflow for tokscope repo - **DONE**: `docs/workflows/deploy-xordi.yml`
+- [ ] Configure DockerHub credentials in GitHub secrets - *Requires tokscope repo access*
+- [ ] Configure Phala Cloud API key in GitHub secrets - *Requires tokscope repo access*
+- [ ] Update `docker-compose.yml` for Xordi services - *Requires tokscope repo access*
+- [ ] Test build workflow (without deploy) - *Requires tokscope repo access*
 
 #### Phase 2: Verification Documentation
 
-- [ ] Create `VERIFICATION-REPORT.md` in tokscope repo (follow Hermes template)
-- [ ] Document current deployment's chain-of-trust:
-  - [ ] GitHub commit SHA
-  - [ ] DockerHub image digest
-  - [ ] TEE attestation link
-- [ ] Add link to Trust Center report
+- [x] Create `VERIFICATION-REPORT.md` in tokscope repo (follow Hermes template) - **DONE**: `docs/VERIFICATION-REPORT.md`
+- [x] Document current deployment's chain-of-trust:
+  - [ ] GitHub commit SHA - *Needs Node Father to provide*
+  - [ ] DockerHub image digest - *Needs Node Father to provide*
+  - [x] TEE attestation link - **DONE**: Trust Center URL documented
+- [x] Add link to Trust Center report - **DONE**
 
 #### Phase 3: Attestation Endpoints (Optional Enhancement)
 
@@ -503,8 +503,19 @@ Following the Hermes project's verified implementation:
 
 - [ ] Test full CI/CD deploy workflow
 - [ ] Document manual override procedures
-- [ ] Create release checklist template
+- [x] Create release checklist template - **DONE**: `docs/RELEASE-CHECKLIST.md`
 - [ ] Train team on deployment process (Node Father knowledge transfer)
+
+### Deliverables Created (2026-01-05)
+
+| Deliverable | Location | Purpose |
+|-------------|----------|---------|
+| **Verification Report** | `docs/VERIFICATION-REPORT.md` | Current attestation status, gaps, trust boundaries |
+| **Release Checklist** | `docs/RELEASE-CHECKLIST.md` | Prescriptive process requiring transparency logging |
+| **CI/CD Workflow** | `docs/workflows/deploy-xordi.yml` | GitHub Actions template for tokscope repo |
+| **Tweet Content** | `docs/TWEET-CONTENT.md` | Ready-to-post threads for Andrew |
+
+**Next Action Required:** Copy these files to tokscope repo and configure GitHub secrets.
 
 ## Resolved Questions
 
@@ -749,3 +760,4 @@ Rejected - Phala team has more expertise, better to use/contribute upstream
 | 2025-12-31 | LSDan | Added dstack docs revamp PRs (#423, #75) with operator guides for prod deployment |
 | 2025-12-31 | LSDan | Added LSDan-Andrew sync context: core problem articulation, availability vs integrity tension, three infra problems, restructured next steps around "the one thing that needs to change" |
 | 2026-01-05 | LSDan | Added Andrew's direct request (Jan 5 Telegram), dstack-tutorial repo, Hermes live URL (hermes.teleport.computer) |
+| 2026-01-05 | LSDan | Created deliverables: VERIFICATION-REPORT.md, RELEASE-CHECKLIST.md, deploy-xordi.yml workflow, TWEET-CONTENT.md |
