@@ -443,3 +443,4 @@ Deploy KMS on host instead of in CVM.
 | 2026-01-06 | Claude | Investigation: Found reqwest::Client::new() per request issue, implemented fix, but freeze persisted. Continued investigation. |
 | 2026-01-06 | Claude | **ACTUAL ROOT CAUSE FOUND**: Alchemy demo endpoint (`eth-sepolia.g.alchemy.com/v2/demo`) returns HTTP 429 rate limit errors. auth-eth hangs waiting for Ethereum responses, causing KMS GetMeta to timeout. This is a configuration issue - need dedicated API key for production. |
 | 2026-01-06 | Claude | **FIX IMPLEMENTED**: Updated all Ansible playbooks and tutorials to use `alchemy_api_key` from local-secrets.yml. Updated blockchain-setup tutorial to include Alchemy API key setup as a required step. |
+| 2026-01-06 | Claude | **TESTING SUCCESSFUL**: Deployed KMS with Alchemy API key fix. Tested 30 rapid-fire GetMeta requests - all succeeded. Previously would freeze after 2-4 requests. Fix confirmed working. |
