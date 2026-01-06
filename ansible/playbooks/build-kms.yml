@@ -384,32 +384,69 @@
           #!/bin/bash
           set -e
 
+          # Enhanced logging for debugging KMS freeze issue
+          log() {
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+          }
+
+          log "=== KMS Startup Script ==="
+          log "Environment: RUST_LOG=${RUST_LOG:-info}"
+
+          # Enable Rust debug output
+          export RUST_LOG=${RUST_LOG:-info}
+          export RUST_BACKTRACE=1
+
           # Load auth-eth environment
           if [ -f /etc/kms/auth-eth.env ]; then
+            log "Loading auth-eth environment from /etc/kms/auth-eth.env"
             export $(cat /etc/kms/auth-eth.env | grep -v '^#' | xargs)
           fi
 
           # Template kms.toml from environment variables if KMS_DOMAIN is set
           if [ -n "$KMS_DOMAIN" ]; then
-            echo "Configuring KMS for domain: $KMS_DOMAIN"
+            log "Configuring KMS for domain: $KMS_DOMAIN"
             sed -i "s|auto_bootstrap_domain = \".*\"|auto_bootstrap_domain = \"$KMS_DOMAIN\"|" /etc/kms/kms.toml
           fi
 
           # Allow overriding contract address via environment
           if [ -n "$KMS_CONTRACT_ADDR" ]; then
-            echo "Using contract address from environment: $KMS_CONTRACT_ADDR"
+            log "Using contract address from environment: $KMS_CONTRACT_ADDR"
           fi
 
-          # Start auth-eth in background
+          # Create log directory
+          mkdir -p /var/log/kms
+
+          # Start auth-eth in background with logging
+          log "Starting auth-eth service..."
           cd /opt/auth-eth
-          node dist/src/main.js &
+          node dist/src/main.js > /var/log/kms/auth-eth.log 2>&1 &
           AUTH_ETH_PID=$!
+          log "auth-eth started with PID: $AUTH_ETH_PID"
 
           # Wait for auth-eth to be ready
           sleep 2
 
-          # Start KMS (foreground)
-          exec /usr/local/bin/dstack-kms --config /etc/kms/kms.toml
+          # Verify auth-eth is running
+          if ! kill -0 $AUTH_ETH_PID 2>/dev/null; then
+            log "ERROR: auth-eth failed to start!"
+            log "=== auth-eth log ==="
+            cat /var/log/kms/auth-eth.log
+            exit 1
+          fi
+          log "auth-eth is running"
+
+          # Test auth-eth endpoint
+          log "Testing auth-eth endpoint..."
+          if curl -s --max-time 5 http://127.0.0.1:9200/health >/dev/null 2>&1; then
+            log "auth-eth health check: OK"
+          else
+            log "auth-eth health check: No response (may be normal if no /health endpoint)"
+          fi
+
+          # Start KMS (foreground) with output logging
+          log "Starting KMS..."
+          log "Config: /etc/kms/kms.toml"
+          exec /usr/local/bin/dstack-kms --config /etc/kms/kms.toml 2>&1
         dest: "{{ user_home }}/kms-deployment/start-kms.sh"
         mode: '0755'
 

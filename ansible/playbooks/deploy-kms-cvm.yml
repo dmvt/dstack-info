@@ -226,12 +226,15 @@
               volumes:
                 - /var/run/dstack.sock:/var/run/dstack.sock
                 - kms-certs:/etc/kms/certs
+                - kms-logs:/var/log/kms
               environment:
-                - RUST_LOG=info
+                - RUST_LOG={{ kms_log_level | default('info') }}
+                - RUST_BACKTRACE=1
                 - KMS_DOMAIN={{ kms_domain }}
               restart: unless-stopped
           volumes:
             kms-certs:
+            kms-logs:
 
     - name: Build app manifest
       ansible.builtin.set_fact:
