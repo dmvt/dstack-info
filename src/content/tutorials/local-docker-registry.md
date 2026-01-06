@@ -209,20 +209,20 @@ docker tag dstack0/dstack-kms:0.5.5 registry.yourdomain.com/dstack-kms:latest
 docker push registry.yourdomain.com/dstack-kms:latest
 ```
 
-### Option B: Build Custom Image with Working RPC
+### Option B: Build Custom Image with Your Alchemy API Key
 
-The default KMS image uses a rate-limited Ethereum RPC endpoint. For reliable operation, build a custom image:
+The default KMS image uses a rate-limited Ethereum RPC endpoint (`/v2/demo`). For reliable operation, build a custom image with your Alchemy API key:
 
 ```bash
 # Create build directory
 mkdir -p ~/kms-image-build
 cd ~/kms-image-build
 
-# Create auth-eth.env with working RPC
-cat > auth-eth.env << 'EOF'
+# Create auth-eth.env with your Alchemy API key
+cat > auth-eth.env << EOF
 HOST=127.0.0.1
 PORT=9200
-ETH_RPC_URL=https://ethereum-sepolia.publicnode.com
+ETH_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)
 KMS_CONTRACT_ADDR=0xe6c23bfE4686E28DcDA15A1996B1c0C549656E26
 EOF
 
@@ -233,18 +233,13 @@ COPY auth-eth.env /etc/kms/auth-eth.env
 EOF
 
 # Build and tag
-docker build -t registry.yourdomain.com/dstack-kms:fixed .
+docker build -t registry.yourdomain.com/dstack-kms:latest .
 
 # Push to local registry
-docker push registry.yourdomain.com/dstack-kms:fixed
-
-# Also tag as latest
-docker tag registry.yourdomain.com/dstack-kms:fixed \
-  registry.yourdomain.com/dstack-kms:latest
 docker push registry.yourdomain.com/dstack-kms:latest
 ```
 
-**Why the custom image?** The default image uses `eth-sepolia.g.alchemy.com/v2/demo` which returns HTTP 429 (rate limited). This causes the auth-eth service to hang, which makes KMS GetMeta calls timeout. The PublicNode endpoint works reliably.
+**Why the custom image?** The default image uses `/v2/demo` which returns HTTP 429 (rate limited). This causes the auth-eth service to hang, which makes KMS GetMeta calls timeout. Using your own Alchemy API key avoids rate limiting.
 
 ### Verify Images Cached
 

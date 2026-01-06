@@ -95,10 +95,13 @@ echo "~/.dstack/secrets/" >> ~/.gitignore
 ### Step 1.4: Check Wallet Balance
 
 ```bash
+# Quick check using demo endpoint (for initial verification only)
 cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
 ```
 
 Expected output for new wallet: `0` (zero)
+
+> **Note:** The demo endpoint works for quick balance checks but is rate-limited. You'll set up a proper Alchemy API key in Step 3.
 
 ---
 
@@ -122,11 +125,13 @@ If you prefer a browser-based wallet, MetaMask is the most popular choice.
 
 ```
 Network Name: Sepolia
-RPC URL: https://eth-sepolia.g.alchemy.com/v2/demo
+RPC URL: https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
 Chain ID: 11155111
 Currency Symbol: ETH
 Block Explorer: https://sepolia.etherscan.io
 ```
+
+> **Note:** Replace `YOUR_ALCHEMY_API_KEY` with your actual API key from Step 3. For initial setup, the demo endpoint works but is rate-limited.
 
 5. Click "Save"
 
@@ -191,10 +196,13 @@ This page lists all available faucets and their requirements (mainnet ETH balanc
 **Command Line:**
 
 ```bash
+# Quick check using demo endpoint (acceptable for one-off balance checks)
 cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
 ```
 
 Expected: Non-zero value (e.g., `50000000000000000` = 0.05 ETH, `100000000000000000` = 0.1 ETH in wei)
+
+> **Note:** The demo endpoint works for occasional balance checks. Set up your Alchemy API key in Step 3 for production use.
 
 **MetaMask:**
 
@@ -213,45 +221,63 @@ https://sepolia.etherscan.io/address/YOUR_ADDRESS
 
 ---
 
-## Step 3: Configure RPC Endpoint
+## Step 3: Configure RPC Endpoint (Required)
 
-For production use, you should get a dedicated RPC endpoint instead of using the public demo endpoint.
+You need a dedicated RPC endpoint from Alchemy for dstack deployment. The public demo endpoint is rate-limited and will cause KMS to freeze.
 
-### Public Demo Endpoint (Recommended for Tutorials)
+### Get Alchemy API Key (Required)
 
-For Sepolia testnet, the public demo endpoint works well:
+1. Create free account at: https://dashboard.alchemy.com/
+2. Create a new app:
+   - Name: "dstack" (or any name)
+   - Chain: Ethereum
+   - Network: **Sepolia**
+3. Copy your API Key from the dashboard
 
+### Store Your API Key
+
+```bash
+# Store Alchemy API key securely
+echo "YOUR_ALCHEMY_API_KEY" > ~/.dstack/secrets/alchemy-api-key
+chmod 600 ~/.dstack/secrets/alchemy-api-key
 ```
-https://eth-sepolia.g.alchemy.com/v2/demo
+
+### Your RPC URL
+
+Your RPC URL will be:
+```
+https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
 ```
 
-This endpoint is sufficient for:
-- Deploying contracts
-- Checking balances
-- Running transactions
+Or using the stored key:
+```bash
+export ETH_RPC_URL="https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)"
+```
 
-### Production Endpoints (Optional)
-
-For production mainnet deployments, get a dedicated API key from:
-
-- **Alchemy:** https://www.alchemy.com/ (300M compute units/month free)
-- **Infura:** https://www.infura.io/
+⚠️ **Important:** Do NOT use the demo endpoint (`/v2/demo`). It is rate-limited and will cause the KMS to freeze after a few requests.
 
 ---
 
 ## Step 4: Test RPC Connectivity
 
+### Set up RPC URL environment variable
+
+```bash
+# Export your RPC URL (do this once per terminal session)
+export ETH_RPC_URL="https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)"
+```
+
 ### Test with cast
 
 ```bash
 # Get latest block number
-cast block-number --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
+cast block-number --rpc-url $ETH_RPC_URL
 
 # Get current gas price
-cast gas-price --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
+cast gas-price --rpc-url $ETH_RPC_URL
 
 # Get your balance
-cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo
+cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url $ETH_RPC_URL
 ```
 
 All commands should return values without errors.
@@ -275,7 +301,7 @@ You should have:
 
 ```bash
 echo "Wallet: $(cat ~/.dstack/secrets/sepolia-address)"
-echo "Balance: $(cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url https://eth-sepolia.g.alchemy.com/v2/demo)"
+echo "Balance: $(cast balance $(cat ~/.dstack/secrets/sepolia-address) --rpc-url $ETH_RPC_URL)"
 ```
 
 ---
@@ -287,6 +313,7 @@ Before proceeding to KMS deployment, verify:
 -   ✅ Wallet created and address saved to `~/.dstack/secrets/sepolia-address`
 -   ✅ Private key stored securely in `~/.dstack/secrets/sepolia-private-key`
 -   ✅ Wallet has ≥0.1 testnet ETH
+-   ✅ **Alchemy API key stored in `~/.dstack/secrets/alchemy-api-key`**
 -   ✅ RPC endpoint tested and working
 -   ✅ Can query balance via cast
 
@@ -300,7 +327,7 @@ If you're following the Ansible automation approach, navigate to the ansible dir
 cd ~/dstack-info/ansible
 ansible-playbook playbooks/verify-blockchain.yml \
   -e "wallet_address=$(cat ~/.dstack/secrets/sepolia-address)" \
-  -e "rpc_url=https://eth-sepolia.g.alchemy.com/v2/demo"
+  -e "rpc_url=https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)"
 ```
 
 This will verify:

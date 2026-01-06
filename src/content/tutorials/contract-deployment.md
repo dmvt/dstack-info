@@ -131,7 +131,7 @@ WALLET_ADDRESS=$(cat ~/.dstack/secrets/sepolia-address)
 echo "Wallet: $WALLET_ADDRESS"
 
 # Check balance using curl
-curl -s -X POST "https://eth-sepolia.g.alchemy.com/v2/demo" \
+curl -s -X POST "https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)" \
   -H "Content-Type: application/json" \
   -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBalance\",\"params\":[\"$WALLET_ADDRESS\",\"latest\"],\"id\":1}" | \
   jq -r '.result' | xargs printf "Balance: %d wei\n"
@@ -201,7 +201,7 @@ Check that the contract exists on chain:
 
 ```bash
 # Verify contract has bytecode
-curl -s -X POST "https://eth-sepolia.g.alchemy.com/v2/demo" \
+curl -s -X POST "https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)" \
   -H "Content-Type: application/json" \
   -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getCode\",\"params\":[\"$KMS_CONTRACT_ADDRESS\",\"latest\"],\"id\":1}" | \
   jq -r 'if .result != "0x" then "✓ Contract deployed successfully" else "✗ Contract not found" end'
@@ -283,7 +283,7 @@ Error: could not detect network
 Check network connectivity:
 
 ```bash
-curl -s -X POST "https://eth-sepolia.g.alchemy.com/v2/demo" \
+curl -s -X POST "https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```

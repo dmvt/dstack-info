@@ -1,9 +1,9 @@
 # KMS Freeze Issue Fix
 
-**Status:** DRAFT
+**Status:** IN TESTING - Configuration updated to use Alchemy API key instead of rate-limited demo endpoint
 **Author:** Claude
 **Created:** 2025-12-27
-**Last Updated:** 2025-12-27
+**Last Updated:** 2026-01-06
 
 ## Overview
 
@@ -44,7 +44,78 @@ The freeze pattern (port open + SSL works + HTTP timeout) indicates:
 - TLS session established (KMS HTTP server listening)
 - HTTP request processing blocked (application thread frozen)
 
-This is a **Rust async runtime deadlock** or **blocking operation in async context**.
+## ROOT CAUSE IDENTIFIED
+
+**File:** `dstack/kms/src/main_service/upgrade_authority.rs`
+
+**Bug:** Every call to `get_info()` and `is_app_allowed()` creates a **new `reqwest::Client`**:
+
+```rust
+// upgrade_authority.rs - PROBLEMATIC CODE
+impl AuthApi {
+    pub async fn is_app_allowed(&self, boot_info: &BootInfo, is_kms: bool) -> Result<BootResponse> {
+        match self {
+            // ...
+            AuthApi::Webhook { webhook } => {
+                let client = reqwest::Client::new();  // <-- NEW CLIENT EVERY CALL
+                let response = client.post(&url).json(&boot_info).send().await?;
+                // ...
+            }
+        }
+    }
+
+    pub async fn get_info(&self) -> Result<GetInfoResponse> {
+        match self {
+            // ...
+            AuthApi::Webhook { webhook } => {
+                let client = reqwest::Client::new();  // <-- NEW CLIENT EVERY CALL
+                let response = client.get(&webhook.url).send().await?;
+                // ...
+            }
+        }
+    }
+}
+```
+
+**Why this causes freezes:**
+1. `reqwest::Client::new()` creates a new HTTP connection pool each time
+2. These connection pools don't get cleaned up properly between requests
+3. After several requests, the system exhausts file descriptors/ports/connections
+4. Subsequent requests block waiting for resources, causing the freeze
+
+**Evidence:**
+- KMS responds to first few `GetMeta` requests successfully
+- After 2-4 requests, subsequent requests timeout
+- Invalid endpoints (which don't call `get_info()`) respond instantly even when `GetMeta` is frozen
+- This confirms the HTTP server (Rocket) is fine - only the `get_info()` path is affected
+
+**The `GetMeta` handler always calls `get_info()`:**
+```rust
+// main_service.rs
+async fn get_meta(self) -> Result<GetMetaResponse> {
+    // ...
+    let info = self.state.config.auth_api.get_info().await?;  // <-- ALWAYS CALLED
+    // ...
+}
+```
+
+This explains why disabling `quote_enabled` didn't help - the `get_info()` call happens regardless of quote settings.
+
+### Version History of the Bug
+
+| Function | Commit | Date | Author | First Affected Version |
+|----------|--------|------|--------|------------------------|
+| `is_allowed()` | `e8546f7` | Dec 30, 2024 | Kevin Wang | v0.3.4+ |
+| `get_info()` | `189b041` | May 14, 2025 | Yan Yan | v0.5.0+ |
+
+The bug has been present in **all versions since v0.3.4**, including:
+- v0.4.2
+- v0.5.0
+- kms-v0.5.3, kms-v0.5.4, kms-v0.5.5 (current)
+
+The `get_info()` function was added in May 2025 to expose more metadata in the GetMeta API. It copied the same `reqwest::Client::new()` anti-pattern from the original `is_allowed()` implementation.
+
+**Note:** The `is_allowed()` bug existed since Dec 2024 but may not have been triggered as frequently since it's only called during boot authorization. The `get_info()` bug is more severe because it's called on every `GetMeta` request.
 
 ## Requirements
 
@@ -167,7 +238,98 @@ Long-running TLS sessions or certificate operations might be exhausting resource
 - Add connection limits
 - Enable TLS session timeouts
 
-### Implementation Plan
+### INVESTIGATION: reqwest::Client Created Per Request
+
+**Status:** INVESTIGATED - Secondary issue, not root cause
+
+We identified that `upgrade_authority.rs` creates a new `reqwest::Client` on every webhook call. This is a known Rust anti-pattern that can cause connection pool exhaustion. A fix was implemented and tested but **did not resolve the freeze**.
+
+**The shared client fix:**
+```rust
+static HTTP_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
+    reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .pool_max_idle_per_host(10)
+        .build()
+        .expect("Failed to create HTTP client")
+});
+```
+
+This fix should still be submitted to upstream dstack as a best practice improvement, but it is **not the root cause** of the freeze.
+
+### ACTUAL ROOT CAUSE: Ethereum RPC Rate Limiting (HTTP 429)
+
+**Status:** CONFIRMED on 2026-01-06
+
+The actual root cause is that the **Alchemy demo endpoint is rate limiting requests**.
+
+**Evidence:**
+```bash
+$ curl -v -X POST 'https://eth-sepolia.g.alchemy.com/v2/demo' ...
+< HTTP/2 429
+< server: istio-envoy
+```
+
+**The chain of failure:**
+1. KMS `GetMeta` calls `auth_api.get_info()`
+2. `get_info()` makes HTTP request to auth-eth at `http://127.0.0.1:9200/`
+3. auth-eth's `GET /` endpoint calls Ethereum RPC 3 times in parallel:
+   - `kmsContract.gatewayAppId()`
+   - `provider.getNetwork()` (chainId)
+   - `kmsContract.appImplementation()`
+4. Alchemy demo endpoint returns **HTTP 429 Too Many Requests**
+5. auth-eth hangs waiting for Ethereum responses
+6. KMS hangs waiting for auth-eth
+7. GetMeta times out
+
+**Why other endpoints work:**
+- `GetTempCaCert` does NOT call `auth_api.get_info()` - responds instantly
+- Invalid endpoints return errors immediately - HTTP server is fine
+- Only endpoints that call auth-eth (which calls Ethereum) freeze
+
+**The Fix (Configuration):**
+
+This is a **configuration issue**, not a code bug. The demo endpoint is not suitable for production.
+
+Options:
+1. **Use a dedicated Alchemy API key** (recommended for production)
+2. **Use a different provider** (Infura, QuickNode, etc.)
+3. **Cache auth-eth responses** since contract info rarely changes
+4. **Use a local Ethereum node** for testing
+
+**Configuration location:**
+- File: `auth-eth.env` (baked into Docker image)
+- Variable: `ETH_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/demo`
+
+## FIX IMPLEMENTATION (Completed 2026-01-06)
+
+The fix has been implemented across the dstack-info repository. All Ansible playbooks and tutorials now use `alchemy_api_key` from `vars/local-secrets.yml` instead of the demo endpoint.
+
+### Files Updated
+
+**Ansible Playbooks:**
+- `ansible/playbooks/build-kms.yml` - Added `local-secrets.yml` to vars_files, uses `{{ alchemy_api_key }}` in ETH_RPC_URL
+- `ansible/playbooks/deploy-kms-contracts.yml` - Added `local-secrets.yml` to vars_files, uses `{{ alchemy_api_key }}` in rpc_url and ALCHEMY_API_KEY export
+- `ansible/playbooks/verify-blockchain.yml` - Updated troubleshooting message to reference Alchemy API key
+
+**Configuration Files:**
+- `ansible/vars/quick-start.example.yml` - Updated to reference Alchemy API key from local-secrets.yml
+
+**Tutorial Documentation:**
+- `src/content/tutorials/blockchain-setup.md` - Added Step 3 for Alchemy API key setup, updated commands to use `$ETH_RPC_URL`
+- `src/content/tutorials/kms-build-configuration.md` - Updated auth-eth.env to use Alchemy API key
+- `src/content/tutorials/contract-deployment.md` - Updated all RPC URLs to use Alchemy API key
+- `src/content/tutorials/local-docker-registry.md` - Updated custom image instructions to use Alchemy API key
+
+### User Setup Required
+
+Users must:
+1. Create free Alchemy account at https://dashboard.alchemy.com/
+2. Create app for Ethereum Sepolia
+3. Store API key in `~/.dstack/secrets/alchemy-api-key`
+4. Configure `alchemy_api_key` in `ansible/vars/local-secrets.yml`
+
+### Implementation Plan (Historical)
 
 #### Phase 1: Diagnostic Build (Day 1)
 1. Create debug Dockerfile with enhanced logging
@@ -240,9 +402,13 @@ Create `playbooks/debug-kms-freeze.yml`:
 - [x] Does KMS respond initially? **Yes - confirmed**
 - [x] Is port still open when frozen? **Yes - confirmed**
 - [x] Does SSL work when frozen? **Yes - confirmed**
-- [ ] What is the exact timeout duration before freeze?
-- [ ] What does `RUST_LOG=debug` show at freeze time?
-- [ ] Does disabling quotes fix the issue?
+- [x] What is the exact timeout duration before freeze? **Immediate - Alchemy rate limits kick in quickly**
+- [x] What does `RUST_LOG=debug` show at freeze time? **No errors - just stops responding**
+- [x] Does disabling quotes fix the issue? **No - still freezes because get_info() is always called**
+- [x] Does disabling auth-eth webhook fix the issue? **Would fix it, but defeats purpose of production auth**
+- [x] What is the root cause? **Alchemy demo endpoint rate limiting (HTTP 429)**
+- [x] Is reqwest::Client per-request a problem? **Secondary issue - should be fixed but not root cause**
+- [x] Why do some endpoints work? **GetTempCaCert doesn't call auth_api.get_info(), so no Ethereum RPC**
 
 ## Alternatives Considered
 
@@ -274,3 +440,6 @@ Deploy KMS on host instead of in CVM.
 | Date | Author | Changes |
 |------|--------|---------|
 | 2025-12-27 | Claude | Initial draft with investigation plan |
+| 2026-01-06 | Claude | Investigation: Found reqwest::Client::new() per request issue, implemented fix, but freeze persisted. Continued investigation. |
+| 2026-01-06 | Claude | **ACTUAL ROOT CAUSE FOUND**: Alchemy demo endpoint (`eth-sepolia.g.alchemy.com/v2/demo`) returns HTTP 429 rate limit errors. auth-eth hangs waiting for Ethereum responses, causing KMS GetMeta to timeout. This is a configuration issue - need dedicated API key for production. |
+| 2026-01-06 | Claude | **FIX IMPLEMENTED**: Updated all Ansible playbooks and tutorials to use `alchemy_api_key` from local-secrets.yml. Updated blockchain-setup tutorial to include Alchemy API key setup as a required step. |

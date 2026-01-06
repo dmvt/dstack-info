@@ -22,14 +22,18 @@
 - name: Deploy KMS Smart Contracts to Sepolia
   hosts: dstack_servers
   become: false
+
+  vars_files:
+    - ../vars/local-secrets.yml
+
   vars:
     # Use the connecting user's home directory
     user_home: "/home/{{ ansible_user }}"
     contract_dir: "{{ user_home }}/dstack/kms/auth-eth"
     secrets_dir: "{{ user_home }}/.dstack/secrets"
     deploy_app_impl: true
-    # Use public demo RPC endpoint for Sepolia testnet
-    rpc_url: "https://eth-sepolia.g.alchemy.com/v2/demo"
+    # Ethereum RPC endpoint (using Alchemy API key from local-secrets.yml)
+    rpc_url: "https://eth-sepolia.g.alchemy.com/v2/{{ alchemy_api_key }}"
 
   tasks:
     - name: Check secrets directory exists
@@ -223,7 +227,7 @@
       ansible.builtin.shell: |
         cd {{ contract_dir }}
         export PRIVATE_KEY="{{ wallet_private_key }}"
-        export ALCHEMY_API_KEY="demo"
+        export ALCHEMY_API_KEY="{{ alchemy_api_key }}"
         {% if etherscan_api_key is defined %}
         export ETHERSCAN_API_KEY="{{ etherscan_api_key }}"
         {% endif %}

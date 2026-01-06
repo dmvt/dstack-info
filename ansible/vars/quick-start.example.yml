@@ -35,9 +35,9 @@ intel_pccs_api_key: ""
 # ETHEREUM/BLOCKCHAIN CONFIGURATION
 # =============================================================================
 
-# Ethereum RPC endpoint for Sepolia testnet
-# PublicNode works reliably (no rate limits)
-eth_rpc_url: "https://ethereum-sepolia.publicnode.com"
+# NOTE: Ethereum RPC URL is constructed from alchemy_api_key in local-secrets.yml
+# The URL format is: https://eth-sepolia.g.alchemy.com/v2/{{ alchemy_api_key }}
+# Configure your Alchemy API key in vars/local-secrets.yml
 
 # KMS contract address (set after running deploy-contracts-local.yml)
 # This will be overwritten by vars/contract-addresses.yml

@@ -314,8 +314,9 @@ cat > /etc/kms/auth-eth.env << EOF
 HOST=127.0.0.1
 PORT=9200
 
-# Ethereum RPC endpoint (using public demo endpoint)
-ETH_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/demo
+# Ethereum RPC endpoint (using your Alchemy API key)
+# Get your API key from: https://dashboard.alchemy.com/
+ETH_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)
 
 # KMS Authorization Contract Address
 KMS_CONTRACT_ADDR=$KMS_CONTRACT_ADDRESS
@@ -675,13 +676,15 @@ cat /etc/kms/kms.toml | python3 -c "import sys, tomllib; tomllib.load(sys.stdin.
 Error: could not connect to RPC
 ```
 
-Check network connectivity:
+Check network connectivity (replace with your Alchemy API key):
 
 ```bash
-curl -s "https://eth-sepolia.g.alchemy.com/v2/demo" \
+curl -s "https://eth-sepolia.g.alchemy.com/v2/$(cat ~/.dstack/secrets/alchemy-api-key)" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
+
+> **Note:** The demo endpoint (`/v2/demo`) is rate-limited and will cause KMS to freeze. Always use your own Alchemy API key.
 
 ### Contract address not set
 
