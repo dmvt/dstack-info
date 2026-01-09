@@ -2,9 +2,9 @@
 title: "Gateway Service Setup"
 description: "Configure dstack gateway to run as a systemd service and register with KMS"
 section: "Gateway Deployment"
-stepNumber: 3
-totalSteps: 3
-lastUpdated: 2025-12-04
+stepNumber: 2
+totalSteps: 2
+lastUpdated: 2026-01-09
 prerequisites:
   - gateway-build-configuration
 tags:

@@ -2,12 +2,11 @@
 title: "Gateway Build & Configuration"
 description: "Build dstack gateway from source and configure it for your environment"
 section: "Gateway Deployment"
-stepNumber: 2
-totalSteps: 3
-lastUpdated: 2025-12-04
+stepNumber: 1
+totalSteps: 2
+lastUpdated: 2026-01-09
 prerequisites:
-  - gateway-ssl-setup
-  - clone-build-dstack-vmm
+  - kms-cvm-deployment
 tags:
   - dstack
   - gateway
@@ -26,7 +25,7 @@ This tutorial guides you through building the dstack gateway from source and con
 
 Before starting, ensure you have:
 
-- Completed [Gateway SSL Setup](/tutorial/gateway-ssl-setup)
+- Completed [SSL Certificate Setup](/tutorial/ssl-certificate-setup)
 - Completed [Clone & Build dstack-vmm](/tutorial/clone-build-dstack-vmm)
 - dstack repository cloned at ~/dstack
 - Rust toolchain installed
@@ -314,8 +313,6 @@ sudo tee /etc/dstack/gateway/certbot.toml > /dev/null <<'EOF'
 
 [acme]
 # Let's Encrypt ACME URL
-# Production: https://acme-v02.api.letsencrypt.org/directory
-# Staging: https://acme-staging-v02.api.letsencrypt.org/directory
 url = "https://acme-v02.api.letsencrypt.org/directory"
 
 # Contact email for certificate notifications

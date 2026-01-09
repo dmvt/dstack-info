@@ -1,12 +1,12 @@
 ---
-title: "TDX Attestation Setup"
+title: "PCCS Configuration"
 description: "Configure Intel PCCS with API key for TDX attestation"
-section: "Host Setup"
-stepNumber: 5
-totalSteps: 5
-lastUpdated: 2025-12-08
+section: "Prerequisites"
+stepNumber: 3
+totalSteps: 6
+lastUpdated: 2026-01-09
 prerequisites:
-  - tdx-sgx-verification
+  - ssl-certificate-setup
 tags:
   - tdx
   - attestation
@@ -17,7 +17,7 @@ difficulty: "intermediate"
 estimatedTime: "20 minutes"
 ---
 
-# TDX Attestation Setup
+# PCCS Configuration
 
 This tutorial configures the Intel Provisioning Certificate Caching Service (PCCS) to enable TDX attestation. Attestation is required for dstack CVMs to prove they are running on genuine Intel TDX hardware.
 
@@ -41,7 +41,7 @@ Without proper attestation setup, CVMs cannot obtain sealing keys and will fail 
 
 Before starting, ensure you have:
 
-- Completed [TDX & SGX Verification](/tutorial/tdx-sgx-verification)
+- Completed [SSL Certificate Setup](/tutorial/ssl-certificate-setup)
 - Internet access to Intel's Provisioning Certification Service
 - An email address for Intel registration
 
@@ -131,6 +131,72 @@ Change it to:
 
 Save and exit (`Ctrl+X`, then `Y`, then `Enter`).
 
+## Step 3: Configure PCCS for CVM Access
+
+CVMs access PCCS via the QEMU user-mode networking host IP (10.0.2.2). We need to configure PCCS to listen on all interfaces and update the SSL certificate with the correct Subject Alternative Names (SANs).
+
+### Configure PCCS to Listen on All Interfaces
+
+Edit the PCCS configuration:
+
+```bash
+sudo nano /opt/intel/sgx-dcap-pccs/config/default.json
+```
+
+Find the line:
+```json
+"hosts" : "127.0.0.1",
+```
+
+Change it to:
+```json
+"hosts" : "0.0.0.0",
+```
+
+### Regenerate SSL Certificate with SANs
+
+Create an OpenSSL configuration file:
+
+```bash
+sudo tee /tmp/pccs_openssl.cnf > /dev/null << 'EOF'
+[req]
+distinguished_name = req_distinguished_name
+x509_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+CN = localhost
+O = dstack
+C = US
+
+[v3_req]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+DNS.2 = pccs
+IP.1 = 127.0.0.1
+IP.2 = 10.0.2.2
+IP.3 = 0.0.0.0
+EOF
+```
+
+Generate new certificate:
+
+```bash
+sudo openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+  -keyout /opt/intel/sgx-dcap-pccs/ssl_key/private.pem \
+  -out /opt/intel/sgx-dcap-pccs/ssl_key/file.crt \
+  -config /tmp/pccs_openssl.cnf
+```
+
+Set correct ownership:
+
+```bash
+sudo chown pccs:pccs /opt/intel/sgx-dcap-pccs/ssl_key/private.pem
+sudo chown pccs:pccs /opt/intel/sgx-dcap-pccs/ssl_key/file.crt
+```
+
 ### Restart PCCS
 
 ```bash
@@ -140,7 +206,7 @@ sudo systemctl status pccs
 
 The service should show `active (running)`.
 
-## Step 3: Verify Platform Registration
+## Step 4: Verify Platform Registration
 
 When PCCS receives its first attestation request, it will automatically fetch PCK certificates for your platform from Intel.
 
@@ -164,7 +230,7 @@ sudo journalctl -u pccs -f
 
 When attestation is first requested, you should see PCCS contacting Intel and caching certificates.
 
-## Step 4: Test Attestation
+## Step 5: Test Attestation
 
 Verify that TDX quotes can be generated successfully.
 
@@ -312,10 +378,9 @@ sudo journalctl -u pccs -n 100
 
 ## Next Steps
 
-With TDX attestation configured, you're ready to proceed with dstack deployment:
+With PCCS configured, proceed to:
 
-- [DNS Configuration](/tutorial/dns-configuration) - Set up domain names for services
-- [Blockchain Setup](/tutorial/blockchain-setup) - Configure blockchain for KMS authorization
+- [Docker Setup](/tutorial/docker-setup) - Install Docker Engine for dstack services
 
 ## Additional Resources
 

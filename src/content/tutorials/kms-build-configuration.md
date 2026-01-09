@@ -2,12 +2,11 @@
 title: "KMS Build & Configuration"
 description: "Build and configure the dstack Key Management Service"
 section: "KMS Deployment"
-stepNumber: 3
-totalSteps: 6
-lastUpdated: 2025-12-07
+stepNumber: 1
+totalSteps: 2
+lastUpdated: 2026-01-09
 prerequisites:
-  - contract-deployment
-  - tdx-sgx-verification
+  - guest-image-setup
 tags:
   - dstack
   - kms
@@ -703,7 +702,6 @@ cat ~/dstack/kms/auth-eth/.deployed-addresses
 With KMS built and containerized, proceed to CVM deployment:
 
 - [KMS CVM Deployment](/tutorial/kms-cvm-deployment) - Deploy KMS as a Confidential VM
-- [KMS Bootstrap](/tutorial/kms-bootstrap) - Verify KMS initialization and TDX attestation
 
 ## Additional Resources
 

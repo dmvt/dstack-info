@@ -267,7 +267,7 @@ sudo chmod 755 /var/run/dstack /var/log/dstack /var/lib/dstack
 
 With VMM running as a service, proceed to deploy the Key Management Service:
 
-- [Smart Contract Compilation](/tutorial/smart-contract-compilation) - Start the KMS deployment process
+- [Contract Deployment](/tutorial/contract-deployment) - Deploy KMS contracts to Sepolia
 
 ## Additional Resources
 

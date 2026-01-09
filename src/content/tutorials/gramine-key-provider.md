@@ -2,11 +2,11 @@
 title: "Gramine Key Provider"
 description: "Deploy SGX-based Gramine Sealing Key Provider for CVM attestation"
 section: "Prerequisites"
-stepNumber: 4
-totalSteps: 5
-lastUpdated: 2025-12-09
+stepNumber: 5
+totalSteps: 6
+lastUpdated: 2026-01-09
 prerequisites:
-  - tdx-attestation-setup
+  - docker-setup
 tags:
   - gramine
   - sgx
@@ -72,7 +72,7 @@ When deploying a dstack CVM (like the KMS), there's a fundamental bootstrapping 
 Before starting, ensure you have:
 
 - Completed [TDX & SGX Verification](/tutorial/tdx-sgx-verification) - SGX devices must be present
-- Completed [TDX Attestation Setup](/tutorial/tdx-attestation-setup) - PCCS configured with Intel API key
+- Completed [PCCS Configuration](/tutorial/pccs-configuration) - PCCS configured with Intel API key
 - Docker installed and running
 - SGX devices accessible: `/dev/sgx_enclave`, `/dev/sgx_provision`
 
@@ -329,7 +329,7 @@ docker logs aesmd 2>&1 | tail -30
 **Symptom:** Logs show "quote verification failed"
 
 **Solution:**
-1. Verify PCCS is configured: Check [TDX Attestation Setup](/tutorial/tdx-attestation-setup)
+1. Verify PCCS is configured: Check [PCCS Configuration](/tutorial/pccs-configuration)
 2. Check PCCS is running: `systemctl status pccs`
 3. Verify Intel API key is set in PCCS config
 

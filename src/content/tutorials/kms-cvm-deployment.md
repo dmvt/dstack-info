@@ -2,9 +2,9 @@
 title: "KMS CVM Deployment"
 description: "Deploy dstack KMS as a Confidential Virtual Machine for TDX attestation"
 section: "KMS Deployment"
-stepNumber: 4
-totalSteps: 6
-lastUpdated: 2025-12-09
+stepNumber: 2
+totalSteps: 2
+lastUpdated: 2026-01-09
 prerequisites:
   - kms-build-configuration
   - gramine-key-provider
@@ -522,9 +522,9 @@ Store backup information securely offline.
 
 ## Next Steps
 
-With KMS deployed as a CVM, verify the bootstrap:
+With KMS deployed as a CVM, proceed to set up the Gateway:
 
-- [KMS Bootstrap](/tutorial/kms-bootstrap) - Verify initialization and TDX attestation
+- [Gateway Build & Configuration](/tutorial/gateway-build-configuration) - Build and configure the dstack gateway
 
 ## Additional Resources
 

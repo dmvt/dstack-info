@@ -2,8 +2,8 @@
 title: "SSL Certificate Setup"
 description: "Obtain Let's Encrypt SSL certificates for dstack services"
 section: "Prerequisites"
-stepNumber: 3
-totalSteps: 5
+stepNumber: 2
+totalSteps: 6
 lastUpdated: 2025-12-09
 prerequisites:
   - dns-configuration
@@ -252,7 +252,7 @@ sudo certbot certonly --dns-cloudflare \
   --email your-email@example.com
 ```
 
-**Note:** Wildcard certificates are configured later in the [Gateway SSL Setup](/tutorial/gateway-ssl-setup) tutorial.
+**Note:** Wildcard certificates are configured later in the [Gateway Build & Configuration](/tutorial/gateway-build-configuration) tutorial.
 
 ---
 
@@ -337,8 +337,7 @@ Save as `verify-ssl.sh`, update `DOMAIN`, make executable with `chmod +x verify-
 
 **Solution:**
 1. Wait 1 hour and retry
-2. Use `--staging` flag for testing (creates invalid certs)
-3. Check https://letsencrypt.org/docs/rate-limits/
+2. Check https://letsencrypt.org/docs/rate-limits/
 
 ### DNS Resolution Failed
 

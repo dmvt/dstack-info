@@ -23,8 +23,8 @@
     return acc;
   }, {} as Record<string, any[]>);
 
-  // Define section order (tutorials flow: Host Setup -> Prerequisites -> dstack Installation -> KMS -> Gateway -> First Application)
-  const sectionOrder = ['Host Setup', 'Prerequisites', 'dstack Installation', 'KMS Deployment', 'Gateway Deployment', 'First Application'];
+  // Define section order (tutorials flow: Pre-Deployment -> Host Setup -> Prerequisites -> dstack Installation -> KMS -> Gateway -> First Application)
+  const sectionOrder = ['Pre-Deployment', 'Host Setup', 'Prerequisites', 'dstack Installation', 'KMS Deployment', 'Gateway Deployment', 'First Application'];
 
   // Sort tutorials within each section: numbered steps first, then appendices
   $: sortedSections = Object.entries(tutorialsBySection)

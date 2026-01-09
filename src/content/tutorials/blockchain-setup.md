@@ -1,11 +1,11 @@
 ---
 title: "Blockchain Wallet Setup"
-description: "Set up an Ethereum wallet on Sepolia testnet for dstack KMS deployment"
-section: "Prerequisites"
-stepNumber: 2
-totalSteps: 5
-lastUpdated: 2025-11-02
-
+description: "Set up an Ethereum wallet and Alchemy API key for dstack deployment"
+section: "Pre-Deployment"
+stepNumber: 1
+totalSteps: 2
+lastUpdated: 2026-01-09
+prerequisites: []
 tags:
     - blockchain
     - ethereum

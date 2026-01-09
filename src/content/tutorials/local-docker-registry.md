@@ -2,8 +2,8 @@
 title: "Local Docker Registry"
 description: "Deploy a local Docker registry with SSL for reliable CVM image pulls"
 section: "Prerequisites"
-stepNumber: 5
-totalSteps: 5
+stepNumber: 6
+totalSteps: 6
 lastUpdated: 2025-12-09
 prerequisites:
   - ssl-certificate-setup
@@ -465,7 +465,7 @@ The CVM will pull from your local registry instead of Docker Hub.
 
 With the local Docker registry running and images cached, proceed to:
 
-- [Smart Contract Compilation](/tutorial/smart-contract-compilation) - Compile KMS contracts locally
+- [Contract Deployment](/tutorial/contract-deployment) - Deploy KMS contracts to Sepolia
 - [KMS Build & Configuration](/tutorial/kms-build-configuration) - Prepare KMS for CVM deployment
 
 ## Additional Resources

@@ -276,14 +276,16 @@ ansible-playbook playbooks/verify-tdx.yml -i inventory/hosts.yml
 |------|----------|-----------------|
 | 1 | `verify-dns.yml` | [DNS Configuration](/tutorial/dns-configuration) |
 | 2 | `setup-ssl-certificates.yml` | [SSL Certificate Setup](/tutorial/ssl-certificate-setup) |
-| 3 | `configure-pccs.yml` | [TDX Attestation Setup](/tutorial/tdx-attestation-setup) |
-| 4 | `setup-gramine-key-provider.yml` | [Gramine Key Provider](/tutorial/gramine-key-provider) |
-| 5 | `setup-local-registry.yml` | [Local Docker Registry](/tutorial/local-docker-registry) |
+| 3 | `configure-pccs.yml` | [PCCS Configuration](/tutorial/pccs-configuration) |
+| 4 | `setup-docker.yml` | [Docker Setup](/tutorial/docker-setup) |
+| 5 | `setup-gramine-key-provider.yml` | [Gramine Key Provider](/tutorial/gramine-key-provider) |
+| 6 | `setup-local-registry.yml` | [Local Docker Registry](/tutorial/local-docker-registry) |
 
 ```bash
 ansible-playbook playbooks/verify-dns.yml -i inventory/hosts.yml
 ansible-playbook playbooks/setup-ssl-certificates.yml -i inventory/hosts.yml
 ansible-playbook playbooks/configure-pccs.yml -i inventory/hosts.yml
+ansible-playbook playbooks/setup-docker.yml -i inventory/hosts.yml
 ansible-playbook playbooks/setup-gramine-key-provider.yml -i inventory/hosts.yml
 ansible-playbook playbooks/setup-local-registry.yml -i inventory/hosts.yml
 ```
@@ -312,7 +314,7 @@ ansible-playbook playbooks/setup-guest-images.yml -i inventory/hosts.yml
 
 | Step | Playbook | Manual Tutorial |
 |------|----------|-----------------|
-| 1 | `deploy-contracts-local.yml` | [Smart Contract Compilation](/tutorial/smart-contract-compilation) |
+| 1 | `deploy-contracts-local.yml` | [Contract Deployment](/tutorial/contract-deployment) |
 | 2 | `build-kms.yml` | [KMS Build & Configuration](/tutorial/kms-build-configuration) |
 | 3 | `deploy-kms-cvm.yml` | [KMS CVM Deployment](/tutorial/kms-cvm-deployment) |
 | 4 | `verify-kms-cvm.yml` | [KMS CVM Deployment](/tutorial/kms-cvm-deployment#verification) |

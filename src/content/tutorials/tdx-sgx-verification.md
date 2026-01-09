@@ -3,7 +3,7 @@ title: "TDX & SGX Verification"
 description: "Verify TDX and SGX are properly enabled and registered with Intel"
 section: "Host Setup"
 stepNumber: 4
-totalSteps: 5
+totalSteps: 4
 lastUpdated: 2025-12-07
 prerequisites:
   - tdx-software-installation
