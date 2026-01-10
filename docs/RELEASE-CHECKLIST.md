@@ -13,7 +13,7 @@
 - [ ] All changes committed to `tokscope-xordi-perf` branch
 - [ ] Record the commit SHA: `____________________________________________`
 - [ ] Verify CI passes (if configured)
-- [ ] No secrets in source code (use KMS for secrets)
+- [ ] No secrets in source code (use appropriate KMS for secrets)
 
 ### 2. Docker Image Build
 
